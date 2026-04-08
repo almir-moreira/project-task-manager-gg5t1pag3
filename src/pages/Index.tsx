@@ -6,9 +6,7 @@ import { useAppContext } from '@/stores/main'
 const Index = () => {
   const { tasks, currentUser } = useAppContext()
 
-  const myTasks = tasks.filter(
-    (t) => t.assigneeId === currentUser.id || t.projectOwnerId === currentUser.id,
-  )
+  const myTasks = tasks.filter((t) => t.projectOwnerId === currentUser.id)
   const programmeTasks = tasks.filter((t) => t.programme === currentUser.programme)
 
   return (

@@ -4,7 +4,7 @@ import { TaskStatus } from '@/lib/types'
 import { CheckCircle2, Clock, AlertCircle, PauseCircle, XCircle, ListTodo } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const config: Record<TaskStatus, { icon: any; bg: string; text: string }> = {
+const config: Record<string, { icon: any; bg: string; text: string }> = {
   'To Do': {
     icon: ListTodo,
     bg: 'bg-slate-100 dark:bg-slate-800',
@@ -35,27 +35,37 @@ const config: Record<TaskStatus, { icon: any; bg: string; text: string }> = {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-600 dark:text-emerald-400',
   },
-  'SPM Clearance': { icon: Clock, bg: 'bg-blue-50', text: 'text-blue-500' },
-  'Head Clearance': { icon: Clock, bg: 'bg-blue-50', text: 'text-blue-500' },
-  'CPO Approval': { icon: Clock, bg: 'bg-blue-50', text: 'text-blue-500' },
-  'SG Approval': { icon: Clock, bg: 'bg-blue-50', text: 'text-blue-500' },
 }
 
 export function StatCards() {
   const { tasks } = useAppContext()
 
-  const displayStatuses: TaskStatus[] = [
-    'To Do',
-    'In Progress',
-    'Past Due',
-    'On Hold',
-    'Rejected',
-    'Done',
-  ]
+  const displayStatuses = ['To Do', 'In Progress', 'Past Due', 'On Hold', 'Rejected', 'Done']
+
+  const getBoxStatus = (status: string) => {
+    if (['To Do'].includes(status)) return 'To Do'
+    if (
+      [
+        'In Progress',
+        'SPM Clearance',
+        'Head Approval',
+        'Head Clearance',
+        'CPO Approval',
+        'SG Approval',
+      ].includes(status)
+    )
+      return 'In Progress'
+    if (['On Hold'].includes(status)) return 'On Hold'
+    if (['Rejected'].includes(status)) return 'Rejected'
+    if (['Done'].includes(status)) return 'Done'
+    if (['Past Due'].includes(status)) return 'Past Due'
+    return status
+  }
 
   const counts = tasks.reduce(
     (acc, task) => {
-      acc[task.status] = (acc[task.status] || 0) + 1
+      const box = getBoxStatus(task.status)
+      acc[box] = (acc[box] || 0) + 1
       return acc
     },
     {} as Record<string, number>,
