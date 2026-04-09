@@ -26,7 +26,7 @@ BEGIN
   
   -- Seed Accounts
   INSERT INTO public.accounts (id, code, name) VALUES ('f5a340b0-a5b5-4b1f-aa33-87e2de1e52bc'::uuid, 'ACC-400', 'Main Account') ON CONFLICT (id) DO NOTHING;
-  INSERT INTO public.accounts (id, code, name) VALUES ('g6a340b0-a5b5-4b1f-aa33-87e2de1e52bd'::uuid, 'ACC-401', 'Reserve Account') ON CONFLICT (id) DO NOTHING;
+  INSERT INTO public.accounts (id, code, name) VALUES ('f6a340b0-a5b5-4b1f-aa33-87e2de1e52bd'::uuid, 'ACC-401', 'Reserve Account') ON CONFLICT (id) DO NOTHING;
 END $$;
 
 -- Fix RLS Policies for authenticated users to interact with master tables
