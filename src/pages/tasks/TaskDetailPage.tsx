@@ -23,17 +23,19 @@ export default function TaskDetailPage() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-xl font-bold tracking-tight">Task Details</h1>
+        <h1 className="text-xl font-bold tracking-tight">Activity Matrix</h1>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 items-start mb-6">
         <div className="xl:col-span-4 2xl:col-span-3">
           <TaskPropertiesForm task={task} />
         </div>
-        <div className="xl:col-span-8 2xl:col-span-9 h-full min-h-[600px]">
+        <div className="xl:col-span-8 2xl:col-span-9 h-[calc(100vh-10rem)] min-h-[600px]">
           <TaskActivityTabs task={task} />
         </div>
       </div>
+
+      <div className="text-center text-xs text-muted-foreground mt-auto pt-4">Version 1.0.0</div>
     </div>
   )
 }

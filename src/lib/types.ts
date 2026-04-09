@@ -36,6 +36,15 @@ export interface Task {
   costEstimated: number
   inBudget: boolean
   history: AuditLog[]
+  purpose?: string
+  activityName?: string
+  endDate?: string
+  costCenterId?: string
+  budgetLineId?: string
+  workorderId?: string
+  accountId?: string
+  comments?: string
+  subTaskId?: string
 }
 
 export interface AuditLog {

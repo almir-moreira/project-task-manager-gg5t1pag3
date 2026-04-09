@@ -6,9 +6,11 @@ import { TabFeedback } from './tabs/TabFeedback'
 import { TabComments } from './tabs/TabComments'
 import { TabApprovalMatrix } from './tabs/TabApprovalMatrix'
 import { TabEventDetails, TabRBM } from './tabs/TabGeneric'
+import { TabTaskDetails } from './tabs/TabTaskDetails'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const tabsConfig = [
+  { id: 'task-details', label: 'Task Details', component: TabTaskDetails },
   { id: 'event', label: 'Event Details', component: TabEventDetails },
   {
     id: 'parties',
@@ -58,30 +60,34 @@ const tabsConfig = [
 
 export function TaskActivityTabs({ task }: { task: Task }) {
   return (
-    <Card className="shadow-sm border-border h-full flex flex-col">
-      <Tabs defaultValue="event" className="flex-1 flex flex-col w-full overflow-hidden">
-        <div className="border-b border-border bg-card px-2">
-          <ScrollArea className="w-full">
-            <TabsList className="h-12 w-max bg-transparent p-0 flex justify-start">
+    <Card className="shadow-sm border-border h-full flex flex-row overflow-hidden">
+      <Tabs
+        defaultValue="task-details"
+        orientation="vertical"
+        className="flex flex-1 w-full overflow-hidden"
+      >
+        <div className="w-48 sm:w-56 border-r border-border bg-muted/10 flex-shrink-0 flex flex-col">
+          <ScrollArea className="flex-1 w-full">
+            <TabsList className="flex flex-col h-auto w-full bg-transparent p-0 items-stretch justify-start">
               {tabsConfig.map((tab) => (
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-4 py-3 text-sm font-medium transition-none hover:text-foreground/80 data-[state=active]:text-primary"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border-r-2 data-[state=active]:border-primary rounded-none px-4 py-3 text-sm font-medium transition-all hover:bg-muted/50 data-[state=active]:text-primary justify-start border-r-2 border-transparent text-left"
                 >
                   {tab.label}
                 </TabsTrigger>
               ))}
             </TabsList>
-            <ScrollBar orientation="horizontal" className="hidden" />
+            <ScrollBar orientation="vertical" className="hidden" />
           </ScrollArea>
         </div>
-        <CardContent className="flex-1 p-6 overflow-y-auto bg-card">
+        <CardContent className="flex-1 p-6 overflow-y-auto bg-card m-0">
           {tabsConfig.map((tab) => (
             <TabsContent
               key={tab.id}
               value={tab.id}
-              className="mt-0 h-full focus-visible:outline-none"
+              className="mt-0 h-full focus-visible:outline-none data-[state=inactive]:hidden"
             >
               <tab.component task={task} />
             </TabsContent>

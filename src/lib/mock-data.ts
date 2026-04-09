@@ -26,8 +26,16 @@ export const mockUsers: User[] = [
 
 export const mockTasks: Task[] = [
   {
-    id: 'A-10001',
+    id: 'A-00001',
     title: 'Q3 Financial Review',
+    activityName: 'Q3 Financial Review',
+    purpose: 'Quarterly financial compliance',
+    endDate: '2026-07-15',
+    costCenterId: 'CC-100',
+    budgetLineId: 'BL-200',
+    workorderId: 'WO-300',
+    accountId: 'ACC-400',
+    comments: 'Requires attention from SPM',
     description: 'Quarterly review of budget vs actuals for Programme Alpha.',
     status: 'In Progress',
     category: 'Finance',
@@ -53,8 +61,10 @@ export const mockTasks: Task[] = [
     ],
   },
   {
-    id: 'A-10002',
+    id: 'A-00002',
     title: 'Annual Staff Retreat',
+    activityName: 'Annual Staff Retreat',
+    endDate: '2026-08-12',
     description: 'Organize the annual offsite for team building.',
     status: 'To Do',
     category: 'HR',
@@ -74,8 +84,10 @@ export const mockTasks: Task[] = [
     ],
   },
   {
-    id: 'A-10003',
+    id: 'A-00003',
     title: 'Vendor Contract Renewal',
+    activityName: 'Vendor Contract Renewal',
+    endDate: '2026-06-01',
     description: 'Renew IT services contract with TechCorp.',
     status: 'Past Due',
     category: 'Procurement',
@@ -95,8 +107,10 @@ export const mockTasks: Task[] = [
     ],
   },
   {
-    id: 'A-10004',
+    id: 'A-00004',
     title: 'Website Redesign',
+    activityName: 'Website Redesign',
+    endDate: '2026-04-20',
     description: 'Overhaul corporate site for accessibility.',
     status: 'Done',
     category: 'IT',

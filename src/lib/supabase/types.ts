@@ -9,7 +9,361 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      accounts: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      activities: {
+        Row: {
+          account_id: string | null
+          activity_name: string
+          assignee_id: string | null
+          budget_line_id: string | null
+          comments: string | null
+          cost_center_id: string | null
+          cost_estimated: number | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          in_budget: boolean | null
+          priority: Database['public']['Enums']['task_priority'] | null
+          programme_id: string | null
+          project: string | null
+          project_owner_id: string | null
+          purpose: string | null
+          short_description: string | null
+          start_date: string | null
+          status: Database['public']['Enums']['task_status'] | null
+          sub_task_id: string | null
+          task_number: string | null
+          type_id: string | null
+          workorder_id: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          activity_name: string
+          assignee_id?: string | null
+          budget_line_id?: string | null
+          comments?: string | null
+          cost_center_id?: string | null
+          cost_estimated?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          in_budget?: boolean | null
+          priority?: Database['public']['Enums']['task_priority'] | null
+          programme_id?: string | null
+          project?: string | null
+          project_owner_id?: string | null
+          purpose?: string | null
+          short_description?: string | null
+          start_date?: string | null
+          status?: Database['public']['Enums']['task_status'] | null
+          sub_task_id?: string | null
+          task_number?: string | null
+          type_id?: string | null
+          workorder_id?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          activity_name?: string
+          assignee_id?: string | null
+          budget_line_id?: string | null
+          comments?: string | null
+          cost_center_id?: string | null
+          cost_estimated?: number | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          in_budget?: boolean | null
+          priority?: Database['public']['Enums']['task_priority'] | null
+          programme_id?: string | null
+          project?: string | null
+          project_owner_id?: string | null
+          purpose?: string | null
+          short_description?: string | null
+          start_date?: string | null
+          status?: Database['public']['Enums']['task_status'] | null
+          sub_task_id?: string | null
+          task_number?: string | null
+          type_id?: string | null
+          workorder_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activities_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_assignee_id_fkey'
+            columns: ['assignee_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_budget_line_id_fkey'
+            columns: ['budget_line_id']
+            isOneToOne: false
+            referencedRelation: 'budget_lines'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_cost_center_id_fkey'
+            columns: ['cost_center_id']
+            isOneToOne: false
+            referencedRelation: 'cost_centers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_programme_id_fkey'
+            columns: ['programme_id']
+            isOneToOne: false
+            referencedRelation: 'programmes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_project_owner_id_fkey'
+            columns: ['project_owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_sub_task_id_fkey'
+            columns: ['sub_task_id']
+            isOneToOne: false
+            referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_type_id_fkey'
+            columns: ['type_id']
+            isOneToOne: false
+            referencedRelation: 'task_types'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_workorder_id_fkey'
+            columns: ['workorder_id']
+            isOneToOne: false
+            referencedRelation: 'workorders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      budget_lines: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      cost_centers: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
+      organizations: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string | null
+          programme_id: string | null
+          role: Database['public']['Enums']['user_role'] | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id: string
+          name?: string | null
+          programme_id?: string | null
+          role?: Database['public']['Enums']['user_role'] | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          programme_id?: string | null
+          role?: Database['public']['Enums']['user_role'] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_programme_id_fkey'
+            columns: ['programme_id']
+            isOneToOne: false
+            referencedRelation: 'programmes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      programmes: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          organization_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          organization_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          organization_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'programmes_organization_id_fkey'
+            columns: ['organization_id']
+            isOneToOne: false
+            referencedRelation: 'organizations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          programme_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          programme_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          programme_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'projects_programme_id_fkey'
+            columns: ['programme_id']
+            isOneToOne: false
+            referencedRelation: 'programmes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      task_types: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      workorders: {
+        Row: {
+          code: string
+          created_at: string | null
+          id: string
+          name: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string | null
+          id?: string
+          name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +372,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      task_priority: 'Low' | 'Medium' | 'High' | 'Urgent'
+      task_status:
+        | 'To Do'
+        | 'In Progress'
+        | 'On Hold'
+        | 'SPM Clearance'
+        | 'Head Clearance'
+        | 'Head Approval'
+        | 'CPO Approval'
+        | 'SG Approval'
+        | 'Rejected'
+        | 'Done'
+      user_role:
+        | 'Collaborator'
+        | 'Officer'
+        | 'Project Manager'
+        | 'Head'
+        | 'Manager'
+        | 'Secretary General'
+        | 'Team Assistant'
+        | 'Administrator'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -143,7 +517,31 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      task_priority: ['Low', 'Medium', 'High', 'Urgent'],
+      task_status: [
+        'To Do',
+        'In Progress',
+        'On Hold',
+        'SPM Clearance',
+        'Head Clearance',
+        'Head Approval',
+        'CPO Approval',
+        'SG Approval',
+        'Rejected',
+        'Done',
+      ],
+      user_role: [
+        'Collaborator',
+        'Officer',
+        'Project Manager',
+        'Head',
+        'Manager',
+        'Secretary General',
+        'Team Assistant',
+        'Administrator',
+      ],
+    },
   },
 } as const
 
@@ -153,3 +551,186 @@ export const Constants = {
 // IMPORTANT: The TypeScript types above map UUID, TEXT, VARCHAR all to "string".
 // Use the COLUMN TYPES section below to know the real PostgreSQL type for each column.
 // Always use the correct PostgreSQL type when writing SQL migrations.
+
+// --- COLUMN TYPES (actual PostgreSQL types) ---
+// Use this to know the real database type when writing migrations.
+// "string" in TypeScript types above may be uuid, text, varchar, timestamptz, etc.
+// Table: accounts
+//   id: uuid (not null, default: gen_random_uuid())
+//   code: text (not null)
+//   name: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: activities
+//   id: uuid (not null, default: gen_random_uuid())
+//   task_number: text (nullable)
+//   programme_id: uuid (nullable)
+//   project: text (nullable)
+//   project_owner_id: uuid (nullable)
+//   sub_task_id: uuid (nullable)
+//   type_id: uuid (nullable)
+//   priority: task_priority (nullable, default: 'Medium'::task_priority)
+//   status: task_status (nullable, default: 'To Do'::task_status)
+//   purpose: text (nullable)
+//   activity_name: text (not null)
+//   short_description: text (nullable)
+//   start_date: date (nullable)
+//   end_date: date (nullable)
+//   assignee_id: uuid (nullable)
+//   cost_center_id: uuid (nullable)
+//   budget_line_id: uuid (nullable)
+//   workorder_id: uuid (nullable)
+//   account_id: uuid (nullable)
+//   cost_estimated: numeric (nullable)
+//   in_budget: boolean (nullable, default: false)
+//   comments: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: budget_lines
+//   id: uuid (not null, default: gen_random_uuid())
+//   code: text (not null)
+//   name: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: cost_centers
+//   id: uuid (not null, default: gen_random_uuid())
+//   code: text (not null)
+//   name: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: organizations
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: profiles
+//   id: uuid (not null)
+//   name: text (nullable)
+//   email: text (nullable)
+//   role: user_role (nullable)
+//   programme_id: uuid (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: programmes
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   organization_id: uuid (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: projects
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   programme_id: uuid (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: task_types
+//   id: uuid (not null, default: gen_random_uuid())
+//   name: text (not null)
+//   created_at: timestamp with time zone (nullable, default: now())
+// Table: workorders
+//   id: uuid (not null, default: gen_random_uuid())
+//   code: text (not null)
+//   name: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
+
+// --- CONSTRAINTS ---
+// Table: accounts
+//   PRIMARY KEY accounts_pkey: PRIMARY KEY (id)
+// Table: activities
+//   FOREIGN KEY activities_account_id_fkey: FOREIGN KEY (account_id) REFERENCES accounts(id)
+//   FOREIGN KEY activities_assignee_id_fkey: FOREIGN KEY (assignee_id) REFERENCES profiles(id)
+//   FOREIGN KEY activities_budget_line_id_fkey: FOREIGN KEY (budget_line_id) REFERENCES budget_lines(id)
+//   FOREIGN KEY activities_cost_center_id_fkey: FOREIGN KEY (cost_center_id) REFERENCES cost_centers(id)
+//   PRIMARY KEY activities_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY activities_programme_id_fkey: FOREIGN KEY (programme_id) REFERENCES programmes(id)
+//   FOREIGN KEY activities_project_owner_id_fkey: FOREIGN KEY (project_owner_id) REFERENCES profiles(id)
+//   FOREIGN KEY activities_sub_task_id_fkey: FOREIGN KEY (sub_task_id) REFERENCES activities(id)
+//   UNIQUE activities_task_number_key: UNIQUE (task_number)
+//   FOREIGN KEY activities_type_id_fkey: FOREIGN KEY (type_id) REFERENCES task_types(id)
+//   FOREIGN KEY activities_workorder_id_fkey: FOREIGN KEY (workorder_id) REFERENCES workorders(id)
+// Table: budget_lines
+//   PRIMARY KEY budget_lines_pkey: PRIMARY KEY (id)
+// Table: cost_centers
+//   PRIMARY KEY cost_centers_pkey: PRIMARY KEY (id)
+// Table: organizations
+//   PRIMARY KEY organizations_pkey: PRIMARY KEY (id)
+// Table: profiles
+//   FOREIGN KEY profiles_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
+//   PRIMARY KEY profiles_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY profiles_programme_id_fkey: FOREIGN KEY (programme_id) REFERENCES programmes(id)
+// Table: programmes
+//   FOREIGN KEY programmes_organization_id_fkey: FOREIGN KEY (organization_id) REFERENCES organizations(id)
+//   PRIMARY KEY programmes_pkey: PRIMARY KEY (id)
+// Table: projects
+//   PRIMARY KEY projects_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY projects_programme_id_fkey: FOREIGN KEY (programme_id) REFERENCES programmes(id)
+// Table: task_types
+//   PRIMARY KEY task_types_pkey: PRIMARY KEY (id)
+// Table: workorders
+//   PRIMARY KEY workorders_pkey: PRIMARY KEY (id)
+
+// --- ROW LEVEL SECURITY POLICIES ---
+// Table: accounts
+//   Policy "auth_read_accounts" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: activities
+//   Policy "auth_all_activities" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: budget_lines
+//   Policy "auth_read_budget_lines" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: cost_centers
+//   Policy "auth_read_cost_centers" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: organizations
+//   Policy "auth_read_org" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: profiles
+//   Policy "auth_insert_profiles" (INSERT, PERMISSIVE) roles={authenticated}
+//     WITH CHECK: true
+//   Policy "auth_read_profiles" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+//   Policy "auth_update_profiles" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: programmes
+//   Policy "auth_read_prog" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: projects
+//   Policy "auth_read_projects" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: task_types
+//   Policy "auth_read_task_types" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+// Table: workorders
+//   Policy "auth_read_workorders" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: true
+
+// --- DATABASE FUNCTIONS ---
+// FUNCTION generate_task_number()
+//   CREATE OR REPLACE FUNCTION public.generate_task_number()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//   AS $function$
+//   BEGIN
+//     IF NEW.task_number IS NULL THEN
+//       NEW.task_number := 'A-' || nextval('task_number_seq');
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION handle_new_user()
+//   CREATE OR REPLACE FUNCTION public.handle_new_user()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     INSERT INTO public.profiles (id, email, name)
+//     VALUES (NEW.id, NEW.email, split_part(NEW.email, '@', 1))
+//     ON CONFLICT (id) DO NOTHING;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
+
+// --- TRIGGERS ---
+// Table: activities
+//   set_task_number: CREATE TRIGGER set_task_number BEFORE INSERT ON public.activities FOR EACH ROW EXECUTE FUNCTION generate_task_number()
+
+// --- INDEXES ---
+// Table: activities
+//   CREATE UNIQUE INDEX activities_task_number_key ON public.activities USING btree (task_number)
