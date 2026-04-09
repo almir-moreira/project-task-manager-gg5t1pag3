@@ -1,6 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { useAppContext } from '@/stores/main'
-import { TaskStatus } from '@/lib/types'
 import { CheckCircle2, Clock, AlertCircle, PauseCircle, XCircle, ListTodo } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -37,34 +35,29 @@ const config: Record<string, { icon: any; bg: string; text: string }> = {
   },
 }
 
-export function StatCards() {
-  const { tasks } = useAppContext()
-
+export function StatCards({ tasks = [] }: { tasks?: any[] }) {
   const displayStatuses = ['To Do', 'In Progress', 'Past Due', 'On Hold', 'Rejected', 'Done']
-
-  const getBoxStatus = (status: string) => {
-    if (['To Do'].includes(status)) return 'To Do'
-    if (
-      [
-        'In Progress',
-        'SPM Clearance',
-        'Head Approval',
-        'Head Clearance',
-        'CPO Approval',
-        'SG Approval',
-      ].includes(status)
-    )
-      return 'In Progress'
-    if (['On Hold'].includes(status)) return 'On Hold'
-    if (['Rejected'].includes(status)) return 'Rejected'
-    if (['Done'].includes(status)) return 'Done'
-    if (['Past Due'].includes(status)) return 'Past Due'
-    return status
-  }
 
   const counts = tasks.reduce(
     (acc, task) => {
-      const box = getBoxStatus(task.status)
+      let box = task.status || 'To Do'
+      if (
+        task.end_date &&
+        new Date(task.end_date) < new Date() &&
+        !['Done', 'Rejected'].includes(task.status)
+      ) {
+        box = 'Past Due'
+      } else if (
+        [
+          'SPM Clearance',
+          'Head Clearance',
+          'Head Approval',
+          'CPO Approval',
+          'SG Approval',
+        ].includes(task.status)
+      ) {
+        box = 'In Progress'
+      }
       acc[box] = (acc[box] || 0) + 1
       return acc
     },

@@ -1,10 +1,8 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { useAppContext } from '@/stores/main'
-import { TaskStatus } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { getStatusColor } from '@/lib/status-colors'
 
-const allStatuses: TaskStatus[] = [
+const allStatuses = [
   'To Do',
   'In Progress',
   'On Hold',
@@ -16,9 +14,7 @@ const allStatuses: TaskStatus[] = [
   'Done',
 ]
 
-export function ProgressBoard() {
-  const { tasks } = useAppContext()
-
+export function ProgressBoard({ tasks = [] }: { tasks?: any[] }) {
   const counts = tasks.reduce(
     (acc, task) => {
       acc[task.status] = (acc[task.status] || 0) + 1
@@ -39,7 +35,6 @@ export function ProgressBoard() {
           {allStatuses.map((status, index) => {
             const count = counts[status] || 0
             const statusClass = getStatusColor(status)
-            // Extract just the background color class to use for a border
             const bgClass =
               statusClass.split(' ').find((c) => c.startsWith('bg-')) || 'bg-slate-200'
             const borderColor = bgClass.replace('bg-', 'border-')

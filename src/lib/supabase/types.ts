@@ -706,7 +706,7 @@ export const Constants = {
 //   AS $function$
 //   BEGIN
 //     IF NEW.task_number IS NULL THEN
-//       NEW.task_number := 'A-' || nextval('task_number_seq');
+//       NEW.task_number := 'A-' || LPAD(nextval('task_number_seq')::text, 5, '0');
 //     END IF;
 //     RETURN NEW;
 //   END;

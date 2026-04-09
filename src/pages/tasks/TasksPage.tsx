@@ -14,12 +14,11 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
-import type { Database } from '@/lib/supabase/types'
-
-type Activity = Database['public']['Tables']['activities']['Row']
+import { getActivities } from '@/services/activities'
+import { getStatusColor } from '@/lib/status-colors'
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<Activity[]>([])
+  const [tasks, setTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
@@ -32,12 +31,7 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
+      const data = await getActivities()
       setTasks(data || [])
     } catch (error: any) {
       toast({
@@ -68,7 +62,7 @@ export default function TasksPage() {
         title: 'Activity created',
         description: 'You can now edit its details.',
       })
-      navigate(`/tasks/${data.id}`)
+      navigate(`/tasks/${data.task_number || data.id}`)
     } catch (error: any) {
       toast({
         title: 'Error creating activity',
@@ -80,24 +74,9 @@ export default function TasksPage() {
 
   const filteredTasks = tasks.filter(
     (task) =>
-      task.activity_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      task.task_number?.toLowerCase().includes(searchQuery.toLowerCase()),
+      (task.activity_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (task.task_number || task.id).toLowerCase().includes(searchQuery.toLowerCase()),
   )
-
-  const getStatusColor = (status: string | null) => {
-    switch (status) {
-      case 'Done':
-        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
-      case 'On Hold':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-      case 'Rejected':
-        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-      default:
-        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
-    }
-  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
@@ -165,10 +144,12 @@ export default function TasksPage() {
                 <TableRow
                   key={task.id}
                   className="hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  onClick={() => navigate(`/tasks/${task.task_number || task.id}`)}
                 >
-                  <TableCell className="font-medium">{task.task_number || '-'}</TableCell>
-                  <TableCell className="font-medium">{task.activity_name}</TableCell>
+                  <TableCell className="font-medium text-xs">
+                    {task.task_number || task.id.slice(0, 8)}
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">{task.activity_name}</TableCell>
                   <TableCell>
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}
@@ -189,7 +170,7 @@ export default function TasksPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/tasks/${task.id}`}>Details</Link>
+                      <Link to={`/tasks/${task.task_number || task.id}`}>Details</Link>
                     </Button>
                   </TableCell>
                 </TableRow>

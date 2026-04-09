@@ -1,20 +1,24 @@
-import { TaskStatus } from './types'
-
-export const getStatusColor = (status: TaskStatus | string): string => {
+export const getStatusColor = (status: string | null): string => {
+  if (!status) return 'bg-slate-200 text-slate-800 border-slate-300'
   switch (status) {
     case 'Past Due':
-      return 'bg-red-600 text-white border-transparent hover:bg-red-700'
     case 'Rejected':
-      return 'bg-orange-600 text-white border-transparent hover:bg-orange-700'
+      return 'bg-red-600 text-white border-transparent'
     case 'Done':
-      return 'bg-emerald-500 text-white border-transparent hover:bg-emerald-600'
+      return 'bg-emerald-500 text-white border-transparent'
     case 'In Progress':
-      return 'bg-blue-600 text-white border-transparent hover:bg-blue-700'
+      return 'bg-blue-600 text-white border-transparent'
     case 'On Hold':
-      return 'bg-amber-500 text-white border-transparent hover:bg-amber-600'
+      return 'bg-amber-500 text-white border-transparent'
+    case 'SPM Clearance':
+    case 'Head Clearance':
+    case 'Head Approval':
+    case 'CPO Approval':
+    case 'SG Approval':
+      return 'bg-purple-600 text-white border-transparent'
     case 'To Do':
-      return 'bg-slate-200 text-slate-800 border-slate-300 hover:bg-slate-300'
+      return 'bg-slate-200 text-slate-800 border-slate-300'
     default:
-      return 'bg-blue-100 text-blue-800 border-transparent hover:bg-blue-200'
+      return 'bg-slate-100 text-slate-800 border-slate-200'
   }
 }

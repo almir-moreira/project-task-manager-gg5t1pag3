@@ -1,5 +1,3 @@
-import { Task, TaskStatus } from '@/lib/types'
-import { useAppContext } from '@/stores/main'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,41 +9,53 @@ import {
 } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { getStatusColor } from '@/lib/status-colors'
+import { useState, useEffect } from 'react'
+import { getMasterData } from '@/services/master-data'
+import { updateActivity } from '@/services/activities'
 
-interface TaskPropertiesFormProps {
-  task: Task
-}
-
-const allStatuses: TaskStatus[] = [
+const allStatuses = [
   'To Do',
   'In Progress',
   'On Hold',
   'SPM Clearance',
   'Head Clearance',
+  'Head Approval',
   'CPO Approval',
   'SG Approval',
   'Rejected',
   'Done',
 ]
 
-export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
-  const { updateTaskStatus, users } = useAppContext()
+export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t: any) => void }) {
+  const [masterData, setMasterData] = useState<any>(null)
 
-  const handleStatusChange = (val: string) => {
-    updateTaskStatus(task.id, val as TaskStatus)
+  useEffect(() => {
+    getMasterData().then(setMasterData)
+  }, [])
+
+  const handleChange = async (field: string, val: any) => {
+    try {
+      const updated = await updateActivity(task.id, { [field]: val })
+      onUpdate(updated)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
-  const programmes = ['Alpha', 'Beta', 'Gamma', 'Delta']
+  if (!masterData)
+    return <div className="p-4 text-sm text-muted-foreground">Loading properties...</div>
 
   return (
     <div className="bg-card border border-border rounded-lg shadow-sm flex flex-col h-full h-[calc(100vh-10rem)] sticky top-[72px]">
       <div className="p-4 border-b border-border bg-muted/20 flex flex-col gap-2">
         <div className="flex justify-between items-start">
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-foreground/90">{task.id}</h2>
+            <h2 className="text-xl font-bold tracking-tight text-foreground/90">
+              {task.task_number || task.id.slice(0, 8)}
+            </h2>
           </div>
           <Badge className={`px-3 py-1 ${getStatusColor(task.status)} border-0 font-semibold`}>
-            {task.status}
+            {task.status || 'To Do'}
           </Badge>
         </div>
       </div>
@@ -55,7 +65,7 @@ export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Status (Workflow)
           </Label>
-          <Select value={task.status} onValueChange={handleStatusChange}>
+          <Select value={task.status || 'To Do'} onValueChange={(v) => handleChange('status', v)}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -73,14 +83,17 @@ export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Programme
           </Label>
-          <Select defaultValue={task.programme}>
+          <Select
+            value={task.programme_id || ''}
+            onValueChange={(v) => handleChange('programme_id', v)}
+          >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select programme" />
             </SelectTrigger>
             <SelectContent>
-              {programmes.map((p) => (
-                <SelectItem key={p} value={p}>
-                  {p}
+              {masterData.programmes.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -91,19 +104,29 @@ export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Project
           </Label>
-          <Input defaultValue={task.project} className="h-9" placeholder="Project name or ID" />
+          <Input
+            defaultValue={task.project || ''}
+            onBlur={(e) =>
+              e.target.value !== task.project && handleChange('project', e.target.value)
+            }
+            className="h-9"
+            placeholder="Project name"
+          />
         </div>
 
         <div className="grid gap-2">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Project Owner
           </Label>
-          <Select defaultValue={task.projectOwnerId}>
+          <Select
+            value={task.project_owner_id || ''}
+            onValueChange={(v) => handleChange('project_owner_id', v)}
+          >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select owner" />
             </SelectTrigger>
             <SelectContent>
-              {users.map((u) => (
+              {masterData.profiles.map((u: any) => (
                 <SelectItem key={u.id} value={u.id}>
                   {u.name}
                 </SelectItem>
@@ -116,22 +139,30 @@ export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Sub Task ID
           </Label>
-          <Input defaultValue={task.subTaskId} placeholder="e.g. A-00002" className="h-9" />
+          <Input
+            defaultValue={task.sub_task_id || ''}
+            onBlur={(e) =>
+              e.target.value !== task.sub_task_id && handleChange('sub_task_id', e.target.value)
+            }
+            placeholder="Link to another UUID"
+            className="h-9"
+          />
         </div>
 
         <div className="grid gap-2">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Type
           </Label>
-          <Select defaultValue={task.type}>
+          <Select value={task.type_id || ''} onValueChange={(v) => handleChange('type_id', v)}>
             <SelectTrigger className="h-9">
-              <SelectValue />
+              <SelectValue placeholder="Select type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Review">Review</SelectItem>
-              <SelectItem value="Event">Event</SelectItem>
-              <SelectItem value="Legal">Legal</SelectItem>
-              <SelectItem value="Project">Project</SelectItem>
+              {masterData.taskTypes.map((t: any) => (
+                <SelectItem key={t.id} value={t.id}>
+                  {t.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -140,9 +171,12 @@ export function TaskPropertiesForm({ task }: TaskPropertiesFormProps) {
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Priority
           </Label>
-          <Select defaultValue={task.priority}>
+          <Select
+            value={task.priority || 'Medium'}
+            onValueChange={(v) => handleChange('priority', v)}
+          >
             <SelectTrigger className="h-9">
-              <SelectValue />
+              <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Low">Low</SelectItem>

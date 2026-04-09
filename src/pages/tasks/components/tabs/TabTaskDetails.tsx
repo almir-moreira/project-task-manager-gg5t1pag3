@@ -1,5 +1,4 @@
-import { Task } from '@/lib/types'
-import { useAppContext } from '@/stores/main'
+import { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -11,12 +10,30 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import { getMasterData } from '@/services/master-data'
+import { updateActivity } from '@/services/activities'
 
-export function TabTaskDetails({ task }: { task: Task }) {
-  const { users } = useAppContext()
+export function TabTaskDetails({ task, onUpdate }: { task: any; onUpdate: (t: any) => void }) {
+  const [masterData, setMasterData] = useState<any>(null)
+
+  useEffect(() => {
+    getMasterData().then(setMasterData)
+  }, [])
+
+  const handleChange = async (field: string, val: any) => {
+    try {
+      const updated = await updateActivity(task.id, { [field]: val })
+      onUpdate(updated)
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  if (!masterData)
+    return <div className="p-4 text-sm text-muted-foreground">Loading details...</div>
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-4xl animate-fade-in">
       <div>
         <h3 className="text-lg font-medium">Task Details</h3>
         <p className="text-sm text-muted-foreground">
@@ -28,18 +45,34 @@ export function TabTaskDetails({ task }: { task: Task }) {
         <div className="space-y-5">
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Purpose</Label>
-            <Input defaultValue={task.purpose} placeholder="Enter purpose of the activity" />
+            <Input
+              defaultValue={task.purpose || ''}
+              onBlur={(e) =>
+                e.target.value !== task.purpose && handleChange('purpose', e.target.value)
+              }
+              placeholder="Enter purpose of the activity"
+            />
           </div>
 
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Activity Name</Label>
-            <Input defaultValue={task.activityName || task.title} />
+            <Input
+              defaultValue={task.activity_name || ''}
+              onBlur={(e) =>
+                e.target.value !== task.activity_name &&
+                handleChange('activity_name', e.target.value)
+              }
+            />
           </div>
 
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Short Description</Label>
             <Textarea
-              defaultValue={task.description}
+              defaultValue={task.short_description || ''}
+              onBlur={(e) =>
+                e.target.value !== task.short_description &&
+                handleChange('short_description', e.target.value)
+              }
               className="min-h-[120px] resize-none"
               placeholder="Provide a brief description..."
             />
@@ -48,22 +81,37 @@ export function TabTaskDetails({ task }: { task: Task }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">Start Date</Label>
-              <Input type="date" defaultValue={task.startDate} />
+              <Input
+                type="date"
+                defaultValue={task.start_date || ''}
+                onBlur={(e) =>
+                  e.target.value !== task.start_date && handleChange('start_date', e.target.value)
+                }
+              />
             </div>
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">End Date</Label>
-              <Input type="date" defaultValue={task.endDate || task.dueDate} />
+              <Input
+                type="date"
+                defaultValue={task.end_date || ''}
+                onBlur={(e) =>
+                  e.target.value !== task.end_date && handleChange('end_date', e.target.value)
+                }
+              />
             </div>
           </div>
 
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Assignee</Label>
-            <Select defaultValue={task.assigneeId}>
+            <Select
+              value={task.assignee_id || ''}
+              onValueChange={(v) => handleChange('assignee_id', v)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select assignee" />
               </SelectTrigger>
               <SelectContent>
-                {users.map((u) => (
+                {masterData.profiles.map((u: any) => (
                   <SelectItem key={u.id} value={u.id}>
                     {u.name}
                   </SelectItem>
@@ -77,27 +125,37 @@ export function TabTaskDetails({ task }: { task: Task }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">Cost Center</Label>
-              <Select defaultValue={task.costCenterId}>
+              <Select
+                value={task.cost_center_id || ''}
+                onValueChange={(v) => handleChange('cost_center_id', v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="CC-100">CC-100 (HQ)</SelectItem>
-                  <SelectItem value="CC-200">CC-200 (Field Office)</SelectItem>
-                  <SelectItem value="CC-300">CC-300 (Projects)</SelectItem>
+                  {masterData.costCenters.map((cc: any) => (
+                    <SelectItem key={cc.id} value={cc.id}>
+                      {cc.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">Budget Line</Label>
-              <Select defaultValue={task.budgetLineId}>
+              <Select
+                value={task.budget_line_id || ''}
+                onValueChange={(v) => handleChange('budget_line_id', v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="BL-100">BL-100 (Personnel)</SelectItem>
-                  <SelectItem value="BL-200">BL-200 (Travel)</SelectItem>
-                  <SelectItem value="BL-201">BL-201 (Services)</SelectItem>
+                  {masterData.budgetLines.map((bl: any) => (
+                    <SelectItem key={bl.id} value={bl.id}>
+                      {bl.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -106,34 +164,53 @@ export function TabTaskDetails({ task }: { task: Task }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">Workorder</Label>
-              <Select defaultValue={task.workorderId}>
+              <Select
+                value={task.workorder_id || ''}
+                onValueChange={(v) => handleChange('workorder_id', v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="WO-300">WO-300</SelectItem>
-                  <SelectItem value="WO-301">WO-301</SelectItem>
-                  <SelectItem value="WO-302">WO-302</SelectItem>
+                  {masterData.workorders.map((wo: any) => (
+                    <SelectItem key={wo.id} value={wo.id}>
+                      {wo.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="grid gap-2">
               <Label className="text-sm font-semibold">Account</Label>
-              <Select defaultValue={task.accountId}>
+              <Select
+                value={task.account_id || ''}
+                onValueChange={(v) => handleChange('account_id', v)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ACC-400">ACC-400 (Main Operating)</SelectItem>
-                  <SelectItem value="ACC-401">ACC-401 (Reserve)</SelectItem>
+                  {masterData.accounts.map((ac: any) => (
+                    <SelectItem key={ac.id} value={ac.id}>
+                      {ac.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Cost Estimated (USD)</Label>
-            <Input type="number" defaultValue={task.costEstimated} placeholder="0.00" />
+            <Label className="text-sm font-semibold">Cost Estimated</Label>
+            <Input
+              type="number"
+              defaultValue={task.cost_estimated || ''}
+              onBlur={(e) => {
+                const val = e.target.value ? parseFloat(e.target.value) : null
+                if (val !== task.cost_estimated) handleChange('cost_estimated', val)
+              }}
+              placeholder="0.00"
+            />
           </div>
 
           <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
@@ -143,13 +220,19 @@ export function TabTaskDetails({ task }: { task: Task }) {
                 Is this included in the current year's budget?
               </p>
             </div>
-            <Switch defaultChecked={task.inBudget} />
+            <Switch
+              checked={!!task.in_budget}
+              onCheckedChange={(v) => handleChange('in_budget', v)}
+            />
           </div>
 
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Comments</Label>
             <Textarea
-              defaultValue={task.comments}
+              defaultValue={task.comments || ''}
+              onBlur={(e) =>
+                e.target.value !== task.comments && handleChange('comments', e.target.value)
+              }
               className="min-h-[100px] resize-none"
               placeholder="Add internal notes or comments regarding this task..."
             />

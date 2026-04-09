@@ -1,13 +1,41 @@
+import { useState, useEffect } from 'react'
 import { StatCards } from './dashboard/components/StatCards'
 import { ProgressBoard } from './dashboard/components/ProgressBoard'
 import { DashboardTaskTable } from './dashboard/components/DashboardTaskTable'
-import { useAppContext } from '@/stores/main'
+import { getActivities } from '@/services/activities'
+import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 
 const Index = () => {
-  const { tasks, currentUser } = useAppContext()
+  const { user } = useAuth()
+  const [tasks, setTasks] = useState<any[]>([])
+  const [profile, setProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-  const myTasks = tasks.filter((t) => t.projectOwnerId === currentUser.id)
-  const programmeTasks = tasks.filter((t) => t.programme === currentUser.programme)
+  useEffect(() => {
+    async function load() {
+      try {
+        const [acts, { data: prof }] = await Promise.all([
+          getActivities(),
+          user
+            ? supabase.from('profiles').select('*').eq('id', user.id).single()
+            : Promise.resolve({ data: null }),
+        ])
+        setTasks(acts || [])
+        setProfile(prof)
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [user])
+
+  if (loading) return <div className="p-6">Loading dashboard...</div>
+
+  const myTasks = tasks.filter((t) => t.assignee_id === user?.id || t.project_owner_id === user?.id)
+  const programmeTasks = tasks.filter((t) => t.programme_id === profile?.programme_id)
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
@@ -18,8 +46,8 @@ const Index = () => {
         </p>
       </div>
 
-      <StatCards />
-      <ProgressBoard />
+      <StatCards tasks={tasks} />
+      <ProgressBoard tasks={tasks} />
 
       <div className="grid gap-6">
         <DashboardTaskTable title="My Tasks" tasks={myTasks} />

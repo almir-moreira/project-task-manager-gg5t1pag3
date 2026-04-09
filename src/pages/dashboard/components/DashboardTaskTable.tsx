@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Task } from '@/lib/types'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Table,
@@ -14,25 +13,21 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { getStatusColor } from '@/lib/status-colors'
 import { Search } from 'lucide-react'
-import { useAppContext } from '@/stores/main'
 
 interface DashboardTaskTableProps {
   title: string
-  tasks: Task[]
+  tasks: any[]
 }
 
 export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
-  const { users } = useAppContext()
 
   const filteredTasks = tasks.filter(
     (t) =>
-      t.title.toLowerCase().includes(search.toLowerCase()) ||
-      t.id.toLowerCase().includes(search.toLowerCase()),
+      (t.activity_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (t.task_number || t.id).toLowerCase().includes(search.toLowerCase()),
   )
-
-  const getUserName = (id: string) => users.find((u) => u.id === id)?.name || 'Unknown'
 
   return (
     <Card className="shadow-sm border-border">
@@ -73,29 +68,33 @@ export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
                 <TableRow
                   key={task.id}
                   className="cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  onClick={() => navigate(`/tasks/${task.task_number || task.id}`)}
                 >
-                  <TableCell className="font-medium text-xs">{task.id}</TableCell>
+                  <TableCell className="font-medium text-xs">
+                    {task.task_number || task.id.slice(0, 8)}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
                       className={`text-[10px] font-semibold border-0 ${getStatusColor(task.status)}`}
                     >
-                      {task.status}
+                      {task.status || 'To Do'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm" title={task.title}>
-                    {task.title}
+                  <TableCell className="max-w-[200px] truncate text-sm" title={task.activity_name}>
+                    {task.activity_name}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{task.category}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {task.type?.name || '-'}
+                  </TableCell>
                   <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
-                    {task.location}
+                    -
                   </TableCell>
                   <TableCell className="text-xs hidden sm:table-cell">
-                    {getUserName(task.projectOwnerId)}
+                    {task.project_owner?.name || '-'}
                   </TableCell>
                   <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">
-                    {task.dueDate}
+                    {task.end_date || '-'}
                   </TableCell>
                 </TableRow>
               ))
