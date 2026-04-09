@@ -11,10 +11,21 @@ export default function TaskDetailPage() {
   const { tasks } = useAppContext()
   const navigate = useNavigate()
 
-  const task = tasks.find((t) => t.id === id)
+  const task = tasks?.find((t) => t.id === id || t.task_number === id)
 
   if (!task) {
-    return <Navigate to="/404" replace />
+    return (
+      <div className="p-4 lg:p-6 space-y-4 max-w-[1600px] mx-auto min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center">
+        <h2 className="text-2xl font-bold tracking-tight">Task not found</h2>
+        <p className="text-muted-foreground">
+          The task "{id}" could not be found or is still loading.
+        </p>
+        <Button onClick={() => navigate('/')} variant="outline" className="mt-4">
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Go to Dashboard
+        </Button>
+      </div>
+    )
   }
 
   return (
