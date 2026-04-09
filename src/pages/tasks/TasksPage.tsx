@@ -1,0 +1,203 @@
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plus, Search, Filter } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { useToast } from '@/hooks/use-toast'
+import type { Database } from '@/lib/supabase/types'
+
+type Activity = Database['public']['Tables']['activities']['Row']
+
+export default function TasksPage() {
+  const [tasks, setTasks] = useState<Activity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    fetchTasks()
+  }, [])
+
+  const fetchTasks = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setTasks(data || [])
+    } catch (error: any) {
+      toast({
+        title: 'Error fetching activities',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateTask = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('activities')
+        .insert({
+          activity_name: 'New Activity',
+          status: 'To Do',
+          priority: 'Medium',
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      toast({
+        title: 'Activity created',
+        description: 'You can now edit its details.',
+      })
+      navigate(`/tasks/${data.id}`)
+    } catch (error: any) {
+      toast({
+        title: 'Error creating activity',
+        description: error.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const filteredTasks = tasks.filter(
+    (task) =>
+      task.activity_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      task.task_number?.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
+  const getStatusColor = (status: string | null) => {
+    switch (status) {
+      case 'Done':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      case 'In Progress':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'
+      case 'On Hold':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+      case 'Rejected':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+    }
+  }
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Activity Matrix</h1>
+          <p className="text-muted-foreground">
+            Manage and track your activities across all programmes.
+          </p>
+        </div>
+        <Button onClick={handleCreateTask}>
+          <Plus className="w-4 h-4 mr-2" />
+          New Activity
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-lg border shadow-sm">
+        <div className="relative w-full sm:w-96">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search activities by ID or name..."
+            className="pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button variant="outline" className="w-full sm:w-auto">
+          <Filter className="w-4 h-4 mr-2" />
+          Filters
+        </Button>
+      </div>
+
+      <div className="border rounded-md bg-card shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px]">ID</TableHead>
+              <TableHead>Activity Name</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p>Loading activities...</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : filteredTasks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                  {searchQuery
+                    ? 'No activities found matching your search.'
+                    : 'No activities found. Create one to get started.'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTasks.map((task) => (
+                <TableRow
+                  key={task.id}
+                  className="hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/tasks/${task.id}`)}
+                >
+                  <TableCell className="font-medium">{task.task_number || '-'}</TableCell>
+                  <TableCell className="font-medium">{task.activity_name}</TableCell>
+                  <TableCell>
+                    <span
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}
+                    >
+                      {task.status || 'To Do'}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        task.priority === 'High' || task.priority === 'Urgent'
+                          ? 'destructive'
+                          : 'secondary'
+                      }
+                    >
+                      {task.priority || 'Medium'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="sm" asChild onClick={(e) => e.stopPropagation()}>
+                      <Link to={`/tasks/${task.id}`}>Details</Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}

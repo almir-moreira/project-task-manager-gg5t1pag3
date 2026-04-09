@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth'
 import Index from './pages/Index'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import TasksPage from './pages/tasks/TasksPage'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import AdminPage from './pages/admin/AdminPage'
 import LoginPage from './pages/auth/LoginPage'
@@ -50,7 +51,7 @@ const App = () => (
               }
             >
               <Route path="/" element={<Index />} />
-              <Route path="/tasks" element={<Navigate to="/" replace />} />
+              <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
             </Route>
