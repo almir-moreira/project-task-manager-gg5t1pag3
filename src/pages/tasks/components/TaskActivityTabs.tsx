@@ -11,11 +11,11 @@ import {
   TabSGParticipation,
   TabAttachments,
 } from './tabs/TabGeneric'
-import { TabTaskDetails } from './tabs/TabTaskDetails'
+import { TabActivityDetails } from './tabs/TabTaskDetails'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const tabsConfig = [
-  { id: 'task-details', label: 'Task Details', component: TabTaskDetails },
+  { id: 'activity-details', label: 'Activity Details', component: TabActivityDetails },
   { id: 'event', label: 'Event Details', component: TabEventDetails },
   { id: 'parties', label: 'Involved Parties', component: TabInvolvedParties },
   { id: 'sg', label: 'SG Participation', component: TabSGParticipation },
@@ -26,26 +26,46 @@ const tabsConfig = [
   {
     id: 'eosg',
     label: 'EOSG',
-    component: () => <TabFeedback units={['RELEX', 'Legal', 'Governing Bodies', 'Protocol']} />,
+    component: ({ activity, onUpdate }: any) => (
+      <TabFeedback
+        units={['RELEX', 'Legal', 'Governing Bodies', 'Protocol']}
+        task={activity}
+        onUpdate={onUpdate}
+      />
+    ),
   },
   {
     id: 'ops',
     label: 'OPS',
-    component: () => <TabFeedback units={['EMS', 'Procurement', 'IT', 'M&E']} />,
+    component: ({ activity, onUpdate }: any) => (
+      <TabFeedback
+        units={['EMS', 'Procurement', 'IT', 'M&E']}
+        task={activity}
+        onUpdate={onUpdate}
+      />
+    ),
   },
   {
     id: 'comms',
     label: 'COMMS',
-    component: () => <TabFeedback units={['Communications', 'Social Media']} />,
+    component: ({ activity, onUpdate }: any) => (
+      <TabFeedback units={['Communications', 'Social Media']} task={activity} onUpdate={onUpdate} />
+    ),
   },
   { id: 'history', label: 'History', component: TabHistory },
 ]
 
-export function TaskActivityTabs({ task, onUpdate }: { task: any; onUpdate: (t: any) => void }) {
+export function ActivityTabs({
+  activity,
+  onUpdate,
+}: {
+  activity: any
+  onUpdate: (a: any) => void
+}) {
   return (
     <Card className="shadow-sm border-border h-full flex flex-col sm:flex-row overflow-hidden">
       <Tabs
-        defaultValue="task-details"
+        defaultValue="activity-details"
         orientation="vertical"
         className="flex flex-1 w-full overflow-hidden flex-col sm:flex-row"
       >
@@ -72,7 +92,7 @@ export function TaskActivityTabs({ task, onUpdate }: { task: any; onUpdate: (t: 
               value={tab.id}
               className="m-0 p-4 sm:p-0 h-full focus-visible:outline-none data-[state=inactive]:hidden"
             >
-              <tab.component task={task} onUpdate={onUpdate} />
+              <tab.component activity={activity} onUpdate={onUpdate} task={activity} />
             </TabsContent>
           ))}
         </CardContent>

@@ -26,7 +26,13 @@ const allStatuses = [
   'Done',
 ]
 
-export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t: any) => void }) {
+export function ActivityPropertiesForm({
+  activity,
+  onUpdate,
+}: {
+  activity: any
+  onUpdate: (a: any) => void
+}) {
   const [masterData, setMasterData] = useState<any>(null)
 
   useEffect(() => {
@@ -35,7 +41,7 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
 
   const handleChange = async (field: string, val: any) => {
     try {
-      const updated = await updateActivity(task.id, { [field]: val })
+      const updated = await updateActivity(activity.id, { [field]: val })
       onUpdate(updated)
     } catch (e) {
       console.error(e)
@@ -51,11 +57,11 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
         <div className="flex justify-between items-start">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-foreground/90">
-              {task.task_number || task.id.slice(0, 8)}
+              {activity.task_number || activity.id.slice(0, 8)}
             </h2>
           </div>
-          <Badge className={`px-3 py-1 ${getStatusColor(task.status)} border-0 font-semibold`}>
-            {task.status || 'To Do'}
+          <Badge className={`px-3 py-1 ${getStatusColor(activity.status)} border-0 font-semibold`}>
+            {activity.status || 'To Do'}
           </Badge>
         </div>
       </div>
@@ -65,7 +71,10 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Status (Workflow)
           </Label>
-          <Select value={task.status || 'To Do'} onValueChange={(v) => handleChange('status', v)}>
+          <Select
+            value={activity.status || 'To Do'}
+            onValueChange={(v) => handleChange('status', v)}
+          >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
@@ -84,7 +93,7 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
             Programme
           </Label>
           <Select
-            value={task.programme_id || ''}
+            value={activity.programme_id || ''}
             onValueChange={(v) => handleChange('programme_id', v)}
           >
             <SelectTrigger className="h-9">
@@ -105,9 +114,9 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
             Project
           </Label>
           <Input
-            defaultValue={task.project || ''}
+            defaultValue={activity.project || ''}
             onBlur={(e) =>
-              e.target.value !== task.project && handleChange('project', e.target.value)
+              e.target.value !== activity.project && handleChange('project', e.target.value)
             }
             className="h-9"
             placeholder="Project name"
@@ -119,7 +128,7 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
             Project Owner
           </Label>
           <Select
-            value={task.project_owner_id || ''}
+            value={activity.project_owner_id || ''}
             onValueChange={(v) => handleChange('project_owner_id', v)}
           >
             <SelectTrigger className="h-9">
@@ -137,12 +146,12 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
 
         <div className="grid gap-2">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-            Sub Task ID
+            Sub Activity ID
           </Label>
           <Input
-            defaultValue={task.sub_task_id || ''}
+            defaultValue={activity.sub_task_id || ''}
             onBlur={(e) =>
-              e.target.value !== task.sub_task_id && handleChange('sub_task_id', e.target.value)
+              e.target.value !== activity.sub_task_id && handleChange('sub_task_id', e.target.value)
             }
             placeholder="Link to another UUID"
             className="h-9"
@@ -153,7 +162,7 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Type
           </Label>
-          <Select value={task.type_id || ''} onValueChange={(v) => handleChange('type_id', v)}>
+          <Select value={activity.type_id || ''} onValueChange={(v) => handleChange('type_id', v)}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
@@ -172,7 +181,7 @@ export function TaskPropertiesForm({ task, onUpdate }: { task: any; onUpdate: (t
             Priority
           </Label>
           <Select
-            value={task.priority || 'Medium'}
+            value={activity.priority || 'Medium'}
             onValueChange={(v) => handleChange('priority', v)}
           >
             <SelectTrigger className="h-9">

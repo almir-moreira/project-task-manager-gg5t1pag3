@@ -16,8 +16,8 @@ const allStatuses = [
 
 export function ProgressBoard({ tasks = [] }: { tasks?: any[] }) {
   const counts = tasks.reduce(
-    (acc, task) => {
-      acc[task.status] = (acc[task.status] || 0) + 1
+    (acc, activity) => {
+      acc[activity.status] = (acc[activity.status] || 0) + 1
       return acc
     },
     {} as Record<string, number>,

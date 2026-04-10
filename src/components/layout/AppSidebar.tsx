@@ -25,7 +25,7 @@ import { supabase } from '@/lib/supabase/client'
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Tasks', url: '/tasks', icon: CheckSquare },
+  { title: 'Activities', url: '/tasks', icon: CheckSquare },
   { title: 'Programs', url: '/admin', icon: FolderKanban },
   { title: 'Projects', url: '/admin', icon: Briefcase },
   { title: 'Administration', url: '/admin', icon: Settings },

@@ -39,12 +39,12 @@ export function StatCards({ tasks = [] }: { tasks?: any[] }) {
   const displayStatuses = ['To Do', 'In Progress', 'Past Due', 'On Hold', 'Rejected', 'Done']
 
   const counts = tasks.reduce(
-    (acc, task) => {
-      let box = task.status || 'To Do'
+    (acc, activity) => {
+      let box = activity.status || 'To Do'
       if (
-        task.end_date &&
-        new Date(task.end_date) < new Date() &&
-        !['Done', 'Rejected'].includes(task.status)
+        activity.end_date &&
+        new Date(activity.end_date) < new Date() &&
+        !['Done', 'Rejected'].includes(activity.status)
       ) {
         box = 'Past Due'
       } else if (
@@ -54,7 +54,7 @@ export function StatCards({ tasks = [] }: { tasks?: any[] }) {
           'Head Approval',
           'CPO Approval',
           'SG Approval',
-        ].includes(task.status)
+        ].includes(activity.status)
       ) {
         box = 'In Progress'
       }

@@ -54,7 +54,7 @@ export function AppHeader() {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search tasks or IDs..."
+            placeholder="Search activities or IDs..."
             className="w-full pl-9 bg-muted/50 border-transparent focus-visible:bg-background"
           />
         </div>

@@ -23,10 +23,10 @@ export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
-  const filteredTasks = tasks.filter(
-    (t) =>
-      (t.activity_name || '').toLowerCase().includes(search.toLowerCase()) ||
-      (t.task_number || t.id).toLowerCase().includes(search.toLowerCase()),
+  const filteredActivities = tasks.filter(
+    (a) =>
+      (a.activity_name || '').toLowerCase().includes(search.toLowerCase()) ||
+      (a.task_number || a.id).toLowerCase().includes(search.toLowerCase()),
   )
 
   return (
@@ -36,7 +36,7 @@ export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
         <div className="relative w-full sm:w-[250px]">
           <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
           <Input
-            placeholder="Filter tasks..."
+            placeholder="Filter activities..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="h-8 pl-8 text-xs bg-background"
@@ -57,44 +57,47 @@ export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTasks.length === 0 ? (
+            {filteredActivities.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-sm">
-                  No tasks found.
+                  No activities found.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTasks.map((task) => (
+              filteredActivities.map((activity) => (
                 <TableRow
-                  key={task.id}
+                  key={activity.id}
                   className="cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(`/tasks/${task.task_number || task.id}`)}
+                  onClick={() => navigate(`/tasks/${activity.task_number || activity.id}`)}
                 >
                   <TableCell className="font-medium text-xs">
-                    {task.task_number || task.id.slice(0, 8)}
+                    {activity.task_number || activity.id.slice(0, 8)}
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] font-semibold border-0 ${getStatusColor(task.status)}`}
+                      className={`text-[10px] font-semibold border-0 ${getStatusColor(activity.status)}`}
                     >
-                      {task.status || 'To Do'}
+                      {activity.status || 'To Do'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-[200px] truncate text-sm" title={task.activity_name}>
-                    {task.activity_name}
+                  <TableCell
+                    className="max-w-[200px] truncate text-sm"
+                    title={activity.activity_name}
+                  >
+                    {activity.activity_name}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground">
-                    {task.type?.name || '-'}
+                    {activity.type?.name || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
                     -
                   </TableCell>
                   <TableCell className="text-xs hidden sm:table-cell">
-                    {task.project_owner?.name || '-'}
+                    {activity.project_owner?.name || '-'}
                   </TableCell>
                   <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">
-                    {task.end_date || '-'}
+                    {activity.end_date || '-'}
                   </TableCell>
                 </TableRow>
               ))

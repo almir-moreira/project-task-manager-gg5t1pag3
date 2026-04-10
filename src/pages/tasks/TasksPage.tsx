@@ -17,22 +17,22 @@ import { useToast } from '@/hooks/use-toast'
 import { getActivities } from '@/services/activities'
 import { getStatusColor } from '@/lib/status-colors'
 
-export default function TasksPage() {
-  const [tasks, setTasks] = useState<any[]>([])
+export default function ActivitiesPage() {
+  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetchTasks()
+    fetchActivities()
   }, [])
 
-  const fetchTasks = async () => {
+  const fetchActivities = async () => {
     try {
       setLoading(true)
       const data = await getActivities()
-      setTasks(data || [])
+      setActivities(data || [])
     } catch (error: any) {
       toast({
         title: 'Error fetching activities',
@@ -44,7 +44,7 @@ export default function TasksPage() {
     }
   }
 
-  const handleCreateTask = async () => {
+  const handleCreateActivity = async () => {
     try {
       const { data, error } = await supabase
         .from('activities')
@@ -72,10 +72,10 @@ export default function TasksPage() {
     }
   }
 
-  const filteredTasks = tasks.filter(
-    (task) =>
-      (task.activity_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (task.task_number || task.id).toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredActivities = activities.filter(
+    (activity) =>
+      (activity.activity_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (activity.task_number || activity.id).toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   return (
@@ -87,7 +87,7 @@ export default function TasksPage() {
             Manage and track your activities across all programmes.
           </p>
         </div>
-        <Button onClick={handleCreateTask}>
+        <Button onClick={handleCreateActivity}>
           <Plus className="w-4 h-4 mr-2" />
           New Activity
         </Button>
@@ -131,7 +131,7 @@ export default function TasksPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ) : filteredTasks.length === 0 ? (
+            ) : filteredActivities.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                   {searchQuery
@@ -140,37 +140,37 @@ export default function TasksPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTasks.map((task) => (
+              filteredActivities.map((activity) => (
                 <TableRow
-                  key={task.id}
+                  key={activity.id}
                   className="hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => navigate(`/tasks/${task.task_number || task.id}`)}
+                  onClick={() => navigate(`/tasks/${activity.task_number || activity.id}`)}
                 >
                   <TableCell className="font-medium text-xs">
-                    {task.task_number || task.id.slice(0, 8)}
+                    {activity.task_number || activity.id.slice(0, 8)}
                   </TableCell>
-                  <TableCell className="font-medium text-sm">{task.activity_name}</TableCell>
+                  <TableCell className="font-medium text-sm">{activity.activity_name}</TableCell>
                   <TableCell>
                     <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}
                     >
-                      {task.status || 'To Do'}
+                      {activity.status || 'To Do'}
                     </span>
                   </TableCell>
                   <TableCell>
                     <Badge
                       variant={
-                        task.priority === 'High' || task.priority === 'Urgent'
+                        activity.priority === 'High' || activity.priority === 'Urgent'
                           ? 'destructive'
                           : 'secondary'
                       }
                     >
-                      {task.priority || 'Medium'}
+                      {activity.priority || 'Medium'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="sm" asChild onClick={(e) => e.stopPropagation()}>
-                      <Link to={`/tasks/${task.task_number || task.id}`}>Details</Link>
+                      <Link to={`/tasks/${activity.task_number || activity.id}`}>Details</Link>
                     </Button>
                   </TableCell>
                 </TableRow>
