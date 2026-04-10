@@ -57,8 +57,6 @@ export default function ActivityDetailPage() {
           <ActivityTabs activity={activity} onUpdate={setActivity} />
         </div>
       </div>
-
-      <div className="text-center text-xs text-muted-foreground mt-auto pt-4">Version 1.0.1</div>
     </div>
   )
 }

@@ -10,9 +10,12 @@ export default function Layout() {
         <AppSidebar />
         <SidebarInset className="flex flex-col flex-1 overflow-hidden">
           <AppHeader />
-          <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-background/95">
-            <div className="animate-fade-in">
+          <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-background/95 flex flex-col">
+            <div className="animate-fade-in flex-1">
               <Outlet />
+            </div>
+            <div className="text-center text-xs text-muted-foreground py-4 mt-auto border-t border-border">
+              Version 1.0.1
             </div>
           </main>
         </SidebarInset>

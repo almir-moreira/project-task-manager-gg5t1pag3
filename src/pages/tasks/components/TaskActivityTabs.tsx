@@ -4,13 +4,8 @@ import { TabHistory } from './tabs/TabHistory'
 import { TabFeedback } from './tabs/TabFeedback'
 import { TabComments } from './tabs/TabComments'
 import { TabApprovalMatrix } from './tabs/TabApprovalMatrix'
-import {
-  TabEventDetails,
-  TabRBM,
-  TabInvolvedParties,
-  TabSGParticipation,
-  TabAttachments,
-} from './tabs/TabGeneric'
+import { TabEventDetails, TabRBM, TabInvolvedParties, TabSGParticipation } from './tabs/TabGeneric'
+import { TabAttachments } from './tabs/TabAttachments'
 import { TabActivityDetails } from './tabs/TabTaskDetails'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 

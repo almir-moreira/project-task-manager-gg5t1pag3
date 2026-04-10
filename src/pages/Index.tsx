@@ -34,7 +34,7 @@ const Index = () => {
 
   if (loading) return <div className="p-6">Loading dashboard...</div>
 
-  const myTasks = tasks.filter((t) => t.assignee_id === user?.id || t.project_owner_id === user?.id)
+  const myTasks = tasks.filter((t) => t.project_owner_id === user?.id)
   const programmeTasks = tasks.filter((t) => t.programme_id === profile?.programme_id)
 
   return (
@@ -42,7 +42,7 @@ const Index = () => {
       <div className="space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Monitor system-wide task progress and your assigned activities.
+          Monitor system-wide activity progress and your assigned activities.
         </p>
       </div>
 
@@ -50,8 +50,8 @@ const Index = () => {
       <ProgressBoard tasks={tasks} />
 
       <div className="grid gap-6">
-        <DashboardTaskTable title="My Tasks" tasks={myTasks} />
-        <DashboardTaskTable title="Programme Tasks" tasks={programmeTasks} />
+        <DashboardTaskTable title="Assigned to Me" tasks={myTasks} />
+        <DashboardTaskTable title="Programme Activities" tasks={programmeTasks} />
       </div>
     </div>
   )
