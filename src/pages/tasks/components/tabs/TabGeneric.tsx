@@ -165,15 +165,27 @@ export function TabInvolvedParties({
           </Label>
         </div>
         {activity.inv_ems && (
-          <div className="grid gap-2 pl-6">
-            <Label>EMS Comments</Label>
-            <Textarea
-              defaultValue={activity.inv_ems_comments || ''}
-              onBlur={(e) =>
-                e.target.value !== activity.inv_ems_comments &&
-                handleChange('inv_ems_comments', e.target.value)
-              }
-            />
+          <div className="grid gap-4 pl-6">
+            <div className="grid gap-2">
+              <Label>Comments to EMS</Label>
+              <Textarea
+                defaultValue={activity.inv_comments_to_ems || ''}
+                onBlur={(e) =>
+                  e.target.value !== activity.inv_comments_to_ems &&
+                  handleChange('inv_comments_to_ems', e.target.value)
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>EMS Comments</Label>
+              <Textarea
+                defaultValue={activity.inv_ems_comments || ''}
+                onBlur={(e) =>
+                  e.target.value !== activity.inv_ems_comments &&
+                  handleChange('inv_ems_comments', e.target.value)
+                }
+              />
+            </div>
           </div>
         )}
       </div>
