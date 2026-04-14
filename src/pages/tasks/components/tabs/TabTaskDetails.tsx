@@ -69,17 +69,18 @@ export function TabActivityDetails({
 
         <div className="grid gap-2">
           <Label className="text-sm font-semibold">Description</Label>
-          <Input
+          <Textarea
             defaultValue={activity.short_description || ''}
             onBlur={(e) =>
               e.target.value !== activity.short_description &&
               handleChange('short_description', e.target.value)
             }
-            placeholder="Provide a brief description..."
+            placeholder="Provide a detailed description..."
+            className="min-h-[150px] resize-y"
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Start Date</Label>
             <Input
@@ -98,6 +99,20 @@ export function TabActivityDetails({
               onBlur={(e) =>
                 e.target.value !== activity.end_date && handleChange('end_date', e.target.value)
               }
+            />
+          </div>
+          <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-md border border-input h-10">
+            <Label className="text-sm font-medium">In Budget</Label>
+            <Switch
+              checked={!!activity.in_budget}
+              onCheckedChange={(v) => handleChange('in_budget', v)}
+            />
+          </div>
+          <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-md border border-input h-10">
+            <Label className="text-sm font-medium">In the Workplan</Label>
+            <Switch
+              checked={!!activity.in_workplan}
+              onCheckedChange={(v) => handleChange('in_workplan', v)}
             />
           </div>
         </div>
@@ -133,24 +148,7 @@ export function TabActivityDetails({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 mt-6 border-t border-border">
-          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
-            <Label className="text-base font-medium">In Budget</Label>
-            <Switch
-              checked={!!activity.in_budget}
-              onCheckedChange={(v) => handleChange('in_budget', v)}
-            />
-          </div>
-          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
-            <Label className="text-base font-medium">In the Workplan</Label>
-            <Switch
-              checked={!!activity.in_workplan}
-              onCheckedChange={(v) => handleChange('in_workplan', v)}
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pt-6 mt-6 border-t border-border">
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Cost Center</Label>
             <Select
