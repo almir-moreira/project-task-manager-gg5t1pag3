@@ -42,85 +42,146 @@ export function TabActivityDetails({
     <div className="space-y-6 max-w-4xl animate-fade-in pb-10">
       <div>
         <h3 className="text-lg font-medium">Activity Details</h3>
-        <p className="text-sm text-muted-foreground">
-          Comprehensive information and financial tracking for this activity.
-        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-5">
+      <div className="space-y-5">
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Purpose</Label>
+          <Input
+            defaultValue={activity.purpose || ''}
+            onBlur={(e) =>
+              e.target.value !== activity.purpose && handleChange('purpose', e.target.value)
+            }
+            placeholder="Enter purpose of the activity"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Activity Name</Label>
+          <Input
+            defaultValue={activity.activity_name || ''}
+            onBlur={(e) =>
+              e.target.value !== activity.activity_name &&
+              handleChange('activity_name', e.target.value)
+            }
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Description</Label>
+          <Input
+            defaultValue={activity.short_description || ''}
+            onBlur={(e) =>
+              e.target.value !== activity.short_description &&
+              handleChange('short_description', e.target.value)
+            }
+            placeholder="Provide a brief description..."
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Purpose</Label>
+            <Label className="text-sm font-semibold">Start Date</Label>
             <Input
-              defaultValue={activity.purpose || ''}
+              type="date"
+              defaultValue={activity.start_date || ''}
               onBlur={(e) =>
-                e.target.value !== activity.purpose && handleChange('purpose', e.target.value)
+                e.target.value !== activity.start_date && handleChange('start_date', e.target.value)
               }
-              placeholder="Enter purpose of the activity"
             />
           </div>
-
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Activity Name</Label>
+            <Label className="text-sm font-semibold">End Date</Label>
             <Input
-              defaultValue={activity.activity_name || ''}
+              type="date"
+              defaultValue={activity.end_date || ''}
               onBlur={(e) =>
-                e.target.value !== activity.activity_name &&
-                handleChange('activity_name', e.target.value)
+                e.target.value !== activity.end_date && handleChange('end_date', e.target.value)
               }
             />
           </div>
+        </div>
 
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Short Description</Label>
-            <Textarea
-              defaultValue={activity.short_description || ''}
-              onBlur={(e) =>
-                e.target.value !== activity.short_description &&
-                handleChange('short_description', e.target.value)
-              }
-              className="min-h-[120px] resize-none"
-              placeholder="Provide a brief description..."
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Assignee</Label>
+          <Select
+            value={activity.assignee_id || ''}
+            onValueChange={(v) => handleChange('assignee_id', v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select assignee" />
+            </SelectTrigger>
+            <SelectContent>
+              {masterData.profiles.map((u: any) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Comments</Label>
+          <Textarea
+            defaultValue={activity.comments || ''}
+            onBlur={(e) =>
+              e.target.value !== activity.comments && handleChange('comments', e.target.value)
+            }
+            className="min-h-[100px] resize-none"
+            placeholder="Add internal notes or comments regarding this activity..."
+          />
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 mt-6 border-t border-border">
+          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
+            <Label className="text-base font-medium">In Budget</Label>
+            <Switch
+              checked={!!activity.in_budget}
+              onCheckedChange={(v) => handleChange('in_budget', v)}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Start Date</Label>
-              <Input
-                type="date"
-                defaultValue={activity.start_date || ''}
-                onBlur={(e) =>
-                  e.target.value !== activity.start_date &&
-                  handleChange('start_date', e.target.value)
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">End Date</Label>
-              <Input
-                type="date"
-                defaultValue={activity.end_date || ''}
-                onBlur={(e) =>
-                  e.target.value !== activity.end_date && handleChange('end_date', e.target.value)
-                }
-              />
-            </div>
+          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
+            <Label className="text-base font-medium">In the Workplan</Label>
+            <Switch
+              checked={!!activity.in_workplan}
+              onCheckedChange={(v) => handleChange('in_workplan', v)}
+            />
           </div>
+        </div>
 
+        <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Assignee</Label>
+            <Label className="text-sm font-semibold">Cost Center</Label>
             <Select
-              value={activity.assignee_id || ''}
-              onValueChange={(v) => handleChange('assignee_id', v)}
+              value={activity.cost_center_id || ''}
+              onValueChange={(v) => handleChange('cost_center_id', v)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select assignee" />
+                <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent>
-                {masterData.profiles.map((u: any) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
+                {masterData.costCenters.map((cc: any) => (
+                  <SelectItem key={cc.id} value={cc.id}>
+                    {cc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Budget Line</Label>
+            <Select
+              value={activity.budget_line_id || ''}
+              onValueChange={(v) => handleChange('budget_line_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.budgetLines.map((bl: any) => (
+                  <SelectItem key={bl.id} value={bl.id}>
+                    {bl.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -128,122 +189,56 @@ export function TabActivityDetails({
           </div>
         </div>
 
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Cost Center</Label>
-              <Select
-                value={activity.cost_center_id || ''}
-                onValueChange={(v) => handleChange('cost_center_id', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.costCenters.map((cc: any) => (
-                    <SelectItem key={cc.id} value={cc.id}>
-                      {cc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Budget Line</Label>
-              <Select
-                value={activity.budget_line_id || ''}
-                onValueChange={(v) => handleChange('budget_line_id', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.budgetLines.map((bl: any) => (
-                    <SelectItem key={bl.id} value={bl.id}>
-                      {bl.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Workorder</Label>
-              <Select
-                value={activity.workorder_id || ''}
-                onValueChange={(v) => handleChange('workorder_id', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.workorders.map((wo: any) => (
-                    <SelectItem key={wo.id} value={wo.id}>
-                      {wo.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Account</Label>
-              <Select
-                value={activity.account_id || ''}
-                onValueChange={(v) => handleChange('account_id', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select" />
-                </SelectTrigger>
-                <SelectContent>
-                  {masterData.accounts.map((ac: any) => (
-                    <SelectItem key={ac.id} value={ac.id}>
-                      {ac.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+        <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Cost Estimated</Label>
-            <Input
-              type="number"
-              defaultValue={activity.cost_estimated || ''}
-              onBlur={(e) => {
-                const val = e.target.value ? parseFloat(e.target.value) : null
-                if (val !== activity.cost_estimated) handleChange('cost_estimated', val)
-              }}
-              placeholder="0.00"
-            />
+            <Label className="text-sm font-semibold">Workorder</Label>
+            <Select
+              value={activity.workorder_id || ''}
+              onValueChange={(v) => handleChange('workorder_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.workorders.map((wo: any) => (
+                  <SelectItem key={wo.id} value={wo.id}>
+                    {wo.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border border-border">
-            <div className="space-y-0.5">
-              <Label className="text-base font-medium">In Budget/Workplan</Label>
-              <p className="text-xs text-muted-foreground">
-                Is this included in the current year's budget?
-              </p>
-            </div>
-            <Switch
-              checked={!!activity.in_budget}
-              onCheckedChange={(v) => handleChange('in_budget', v)}
-            />
-          </div>
-
           <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Comments</Label>
-            <Textarea
-              defaultValue={activity.comments || ''}
-              onBlur={(e) =>
-                e.target.value !== activity.comments && handleChange('comments', e.target.value)
-              }
-              className="min-h-[100px] resize-none"
-              placeholder="Add internal notes or comments regarding this activity..."
-            />
+            <Label className="text-sm font-semibold">Account</Label>
+            <Select
+              value={activity.account_id || ''}
+              onValueChange={(v) => handleChange('account_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.accounts.map((ac: any) => (
+                  <SelectItem key={ac.id} value={ac.id}>
+                    {ac.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-sm font-semibold">Cost Estimated</Label>
+          <Input
+            type="number"
+            defaultValue={activity.cost_estimated || ''}
+            onBlur={(e) => {
+              const val = e.target.value ? parseFloat(e.target.value) : null
+              if (val !== activity.cost_estimated) handleChange('cost_estimated', val)
+            }}
+            placeholder="0.00"
+          />
         </div>
       </div>
     </div>

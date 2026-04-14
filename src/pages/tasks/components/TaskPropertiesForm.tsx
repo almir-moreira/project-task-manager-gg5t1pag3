@@ -160,11 +160,11 @@ export function ActivityPropertiesForm({
 
         <div className="grid gap-2">
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
-            Type
+            Category
           </Label>
           <Select value={activity.type_id || ''} onValueChange={(v) => handleChange('type_id', v)}>
             <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select type" />
+              <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
               {masterData.taskTypes.map((t: any) => (
