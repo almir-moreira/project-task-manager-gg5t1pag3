@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { getStatusColor } from '@/lib/status-colors'
 import { useState, useEffect } from 'react'
 import { getMasterData } from '@/services/master-data'
-import { updateActivity } from '@/services/activities'
+import { updateActivity, getActivities } from '@/services/activities'
 
 const allStatuses = [
   'To Do',
@@ -34,9 +34,11 @@ export function ActivityPropertiesForm({
   onUpdate: (a: any) => void
 }) {
   const [masterData, setMasterData] = useState<any>(null)
+  const [activitiesList, setActivitiesList] = useState<any[]>([])
 
   useEffect(() => {
     getMasterData().then(setMasterData)
+    getActivities().then(setActivitiesList)
   }, [])
 
   const handleChange = async (field: string, val: any) => {
@@ -148,14 +150,24 @@ export function ActivityPropertiesForm({
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Sub Activity ID
           </Label>
-          <Input
-            defaultValue={activity.sub_task_id || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.sub_task_id && handleChange('sub_task_id', e.target.value)
-            }
-            placeholder="Link to another UUID"
-            className="h-9"
-          />
+          <Select
+            value={activity.sub_task_id || 'none'}
+            onValueChange={(v) => handleChange('sub_task_id', v === 'none' ? null : v)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select activity" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">None</SelectItem>
+              {activitiesList
+                .filter((a) => a.id !== activity.id)
+                .map((a: any) => (
+                  <SelectItem key={a.id} value={a.id}>
+                    {a.task_number || a.id.slice(0, 8)} - {a.activity_name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid gap-2">
