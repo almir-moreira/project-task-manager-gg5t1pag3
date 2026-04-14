@@ -1,11 +1,17 @@
 // AVOID UPDATING THIS FILE DIRECTLY. It is automatically generated.
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.5'
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -85,7 +91,7 @@ export type Database = {
           inv_staff_involvement: string | null
           inv_travel_days: string | null
           nature_of_urgency: string | null
-          priority: Database['public']['Enums']['task_priority'] | null
+          priority: Database["public"]["Enums"]["task_priority"] | null
           programme_id: string | null
           project: string | null
           project_owner_id: string | null
@@ -108,7 +114,7 @@ export type Database = {
           sg_speaking_notes: string | null
           short_description: string | null
           start_date: string | null
-          status: Database['public']['Enums']['task_status'] | null
+          status: Database["public"]["Enums"]["task_status"] | null
           sub_task_id: string | null
           task_number: string | null
           type_id: string | null
@@ -169,7 +175,7 @@ export type Database = {
           inv_staff_involvement?: string | null
           inv_travel_days?: string | null
           nature_of_urgency?: string | null
-          priority?: Database['public']['Enums']['task_priority'] | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           programme_id?: string | null
           project?: string | null
           project_owner_id?: string | null
@@ -192,7 +198,7 @@ export type Database = {
           sg_speaking_notes?: string | null
           short_description?: string | null
           start_date?: string | null
-          status?: Database['public']['Enums']['task_status'] | null
+          status?: Database["public"]["Enums"]["task_status"] | null
           sub_task_id?: string | null
           task_number?: string | null
           type_id?: string | null
@@ -253,7 +259,7 @@ export type Database = {
           inv_staff_involvement?: string | null
           inv_travel_days?: string | null
           nature_of_urgency?: string | null
-          priority?: Database['public']['Enums']['task_priority'] | null
+          priority?: Database["public"]["Enums"]["task_priority"] | null
           programme_id?: string | null
           project?: string | null
           project_owner_id?: string | null
@@ -276,7 +282,7 @@ export type Database = {
           sg_speaking_notes?: string | null
           short_description?: string | null
           start_date?: string | null
-          status?: Database['public']['Enums']['task_status'] | null
+          status?: Database["public"]["Enums"]["task_status"] | null
           sub_task_id?: string | null
           task_number?: string | null
           type_id?: string | null
@@ -285,109 +291,153 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'activities_account_id_fkey'
-            columns: ['account_id']
+            foreignKeyName: "activities_account_id_fkey"
+            columns: ["account_id"]
             isOneToOne: false
-            referencedRelation: 'accounts'
-            referencedColumns: ['id']
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_approver_cpo_id_fkey'
-            columns: ['approver_cpo_id']
+            foreignKeyName: "activities_approver_cpo_id_fkey"
+            columns: ["approver_cpo_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_approver_head_id_fkey'
-            columns: ['approver_head_id']
+            foreignKeyName: "activities_approver_head_id_fkey"
+            columns: ["approver_head_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_approver_sg_id_fkey'
-            columns: ['approver_sg_id']
+            foreignKeyName: "activities_approver_sg_id_fkey"
+            columns: ["approver_sg_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_assignee_id_fkey'
-            columns: ['assignee_id']
+            foreignKeyName: "activities_assignee_id_fkey"
+            columns: ["assignee_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_budget_line_id_fkey'
-            columns: ['budget_line_id']
+            foreignKeyName: "activities_budget_line_id_fkey"
+            columns: ["budget_line_id"]
             isOneToOne: false
-            referencedRelation: 'budget_lines'
-            referencedColumns: ['id']
+            referencedRelation: "budget_lines"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_cost_center_id_fkey'
-            columns: ['cost_center_id']
+            foreignKeyName: "activities_cost_center_id_fkey"
+            columns: ["cost_center_id"]
             isOneToOne: false
-            referencedRelation: 'cost_centers'
-            referencedColumns: ['id']
+            referencedRelation: "cost_centers"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_programme_id_fkey'
-            columns: ['programme_id']
+            foreignKeyName: "activities_programme_id_fkey"
+            columns: ["programme_id"]
             isOneToOne: false
-            referencedRelation: 'programmes'
-            referencedColumns: ['id']
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_project_owner_id_fkey'
-            columns: ['project_owner_id']
+            foreignKeyName: "activities_project_owner_id_fkey"
+            columns: ["project_owner_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_reviewer_cpo_id_fkey'
-            columns: ['reviewer_cpo_id']
+            foreignKeyName: "activities_reviewer_cpo_id_fkey"
+            columns: ["reviewer_cpo_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_reviewer_head_id_fkey'
-            columns: ['reviewer_head_id']
+            foreignKeyName: "activities_reviewer_head_id_fkey"
+            columns: ["reviewer_head_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_reviewer_team_leader_id_fkey'
-            columns: ['reviewer_team_leader_id']
+            foreignKeyName: "activities_reviewer_team_leader_id_fkey"
+            columns: ["reviewer_team_leader_id"]
             isOneToOne: false
-            referencedRelation: 'profiles'
-            referencedColumns: ['id']
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_sub_task_id_fkey'
-            columns: ['sub_task_id']
+            foreignKeyName: "activities_sub_task_id_fkey"
+            columns: ["sub_task_id"]
             isOneToOne: false
-            referencedRelation: 'activities'
-            referencedColumns: ['id']
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_type_id_fkey'
-            columns: ['type_id']
+            foreignKeyName: "activities_type_id_fkey"
+            columns: ["type_id"]
             isOneToOne: false
-            referencedRelation: 'task_types'
-            referencedColumns: ['id']
+            referencedRelation: "task_types"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'activities_workorder_id_fkey'
-            columns: ['workorder_id']
+            foreignKeyName: "activities_workorder_id_fkey"
+            columns: ["workorder_id"]
             isOneToOne: false
-            referencedRelation: 'workorders'
-            referencedColumns: ['id']
+            referencedRelation: "workorders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_attachments: {
+        Row: {
+          activity_id: string
+          content_type: string | null
+          created_at: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          activity_id: string
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          activity_id?: string
+          content_type?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_attachments_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -458,7 +508,7 @@ export type Database = {
           id: string
           name: string | null
           programme_id: string | null
-          role: Database['public']['Enums']['user_role'] | null
+          role: Database["public"]["Enums"]["user_role"] | null
         }
         Insert: {
           created_at?: string | null
@@ -466,7 +516,7 @@ export type Database = {
           id: string
           name?: string | null
           programme_id?: string | null
-          role?: Database['public']['Enums']['user_role'] | null
+          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Update: {
           created_at?: string | null
@@ -474,15 +524,15 @@ export type Database = {
           id?: string
           name?: string | null
           programme_id?: string | null
-          role?: Database['public']['Enums']['user_role'] | null
+          role?: Database["public"]["Enums"]["user_role"] | null
         }
         Relationships: [
           {
-            foreignKeyName: 'profiles_programme_id_fkey'
-            columns: ['programme_id']
+            foreignKeyName: "profiles_programme_id_fkey"
+            columns: ["programme_id"]
             isOneToOne: false
-            referencedRelation: 'programmes'
-            referencedColumns: ['id']
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -507,11 +557,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'programmes_organization_id_fkey'
-            columns: ['organization_id']
+            foreignKeyName: "programmes_organization_id_fkey"
+            columns: ["organization_id"]
             isOneToOne: false
-            referencedRelation: 'organizations'
-            referencedColumns: ['id']
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -536,11 +586,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'projects_programme_id_fkey'
-            columns: ['programme_id']
+            foreignKeyName: "projects_programme_id_fkey"
+            columns: ["programme_id"]
             isOneToOne: false
-            referencedRelation: 'programmes'
-            referencedColumns: ['id']
+            referencedRelation: "programmes"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -591,27 +641,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      task_priority: 'Low' | 'Medium' | 'High' | 'Urgent'
+      task_priority: "Low" | "Medium" | "High" | "Urgent"
       task_status:
-        | 'To Do'
-        | 'In Progress'
-        | 'On Hold'
-        | 'SPM Clearance'
-        | 'Head Clearance'
-        | 'Head Approval'
-        | 'CPO Approval'
-        | 'SG Approval'
-        | 'Rejected'
-        | 'Done'
+        | "To Do"
+        | "In Progress"
+        | "On Hold"
+        | "SPM Clearance"
+        | "Head Clearance"
+        | "Head Approval"
+        | "CPO Approval"
+        | "SG Approval"
+        | "Rejected"
+        | "Done"
       user_role:
-        | 'Collaborator'
-        | 'Officer'
-        | 'Project Manager'
-        | 'Head'
-        | 'Manager'
-        | 'Secretary General'
-        | 'Team Assistant'
-        | 'Administrator'
+        | "Collaborator"
+        | "Officer"
+        | "Project Manager"
+        | "Head"
+        | "Manager"
+        | "Secretary General"
+        | "Team Assistant"
+        | "Administrator"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -619,31 +669,33 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -652,23 +704,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -677,23 +729,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema['Tables']
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -702,67 +754,68 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema['Enums']
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema['CompositeTypes']
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      task_priority: ['Low', 'Medium', 'High', 'Urgent'],
+      task_priority: ["Low", "Medium", "High", "Urgent"],
       task_status: [
-        'To Do',
-        'In Progress',
-        'On Hold',
-        'SPM Clearance',
-        'Head Clearance',
-        'Head Approval',
-        'CPO Approval',
-        'SG Approval',
-        'Rejected',
-        'Done',
+        "To Do",
+        "In Progress",
+        "On Hold",
+        "SPM Clearance",
+        "Head Clearance",
+        "Head Approval",
+        "CPO Approval",
+        "SG Approval",
+        "Rejected",
+        "Done",
       ],
       user_role: [
-        'Collaborator',
-        'Officer',
-        'Project Manager',
-        'Head',
-        'Manager',
-        'Secretary General',
-        'Team Assistant',
-        'Administrator',
+        "Collaborator",
+        "Officer",
+        "Project Manager",
+        "Head",
+        "Manager",
+        "Secretary General",
+        "Team Assistant",
+        "Administrator",
       ],
     },
   },
 } as const
+
 
 // ====== DATABASE EXTENDED CONTEXT (auto-generated) ======
 // This section contains actual PostgreSQL column types, constraints, RLS policies,
@@ -862,6 +915,16 @@ export const Constants = {
 //   approver_sg_comments: text (nullable)
 //   approver_sg_date: date (nullable)
 //   approver_sg_approved: boolean (nullable, default: false)
+// Table: activity_attachments
+//   id: uuid (not null, default: gen_random_uuid())
+//   activity_id: uuid (not null)
+//   file_name: text (not null)
+//   file_path: text (not null)
+//   file_size: integer (nullable)
+//   content_type: text (nullable)
+//   description: text (nullable)
+//   uploaded_by: uuid (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: budget_lines
 //   id: uuid (not null, default: gen_random_uuid())
 //   code: text (not null)
@@ -924,6 +987,10 @@ export const Constants = {
 //   UNIQUE activities_task_number_key: UNIQUE (task_number)
 //   FOREIGN KEY activities_type_id_fkey: FOREIGN KEY (type_id) REFERENCES task_types(id)
 //   FOREIGN KEY activities_workorder_id_fkey: FOREIGN KEY (workorder_id) REFERENCES workorders(id)
+// Table: activity_attachments
+//   FOREIGN KEY activity_attachments_activity_id_fkey: FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE
+//   PRIMARY KEY activity_attachments_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY activity_attachments_uploaded_by_fkey: FOREIGN KEY (uploaded_by) REFERENCES auth.users(id) ON DELETE SET NULL
 // Table: budget_lines
 //   PRIMARY KEY budget_lines_pkey: PRIMARY KEY (id)
 // Table: cost_centers
@@ -954,6 +1021,10 @@ export const Constants = {
 //     USING: true
 // Table: activities
 //   Policy "auth_all_activities" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
+// Table: activity_attachments
+//   Policy "auth_all_attachments" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
 // Table: budget_lines
@@ -1016,7 +1087,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 // FUNCTION handle_new_user()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user()
 //    RETURNS trigger
@@ -1030,7 +1101,7 @@ export const Constants = {
 //     RETURN NEW;
 //   END;
 //   $function$
-//
+//   
 
 // --- TRIGGERS ---
 // Table: activities
@@ -1039,3 +1110,4 @@ export const Constants = {
 // --- INDEXES ---
 // Table: activities
 //   CREATE UNIQUE INDEX activities_task_number_key ON public.activities USING btree (task_number)
+
