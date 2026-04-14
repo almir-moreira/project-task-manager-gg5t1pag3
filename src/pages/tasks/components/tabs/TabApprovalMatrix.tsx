@@ -7,10 +7,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -52,6 +52,68 @@ export function TabApprovalMatrix({
 
   if (!activity) return null
 
+  const renderRow = (
+    roleName: string,
+    idField: string,
+    commentsField: string,
+    dateField: string,
+    approvedField: string,
+  ) => {
+    return (
+      <TableRow key={roleName}>
+        <TableCell className="font-medium text-sm">{roleName}</TableCell>
+        <TableCell className="align-top pt-4">
+          <Select
+            value={activity[idField] || 'unassigned'}
+            onValueChange={(val) => handleChange(idField, val === 'unassigned' ? null : val)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select user..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="unassigned">Unassigned</SelectItem>
+              {profiles.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name || p.email || 'Unknown'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </TableCell>
+        <TableCell className="align-top py-3">
+          <Textarea
+            className="min-h-[60px] resize-y"
+            defaultValue={activity[commentsField] || ''}
+            onBlur={(e) =>
+              e.target.value !== activity[commentsField] &&
+              handleChange(commentsField, e.target.value)
+            }
+            placeholder="Add comments..."
+          />
+        </TableCell>
+        <TableCell className="align-top pt-4">
+          <Input
+            type="date"
+            className="h-9"
+            defaultValue={activity[dateField] || ''}
+            onBlur={(e) =>
+              e.target.value !== activity[dateField] &&
+              handleChange(dateField, e.target.value || null)
+            }
+          />
+        </TableCell>
+        <TableCell className="text-center align-top pt-5">
+          <div className="flex justify-center">
+            <Checkbox
+              checked={!!activity[approvedField]}
+              onCheckedChange={(v) => handleChange(approvedField, v)}
+            />
+          </div>
+        </TableCell>
+      </TableRow>
+    )
+  }
+
   return (
     <div className="space-y-8 animate-fade-in pb-10">
       <h3 className="text-lg font-medium">Approval Matrix</h3>
@@ -92,173 +154,33 @@ export function TabApprovalMatrix({
               <TableRow>
                 <TableHead className="w-[150px]">Role</TableHead>
                 <TableHead className="w-[200px]">Reviewer</TableHead>
-                <TableHead>Comments</TableHead>
+                <TableHead className="min-w-[200px]">Comments</TableHead>
                 <TableHead className="w-[150px]">Date</TableHead>
                 <TableHead className="text-center w-[100px]">Approved</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Team Leader/CO */}
-              <TableRow>
-                <TableCell className="font-medium text-sm">Team Leader/CO</TableCell>
-                <TableCell>
-                  <Select
-                    value={activity.reviewer_team_leader_id || 'unassigned'}
-                    onValueChange={(val) =>
-                      handleChange('reviewer_team_leader_id', val === 'unassigned' ? null : val)
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Select user..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name || p.email || 'Unknown'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    className="h-8"
-                    defaultValue={activity.reviewer_team_leader_comments || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_team_leader_comments &&
-                      handleChange('reviewer_team_leader_comments', e.target.value)
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="date"
-                    className="h-8"
-                    defaultValue={activity.reviewer_team_leader_date || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_team_leader_date &&
-                      handleChange('reviewer_team_leader_date', e.target.value || null)
-                    }
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center">
-                    <Checkbox
-                      checked={!!activity.reviewer_team_leader_approved}
-                      onCheckedChange={(v) => handleChange('reviewer_team_leader_approved', v)}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-
-              {/* Head */}
-              <TableRow>
-                <TableCell className="font-medium text-sm">Head</TableCell>
-                <TableCell>
-                  <Select
-                    value={activity.reviewer_head_id || 'unassigned'}
-                    onValueChange={(val) =>
-                      handleChange('reviewer_head_id', val === 'unassigned' ? null : val)
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Select user..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name || p.email || 'Unknown'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    className="h-8"
-                    defaultValue={activity.reviewer_head_comments || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_head_comments &&
-                      handleChange('reviewer_head_comments', e.target.value)
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="date"
-                    className="h-8"
-                    defaultValue={activity.reviewer_head_date || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_head_date &&
-                      handleChange('reviewer_head_date', e.target.value || null)
-                    }
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center">
-                    <Checkbox
-                      checked={!!activity.reviewer_head_approved}
-                      onCheckedChange={(v) => handleChange('reviewer_head_approved', v)}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-
-              {/* CPO */}
-              <TableRow>
-                <TableCell className="font-medium text-sm">CPO</TableCell>
-                <TableCell>
-                  <Select
-                    value={activity.reviewer_cpo_id || 'unassigned'}
-                    onValueChange={(val) =>
-                      handleChange('reviewer_cpo_id', val === 'unassigned' ? null : val)
-                    }
-                  >
-                    <SelectTrigger className="h-8">
-                      <SelectValue placeholder="Select user..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {profiles.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name || p.email || 'Unknown'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  <Input
-                    className="h-8"
-                    defaultValue={activity.reviewer_cpo_comments || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_cpo_comments &&
-                      handleChange('reviewer_cpo_comments', e.target.value)
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <Input
-                    type="date"
-                    className="h-8"
-                    defaultValue={activity.reviewer_cpo_date || ''}
-                    onBlur={(e) =>
-                      e.target.value !== activity.reviewer_cpo_date &&
-                      handleChange('reviewer_cpo_date', e.target.value || null)
-                    }
-                  />
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex justify-center">
-                    <Checkbox
-                      checked={!!activity.reviewer_cpo_approved}
-                      onCheckedChange={(v) => handleChange('reviewer_cpo_approved', v)}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
+              {renderRow(
+                'Team Leader/CO',
+                'reviewer_team_leader_id',
+                'reviewer_team_leader_comments',
+                'reviewer_team_leader_date',
+                'reviewer_team_leader_approved',
+              )}
+              {renderRow(
+                'Head',
+                'reviewer_head_id',
+                'reviewer_head_comments',
+                'reviewer_head_date',
+                'reviewer_head_approved',
+              )}
+              {renderRow(
+                'CPO',
+                'reviewer_cpo_id',
+                'reviewer_cpo_comments',
+                'reviewer_cpo_date',
+                'reviewer_cpo_approved',
+              )}
             </TableBody>
           </Table>
         </div>
@@ -271,50 +193,34 @@ export function TabApprovalMatrix({
             <TableHeader className="bg-muted/30">
               <TableRow>
                 <TableHead className="w-[150px]">Role</TableHead>
-                <TableHead>Approver</TableHead>
-                <TableHead>Signature / Status</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead className="w-[200px]">Reviewer</TableHead>
+                <TableHead className="min-w-[200px]">Comments</TableHead>
+                <TableHead className="w-[150px]">Date</TableHead>
+                <TableHead className="text-center w-[100px]">Approved</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium text-sm text-muted-foreground">
-                  Head of Dept
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">Pending Review</TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="bg-slate-100">
-                    Locked
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">-</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium text-sm text-muted-foreground">CPO</TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  Pending Head Approval
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="bg-slate-100">
-                    Locked
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">-</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium text-sm text-muted-foreground">
-                  Secretary General
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  Pending CPO Approval
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="bg-slate-100">
-                    Locked
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">-</TableCell>
-              </TableRow>
+              {renderRow(
+                'Head',
+                'approver_head_id',
+                'approver_head_comments',
+                'approver_head_date',
+                'approver_head_approved',
+              )}
+              {renderRow(
+                'CPO',
+                'approver_cpo_id',
+                'approver_cpo_comments',
+                'approver_cpo_date',
+                'approver_cpo_approved',
+              )}
+              {renderRow(
+                'Secretary General',
+                'approver_sg_id',
+                'approver_sg_comments',
+                'approver_sg_date',
+                'approver_sg_approved',
+              )}
             </TableBody>
           </Table>
         </div>
