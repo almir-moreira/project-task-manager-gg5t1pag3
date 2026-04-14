@@ -194,20 +194,4 @@ export function ActivityPropertiesForm({
           </Label>
           <Select
             value={activity.priority || 'Medium'}
-            onValueChange={(v) => handleChange('priority', v)}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select priority" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Low">Low</SelectItem>
-              <SelectItem value="Medium">Medium</SelectItem>
-              <SelectItem value="High">High</SelectItem>
-              <SelectItem value="Urgent">Urgent</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    </div>
-  )
-}
+   
