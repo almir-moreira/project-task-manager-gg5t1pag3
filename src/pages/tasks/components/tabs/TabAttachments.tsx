@@ -2,17 +2,63 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Trash2, Eye, Upload, File as FileIcon, Loader2 } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import {
+  Trash2,
+  Eye,
+  Download,
+  Edit,
+  Upload,
+  File as FileIcon,
+  Loader2,
+  FileText,
+  Image as ImageIcon,
+  FileSpreadsheet,
+} from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/use-auth'
+import { format } from 'date-fns'
 
-interface Attachment {
+interface AttachmentRow {
   id: string
-  description: string
-  file_name: string
-  file_path: string
-  file_url: string | null
-  isNew?: boolean
+  task_id: string
+  original_file_name: string
+  file_type: string
+  file_size: number
+  server_file_path: string
+  public_or_signed_url: string | null
+  uploaded_by: string | null
+  uploaded_at: string
+  description: string | null
+  profiles?: {
+    name: string | null
+  }
+}
+
+function formatBytes(bytes: number, decimals = 2) {
+  if (!+bytes) return '0 Bytes'
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
 export function TabAttachments({
@@ -22,10 +68,16 @@ export function TabAttachments({
   activity: any
   onUpdate: (a: any) => void
 }) {
-  const [attachments, setAttachments] = useState<Attachment[]>([])
+  const [attachments, setAttachments] = useState<AttachmentRow[]>([])
   const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState<string | null>(null)
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [description, setDescription] = useState('')
+  const [editingDoc, setEditingDoc] = useState<AttachmentRow | null>(null)
+
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const fetchAttachments = async () => {
     if (!activity?.id) {
@@ -36,24 +88,29 @@ export function TabAttachments({
     setLoading(true)
     try {
       const { data, error } = await supabase
-        .from('activity_attachments' as any)
-        .select('*')
-        .eq('activity_id', activity.id)
-        .order('created_at', { ascending: false })
+        .from('attachments')
+        .select(`
+          *,
+          profiles:uploaded_by (name)
+        `)
+        .eq('task_id', activity.id)
+        .order('uploaded_at', { ascending: false })
 
       if (error) throw error
 
-      const formatted = data.map((d: any) => ({
-        id: d.id,
-        description: d.description || '',
-        file_name: d.file_name,
-        file_path: d.file_path,
-        file_url: supabase.storage.from('activity-attachments').getPublicUrl(d.file_path).data
-          .publicUrl,
-        isNew: false,
-      }))
+      const formattedData = (data || []).map((att: any) => {
+        let url = att.public_or_signed_url
+        if (!url && att.server_file_path) {
+          url = supabase.storage.from('activity-attachments').getPublicUrl(att.server_file_path)
+            .data.publicUrl
+        }
+        return {
+          ...att,
+          public_or_signed_url: url,
+        }
+      })
 
-      setAttachments(formatted)
+      setAttachments(formattedData)
     } catch (err: any) {
       toast({
         title: 'Error loading attachments',
@@ -69,55 +126,27 @@ export function TabAttachments({
     fetchAttachments()
   }, [activity?.id])
 
-  const addRow = () => {
-    setAttachments([
-      {
-        id: Math.random().toString(),
-        description: '',
-        file_name: '',
-        file_path: '',
-        file_url: null,
-        isNew: true,
-      },
-      ...attachments,
-    ])
-  }
+  const handleUpload = async () => {
+    if (!selectedFile || !activity?.id || !user) return
 
-  const updateDescriptionLocal = (id: string, description: string) => {
-    setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, description } : a)))
-  }
-
-  const saveDescription = async (id: string, description: string) => {
-    const att = attachments.find((a) => a.id === id)
-    if (!att || att.isNew) return
-
-    const { error } = await supabase
-      .from('activity_attachments' as any)
-      .update({ description })
-      .eq('id', id)
-
-    if (error) {
+    const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB limit
+    if (selectedFile.size > MAX_FILE_SIZE) {
       toast({
-        title: 'Error saving description',
-        description: error.message,
+        title: 'File too large',
+        description: 'Maximum file size is 50MB',
         variant: 'destructive',
       })
+      return
     }
-  }
 
-  const handleFileChange = async (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+    setUploading(true)
     try {
-      setUploading(id)
-
-      const fileExt = file.name.includes('.') ? file.name.split('.').pop() : ''
-      const filePath = `${activity.id}/${Math.random().toString(36).substring(2)}_${Date.now()}${fileExt ? `.${fileExt}` : ''}`
+      const safeName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+      const filePath = `${activity.id}/${Date.now()}_${safeName}`
 
       const { error: uploadError } = await supabase.storage
         .from('activity-attachments')
-        .upload(filePath, file)
+        .upload(filePath, selectedFile)
 
       if (uploadError) throw uploadError
 
@@ -125,189 +154,357 @@ export function TabAttachments({
         .from('activity-attachments')
         .getPublicUrl(filePath)
 
-      const attToSave = attachments.find((a) => a.id === id)
-
-      const { data: dbData, error: dbError } = await supabase
-        .from('activity_attachments' as any)
-        .insert({
-          activity_id: activity.id,
-          file_name: file.name,
-          file_path: filePath,
-          description: attToSave?.description || '',
-          content_type: file.type,
-          file_size: file.size,
-        })
-        .select()
-        .single()
+      const { error: dbError } = await supabase.from('attachments').insert({
+        task_id: activity.id,
+        original_file_name: selectedFile.name,
+        file_type: selectedFile.type || 'application/octet-stream',
+        file_size: selectedFile.size,
+        server_file_path: filePath,
+        public_or_signed_url: publicUrlData.publicUrl,
+        uploaded_by: user.id,
+        description: description,
+      })
 
       if (dbError) {
         await supabase.storage.from('activity-attachments').remove([filePath])
         throw dbError
       }
 
-      setAttachments((prev) =>
-        prev.map((a) =>
-          a.id === id
-            ? {
-                id: dbData.id,
-                description: dbData.description || '',
-                file_name: dbData.file_name,
-                file_path: dbData.file_path,
-                file_url: publicUrlData.publicUrl,
-                isNew: false,
-              }
-            : a,
-        ),
-      )
-
       toast({ title: 'File uploaded successfully' })
+      setUploadDialogOpen(false)
+      setSelectedFile(null)
+      setDescription('')
+      fetchAttachments()
     } catch (err: any) {
       toast({ title: 'Error uploading file', description: err.message, variant: 'destructive' })
     } finally {
-      setUploading(null)
+      setUploading(false)
     }
   }
 
-  const removeRow = async (id: string) => {
-    const att = attachments.find((a) => a.id === id)
-    if (!att) return
-
-    const previous = [...attachments]
-    setAttachments((prev) => prev.filter((a) => a.id !== id))
-
-    if (att.isNew) return
-
+  const deleteAttachment = async (id: string, filePath: string) => {
     try {
-      if (att.file_path) {
-        await supabase.storage.from('activity-attachments').remove([att.file_path])
+      if (filePath) {
+        await supabase.storage.from('activity-attachments').remove([filePath])
       }
 
-      const { error } = await supabase
-        .from('activity_attachments' as any)
-        .delete()
-        .eq('id', id)
+      const { error } = await supabase.from('attachments').delete().eq('id', id)
+
       if (error) throw error
 
       toast({ title: 'Attachment deleted' })
+      setAttachments((prev) => prev.filter((a) => a.id !== id))
     } catch (err: any) {
       toast({ title: 'Error deleting', description: err.message, variant: 'destructive' })
-      setAttachments(previous)
     }
+  }
+
+  const handleDownload = async (url: string, filename: string) => {
+    if (!url) return
+    try {
+      const response = await fetch(url)
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(blobUrl)
+      document.body.removeChild(a)
+    } catch (e) {
+      window.open(url, '_blank')
+    }
+  }
+
+  const updateDescription = async (id: string, newDesc: string) => {
+    try {
+      const { error } = await supabase
+        .from('attachments')
+        .update({ description: newDesc })
+        .eq('id', id)
+
+      if (error) throw error
+      toast({ title: 'Description updated' })
+    } catch (err: any) {
+      toast({ title: 'Error updating', description: err.message, variant: 'destructive' })
+    }
+  }
+
+  const getFileIcon = (filename: string, type: string) => {
+    if (type.includes('image')) return <ImageIcon className="h-4 w-4 text-blue-500" />
+    if (filename.endsWith('.pdf')) return <FileText className="h-4 w-4 text-red-500" />
+    if (filename.endsWith('.doc') || filename.endsWith('.docx'))
+      return <FileText className="h-4 w-4 text-blue-600" />
+    if (filename.endsWith('.xls') || filename.endsWith('.xlsx'))
+      return <FileSpreadsheet className="h-4 w-4 text-green-600" />
+    return <FileIcon className="h-4 w-4 text-muted-foreground" />
   }
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <div>
           <h3 className="text-lg font-medium">Attachments</h3>
           <p className="text-sm text-muted-foreground">
             Manage files and documents related to this activity.
           </p>
         </div>
-        <Button onClick={addRow} size="sm" className="gap-2 shrink-0">
-          <Plus className="h-4 w-4" />
-          Add Attachment
+        <Button onClick={() => setUploadDialogOpen(true)} size="sm" className="gap-2">
+          <Upload className="h-4 w-4" />
+          Upload File
         </Button>
       </div>
 
-      <div className="space-y-4">
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : attachments.length === 0 ? (
-          <div className="text-center py-10 text-sm text-muted-foreground border-2 border-dashed rounded-lg bg-muted/10">
-            No attachments yet. Click "Add Attachment" to upload files.
-          </div>
-        ) : (
-          <div className="border rounded-md overflow-hidden bg-card">
-            <div className="grid grid-cols-12 gap-4 bg-muted/50 p-3 text-xs font-semibold border-b text-muted-foreground uppercase tracking-wider hidden sm:grid">
-              <div className="col-span-12 sm:col-span-5">Description</div>
-              <div className="col-span-12 sm:col-span-4">File</div>
-              <div className="col-span-12 sm:col-span-3 text-right">Actions</div>
-            </div>
-            <div className="divide-y">
+      {loading ? (
+        <div className="flex justify-center items-center py-10">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : attachments.length === 0 ? (
+        <div className="text-center py-10 text-sm text-muted-foreground border-2 border-dashed rounded-lg bg-muted/10">
+          No attachments yet. Click "Upload File" to add documents.
+        </div>
+      ) : (
+        <div className="border rounded-md overflow-hidden bg-card">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="w-[250px]">File Name</TableHead>
+                <TableHead>Description</TableHead>
+                <TableHead className="w-[100px]">Type</TableHead>
+                <TableHead className="w-[100px]">Size</TableHead>
+                <TableHead className="w-[150px]">Uploaded By</TableHead>
+                <TableHead className="w-[120px]">Date</TableHead>
+                <TableHead className="text-right w-[150px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {attachments.map((att) => (
-                <div
-                  key={att.id}
-                  className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4 p-4 sm:p-3 items-center hover:bg-slate-50 dark:hover:bg-muted/20 transition-colors"
-                >
-                  <div className="col-span-1 sm:col-span-5">
-                    <Label className="sm:hidden text-xs text-muted-foreground mb-1 block">
-                      Description
-                    </Label>
+                <TableRow key={att.id}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      {getFileIcon(att.original_file_name, att.file_type || '')}
+                      <span className="truncate max-w-[200px]" title={att.original_file_name}>
+                        {att.original_file_name}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
                     <Input
-                      placeholder="Enter description..."
-                      value={att.description}
-                      onChange={(e) => updateDescriptionLocal(att.id, e.target.value)}
-                      onBlur={(e) => saveDescription(att.id, e.target.value)}
-                      className="h-9 sm:h-8 text-sm bg-background"
+                      defaultValue={att.description || ''}
+                      onBlur={(e) => {
+                        if (e.target.value !== (att.description || '')) {
+                          updateDescription(att.id, e.target.value)
+                        }
+                      }}
+                      className="h-8 text-sm bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background transition-colors"
+                      placeholder="Add description..."
                     />
-                  </div>
-                  <div className="col-span-1 sm:col-span-4 flex items-center gap-2">
-                    <Label className="sm:hidden text-xs text-muted-foreground mb-1 block w-full">
-                      File
-                    </Label>
-                    {att.isNew ? (
-                      <div className="relative w-full mt-auto sm:mt-0">
-                        <Input
-                          type="file"
-                          id={`file-${att.id}`}
-                          className="sr-only"
-                          disabled={uploading === att.id}
-                          onChange={(e) => handleFileChange(att.id, e)}
-                        />
-                        <Label
-                          htmlFor={`file-${att.id}`}
-                          className="flex items-center justify-center gap-2 h-9 sm:h-8 w-full border border-dashed border-muted-foreground/40 rounded-md cursor-pointer hover:bg-muted/50 text-xs font-medium text-foreground transition-colors"
+                  </TableCell>
+                  <TableCell
+                    className="text-muted-foreground text-sm truncate max-w-[100px]"
+                    title={att.file_type}
+                  >
+                    {att.file_type?.split('/')[1]?.toUpperCase() || 'FILE'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {formatBytes(att.file_size || 0)}
+                  </TableCell>
+                  <TableCell
+                    className="text-muted-foreground text-sm truncate max-w-[150px]"
+                    title={att.profiles?.name || 'Unknown'}
+                  >
+                    {att.profiles?.name || 'Unknown'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {format(new Date(att.uploaded_at), 'MMM d, yyyy')}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      {att.public_or_signed_url && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              window.open(att.public_or_signed_url as string, '_blank')
+                            }
+                            title="View"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              handleDownload(
+                                att.public_or_signed_url as string,
+                                att.original_file_name,
+                              )
+                            }
+                            title="Download"
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+
+                      {(att.original_file_name.toLowerCase().endsWith('.doc') ||
+                        att.original_file_name.toLowerCase().endsWith('.docx')) && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/50"
+                          onClick={() => setEditingDoc(att)}
+                          title="Edit Document"
                         >
-                          {uploading === att.id ? (
-                            <>
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              Uploading...
-                            </>
-                          ) : (
-                            <>
-                              <Upload className="h-3.5 w-3.5" />
-                              Choose File to Upload
-                            </>
-                          )}
-                        </Label>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm text-primary bg-primary/10 px-3 py-1.5 rounded-md truncate w-full border border-primary/20">
-                        <FileIcon className="h-4 w-4 shrink-0" />
-                        <span className="truncate font-medium">{att.file_name}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="col-span-1 sm:col-span-3 flex items-center justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-0 mt-2 sm:mt-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs gap-1.5"
-                      disabled={att.isNew || !att.file_url}
-                      onClick={() => att.file_url && window.open(att.file_url, '_blank')}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                      View
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={uploading === att.id}
-                      onClick={() => removeRow(att.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      )}
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => deleteAttachment(att.id, att.server_file_path)}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
               ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      {/* Upload Dialog */}
+      <Dialog
+        open={uploadDialogOpen}
+        onOpenChange={(open) => {
+          if (!uploading) setUploadDialogOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Upload Attachment</DialogTitle>
+            <DialogDescription>
+              Select a file from your device to attach to this activity. Maximum file size is 50MB.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>File</Label>
+              <Input
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                disabled={uploading}
+                className="cursor-pointer"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description (Optional)</Label>
+              <Textarea
+                placeholder="Enter a brief description of this file..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={uploading}
+                className="resize-none"
+                rows={3}
+              />
             </div>
           </div>
-        )}
-      </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setUploadDialogOpen(false)} disabled={uploading}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpload} disabled={!selectedFile || uploading}>
+              {uploading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Upload'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Editor Dialog Scaffold */}
+      <Dialog open={!!editingDoc} onOpenChange={(open) => !open && setEditingDoc(null)}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Word Document</DialogTitle>
+            <DialogDescription>In-app document editing integration</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-md p-4 text-sm text-amber-800 dark:text-amber-200">
+              <p className="font-semibold mb-1 flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Document Editor Service Pending
+              </p>
+              <p className="opacity-90">
+                True in-app Word document editing requires integration with a dedicated Document
+                Editor Service (e.g., Microsoft Office 365 API, Google Docs API, or a self-hosted
+                solution like ONLYOFFICE).
+              </p>
+            </div>
+
+            <div className="space-y-3 border rounded-md p-4 bg-muted/30">
+              <h4 className="font-medium text-sm border-b pb-2">Scaffolded Backend Flow:</h4>
+              <ul className="text-sm space-y-3 list-none text-muted-foreground">
+                <li className="flex flex-col gap-1">
+                  <strong className="text-foreground">Selected File:</strong>
+                  <span className="font-mono text-xs bg-muted p-1 rounded inline-block truncate">
+                    {editingDoc?.original_file_name}
+                  </span>
+                </li>
+                <li className="flex flex-col gap-1">
+                  <strong className="text-foreground">Retrieve Endpoint:</strong>
+                  <code className="bg-muted p-1 rounded">
+                    /api/docs/retrieve?id={editingDoc?.id}
+                  </code>
+                </li>
+                <li className="flex flex-col gap-1">
+                  <strong className="text-foreground">Secure Access URL:</strong>
+                  <code className="bg-muted p-1 rounded truncate">
+                    {editingDoc?.public_or_signed_url?.substring(0, 60)}...
+                  </code>
+                </li>
+                <li className="flex flex-col gap-1">
+                  <strong className="text-foreground">Save/Update Endpoint:</strong>
+                  <code className="bg-muted p-1 rounded">/api/docs/save?id={editingDoc?.id}</code>
+                </li>
+              </ul>
+
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs text-muted-foreground flex gap-2">
+                  <span className="font-bold text-foreground">TODO:</span>
+                  <span>
+                    Implement real-time collaborative editing iframe or component here once the
+                    third-party provider is configured and authenticated.
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingDoc(null)}>
+              Close Preview
+            </Button>
+            <Button disabled className="gap-2">
+              <Upload className="h-4 w-4" />
+              Save Changes to Server
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
