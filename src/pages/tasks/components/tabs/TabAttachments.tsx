@@ -91,7 +91,7 @@ export function TabAttachments({
         .from('attachments')
         .select(`
           *,
-          profiles:uploaded_by (name)
+          profiles (name)
         `)
         .eq('task_id', activity.id)
         .order('uploaded_at', { ascending: false })
