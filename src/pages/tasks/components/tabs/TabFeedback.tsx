@@ -62,7 +62,7 @@ export function TabFeedback({
         .update({ [field]: checked })
         .eq('id', activity.id)
       if (error) throw error
-      if (onUpdate) onUpdate({ [field]: checked })
+      if (onUpdate) onUpdate({ ...activity, [field]: checked })
     } catch (e) {
       toast({ title: 'Error saving workflow inclusion', variant: 'destructive' })
     }
@@ -77,7 +77,7 @@ export function TabFeedback({
         .update({ [field]: reviewerId })
         .eq('id', activity.id)
       if (error) throw error
-      if (onUpdate) onUpdate({ [field]: reviewerId })
+      if (onUpdate) onUpdate({ ...activity, [field]: reviewerId })
     } catch (e) {
       toast({ title: 'Error saving reviewer', variant: 'destructive' })
     }
