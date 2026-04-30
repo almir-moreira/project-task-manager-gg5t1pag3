@@ -215,4 +215,10 @@ export function TabFeedback({ activity }: { activity?: any }) {
                   </TableCell>
                 </TableRow>
               )
-          
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}
