@@ -19,6 +19,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Trash2,
   Eye,
@@ -30,6 +31,7 @@ import {
   FileText,
   Image as ImageIcon,
   FileSpreadsheet,
+  MessageSquare,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
@@ -75,6 +77,9 @@ export function TabAttachments({
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [description, setDescription] = useState('')
   const [editingDoc, setEditingDoc] = useState<AttachmentRow | null>(null)
+
+  const [editingDescDoc, setEditingDescDoc] = useState<AttachmentRow | null>(null)
+  const [editDescValue, setEditDescValue] = useState('')
 
   const { toast } = useToast()
   const { user } = useAuth()
@@ -226,19 +231,27 @@ export function TabAttachments({
 
       if (error) throw error
       toast({ title: 'Description updated' })
+      setAttachments((prev) => prev.map((a) => (a.id === id ? { ...a, description: newDesc } : a)))
     } catch (err: any) {
       toast({ title: 'Error updating', description: err.message, variant: 'destructive' })
     }
   }
 
+  const handleEditDescriptionSave = async () => {
+    if (!editingDescDoc) return
+    await updateDescription(editingDescDoc.id, editDescValue)
+    setEditingDescDoc(null)
+  }
+
   const getFileIcon = (filename: string, type: string) => {
-    if (type.includes('image')) return <ImageIcon className="h-4 w-4 text-blue-500" />
-    if (filename.endsWith('.pdf')) return <FileText className="h-4 w-4 text-red-500" />
+    if (type.includes('image')) return <ImageIcon className="h-4 w-4 text-blue-500 flex-shrink-0" />
+    if (filename.endsWith('.pdf'))
+      return <FileText className="h-4 w-4 text-red-500 flex-shrink-0" />
     if (filename.endsWith('.doc') || filename.endsWith('.docx'))
-      return <FileText className="h-4 w-4 text-blue-600" />
+      return <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
     if (filename.endsWith('.xls') || filename.endsWith('.xlsx'))
-      return <FileSpreadsheet className="h-4 w-4 text-green-600" />
-    return <FileIcon className="h-4 w-4 text-muted-foreground" />
+      return <FileSpreadsheet className="h-4 w-4 text-green-600 flex-shrink-0" />
+    return <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
   }
 
   return (
@@ -269,9 +282,7 @@ export function TabAttachments({
           <Table>
             <TableHeader className="bg-muted/50">
               <TableRow>
-                <TableHead className="w-[250px]">File Name</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead className="w-[100px]">Type</TableHead>
+                <TableHead className="w-[45%]">File Name</TableHead>
                 <TableHead className="w-[100px]">Size</TableHead>
                 <TableHead className="w-[150px]">Uploaded By</TableHead>
                 <TableHead className="w-[120px]">Date</TableHead>
@@ -282,30 +293,33 @@ export function TabAttachments({
               {attachments.map((att) => (
                 <TableRow key={att.id}>
                   <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      {getFileIcon(att.original_file_name, att.file_type || '')}
-                      <span className="truncate max-w-[200px]" title={att.original_file_name}>
-                        {att.original_file_name}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      defaultValue={att.description || ''}
-                      onBlur={(e) => {
-                        if (e.target.value !== (att.description || '')) {
-                          updateDescription(att.id, e.target.value)
-                        }
-                      }}
-                      className="h-8 text-sm bg-transparent border-transparent hover:border-input focus:border-input focus:bg-background transition-colors"
-                      placeholder="Add description..."
-                    />
-                  </TableCell>
-                  <TableCell
-                    className="text-muted-foreground text-sm truncate max-w-[100px]"
-                    title={att.file_type}
-                  >
-                    {att.file_type?.split('/')[1]?.toUpperCase() || 'FILE'}
+                    {att.description ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 cursor-help w-fit">
+                            {getFileIcon(att.original_file_name, att.file_type || '')}
+                            <span className="truncate max-w-[200px] sm:max-w-[300px] md:max-w-[400px]">
+                              {att.original_file_name}
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-[300px] whitespace-normal break-words">
+                            {att.description}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <div className="flex items-center gap-2 w-fit">
+                        {getFileIcon(att.original_file_name, att.file_type || '')}
+                        <span
+                          className="truncate max-w-[200px] sm:max-w-[300px] md:max-w-[400px]"
+                          title={att.original_file_name}
+                        >
+                          {att.original_file_name}
+                        </span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {formatBytes(att.file_size || 0)}
@@ -350,6 +364,19 @@ export function TabAttachments({
                           </Button>
                         </>
                       )}
+
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                          setEditingDescDoc(att)
+                          setEditDescValue(att.description || '')
+                        }}
+                        title="Edit Description"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
 
                       {(att.original_file_name.toLowerCase().endsWith('.doc') ||
                         att.original_file_name.toLowerCase().endsWith('.docx')) && (
@@ -432,6 +459,36 @@ export function TabAttachments({
                 'Upload'
               )}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Description Dialog */}
+      <Dialog open={!!editingDescDoc} onOpenChange={(open) => !open && setEditingDescDoc(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Description</DialogTitle>
+            <DialogDescription>
+              Update the description for {editingDescDoc?.original_file_name}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                placeholder="Enter a brief description of this file..."
+                value={editDescValue}
+                onChange={(e) => setEditDescValue(e.target.value)}
+                className="resize-none"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEditingDescDoc(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditDescriptionSave}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
