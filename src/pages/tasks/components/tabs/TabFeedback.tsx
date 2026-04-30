@@ -48,7 +48,10 @@ export function TabFeedback({ activity }: { activity?: any }) {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!activity?.id) return
+      if (!activity?.id) {
+        setLoading(false)
+        return
+      }
 
       const [profilesRes, workflowsRes, activeRes] = await Promise.all([
         supabase.from('profiles').select('id, name').order('name'),

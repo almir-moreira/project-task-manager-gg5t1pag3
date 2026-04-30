@@ -19,24 +19,7 @@ const tabsConfig = [
   {
     id: 'feedback',
     label: 'Feedback',
-    component: ({ activity, onUpdate }: any) => (
-      <TabFeedback
-        units={[
-          'RELEX',
-          'Legal',
-          'Governing Bodies',
-          'Protocol',
-          'EMS',
-          'Procurement',
-          'IT',
-          'M&E',
-          'Communications',
-          'Social Media',
-        ]}
-        task={activity}
-        onUpdate={onUpdate}
-      />
-    ),
+    component: ({ activity }: any) => <TabFeedback activity={activity} />,
   },
   { id: 'approval', label: 'Approval Matrix', component: TabApprovalMatrix },
   { id: 'comments', label: 'Comments', component: TabComments },
