@@ -7,10 +7,12 @@ import { TabApprovalMatrix } from './tabs/TabApprovalMatrix'
 import { TabEventDetails, TabRBM, TabInvolvedParties, TabSGParticipation } from './tabs/TabGeneric'
 import { TabAttachments } from './tabs/TabAttachments'
 import { TabActivityDetails } from './tabs/TabTaskDetails'
+import { TabWorkflow } from './tabs/TabWorkflow'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const tabsConfig = [
   { id: 'activity-details', label: 'Activity Details', component: TabActivityDetails },
+  { id: 'workflow', label: 'Review Workflow', component: TabWorkflow },
   { id: 'event', label: 'Event Details', component: TabEventDetails },
   { id: 'parties', label: 'Involved Parties', component: TabInvolvedParties },
   { id: 'sg', label: 'SG Participation', component: TabSGParticipation },
