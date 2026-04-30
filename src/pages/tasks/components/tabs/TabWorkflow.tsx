@@ -38,7 +38,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
     const fetchAll = async () => {
       const [profilesRes, workflowsRes, activeRes] = await Promise.all([
         supabase.from('profiles').select('id, name'),
-        supabase.from('workflows').select('*').order('stage'),
+        supabase.from('workflows').select('*').order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 
@@ -92,23 +92,34 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  const selectedWorkflows = workflows.filter((wf) =>
-    activeWorkflows.some((aw) => aw.workflow_id === wf.id),
-  )
-
-  let steps = selectedWorkflows.map((wf) => {
-    const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
-    const assigneeId = active?.reviewer_id
-    return {
-      id: wf.id,
-      name: `${wf.role} Review`,
-      date: active?.completed_at,
-      comments: active?.comments || '',
-      assigneeId,
-      assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
-      status: active?.status || 'Pending',
-    }
+  // Steps in Final Review (Review) and Approval are mandatory. Feedback is selectable.
+  const selectedWorkflows = workflows.filter((wf) => {
+    if (wf.category === 'Review' || wf.category === 'Approval') return true
+    return activeWorkflows.some((aw) => aw.workflow_id === wf.id)
   })
+
+  let steps = selectedWorkflows
+    .sort((a, b) => (a.step ?? a.stage) - (b.step ?? b.stage))
+    .map((wf) => {
+      const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
+      const assigneeId = active?.reviewer_id
+      const categoryName =
+        wf.category === 'Approval'
+          ? 'Approval'
+          : wf.category === 'Review'
+            ? 'Review'
+            : wf.category || 'Review'
+
+      return {
+        id: wf.id,
+        name: `${wf.role} ${categoryName}`,
+        date: active?.completed_at,
+        comments: active?.comments || '',
+        assigneeId,
+        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
+        status: active?.status || 'Pending',
+      }
+    })
 
   if (steps.length > 0) {
     const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
@@ -201,7 +212,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
             <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground">No workflow steps configured.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Please select units in the Feedback tab to generate the workflow.
+              Please configure workflow stages to track progress.
             </p>
           </div>
         ) : (

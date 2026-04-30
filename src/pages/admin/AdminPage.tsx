@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Loader2, ArrowLeft } from 'lucide-react'
+import { Plus, Trash2, Edit2, Check, X, Loader2, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,11 @@ export default function AdminPage() {
   const [category, setCategory] = useState('Review')
   const { toast } = useToast()
 
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editRole, setEditRole] = useState('')
+  const [editStep, setEditStep] = useState('')
+  const [editCategory, setEditCategory] = useState('')
+
   useEffect(() => {
     fetchWorkflows()
   }, [])
@@ -48,7 +53,7 @@ export default function AdminPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!role || !step) return
+    if (!role || !step || !category) return
 
     const { data, error } = await supabase
       .from('workflows')
@@ -76,6 +81,45 @@ export default function AdminPage() {
     }
   }
 
+  const startEdit = (wf: Workflow) => {
+    setEditingId(wf.id)
+    setEditRole(wf.role)
+    setEditStep(String(wf.step ?? wf.stage))
+    setEditCategory(wf.category || '')
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editRole || !editStep || !editCategory) return
+
+    const { data, error } = await supabase
+      .from('workflows')
+      .update({
+        role: editRole,
+        step: parseInt(editStep),
+        category: editCategory,
+        stage: parseInt(editStep),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      toast({ title: 'Error updating workflow', variant: 'destructive' })
+    } else if (data) {
+      setWorkflows(workflows.map((w) => (w.id === id ? data : w)).sort((a, b) => a.step - b.step))
+      setEditingId(null)
+      toast({ title: 'Workflow updated successfully' })
+    }
+  }
+
+  const existingCategories = Array.from(new Set(workflows.map((w) => w.category).filter(Boolean)))
+  const defaultCategories = ['Review', 'Approval', 'Feedback']
+  const allCategories = Array.from(new Set([...defaultCategories, ...existingCategories]))
+
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-center gap-4 mb-6">
@@ -91,7 +135,7 @@ export default function AdminPage() {
         <div className="p-6 border-b bg-muted/20">
           <h2 className="text-xl font-semibold">Workflow Stages Configuration</h2>
           <p className="text-muted-foreground mt-1">
-            Manage the logical flow and sequencing of your review stages.
+            Manage the logical flow, sequencing, and categories of your review stages.
           </p>
         </div>
 
@@ -117,17 +161,23 @@ export default function AdminPage() {
             </div>
             <div className="sm:w-48 space-y-2 w-full">
               <label className="text-sm font-medium">Category</label>
-              <select
-                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              <Input
+                list="category-list"
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="Review">Review</option>
-                <option value="Approval">Approval</option>
-                <option value="Feedback">Feedback</option>
-              </select>
+                placeholder="Select or type..."
+              />
+              <datalist id="category-list">
+                {allCategories.map((c) => (
+                  <option key={c as string} value={c as string} />
+                ))}
+              </datalist>
             </div>
-            <Button type="submit" disabled={!role || !step} className="w-full sm:w-auto h-10">
+            <Button
+              type="submit"
+              disabled={!role || !step || !category}
+              className="w-full sm:w-auto h-10"
+            >
               <Plus className="w-4 h-4 mr-2" /> Add Stage
             </Button>
           </form>
@@ -149,24 +199,82 @@ export default function AdminPage() {
               <TableBody>
                 {workflows.map((wf) => (
                   <TableRow key={wf.id}>
-                    <TableCell className="font-medium">{wf.step ?? wf.stage}</TableCell>
-                    <TableCell>{wf.role}</TableCell>
-                    <TableCell>{wf.category || 'Review'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDelete(wf.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+                    {editingId === wf.id ? (
+                      <>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            value={editStep}
+                            onChange={(e) => setEditStep(e.target.value)}
+                            className="w-20 h-8"
+                            min="1"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value)}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            list="category-list"
+                            value={editCategory}
+                            onChange={(e) => setEditCategory(e.target.value)}
+                            className="h-8"
+                          />
+                        </TableCell>
+                        <TableCell className="text-right space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => saveEdit(wf.id)}
+                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
+                            disabled={!editRole || !editStep || !editCategory}
+                          >
+                            <Check className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={cancelEdit}
+                            className="text-muted-foreground hover:text-foreground h-8 w-8"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </>
+                    ) : (
+                      <>
+                        <TableCell className="font-medium">{wf.step ?? wf.stage}</TableCell>
+                        <TableCell>{wf.role}</TableCell>
+                        <TableCell>{wf.category || 'Review'}</TableCell>
+                        <TableCell className="text-right space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startEdit(wf)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(wf.id)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
                 {workflows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
                       No workflow stages configured yet.
                     </TableCell>
                   </TableRow>
