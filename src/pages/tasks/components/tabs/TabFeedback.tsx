@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
 
 interface Profile {
   id: string
@@ -24,13 +25,18 @@ interface Profile {
 }
 
 interface TabFeedbackProps {
+  activity?: any
+  onUpdate?: (updates: any) => void
   units?: string[]
 }
 
-export function TabFeedback({ units = ['EOSG', 'OPS', 'COMMS'] }: TabFeedbackProps) {
+export function TabFeedback({
+  activity,
+  onUpdate,
+  units = ['EOSG', 'OPS', 'COMMS'],
+}: TabFeedbackProps) {
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [selectedUnits, setSelectedUnits] = useState<Record<string, boolean>>({})
-  const [reviewers, setReviewers] = useState<Record<string, string>>({})
+  const { toast } = useToast()
 
   // Ensure Partnerships is in the list
   const displayUnits = Array.from(new Set([...units, 'Partnerships']))
@@ -47,12 +53,34 @@ export function TabFeedback({ units = ['EOSG', 'OPS', 'COMMS'] }: TabFeedbackPro
     fetchProfiles()
   }, [])
 
-  const handleUnitToggle = (unit: string, checked: boolean) => {
-    setSelectedUnits((prev) => ({ ...prev, [unit]: checked }))
+  const handleUnitToggle = async (unit: string, checked: boolean) => {
+    if (!activity?.id) return
+    const field = `wf_${unit.toLowerCase()}`
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .update({ [field]: checked })
+        .eq('id', activity.id)
+      if (error) throw error
+      if (onUpdate) onUpdate({ [field]: checked })
+    } catch (e) {
+      toast({ title: 'Error saving workflow inclusion', variant: 'destructive' })
+    }
   }
 
-  const handleReviewerChange = (unit: string, reviewerId: string) => {
-    setReviewers((prev) => ({ ...prev, [unit]: reviewerId }))
+  const handleReviewerChange = async (unit: string, reviewerId: string) => {
+    if (!activity?.id) return
+    const field = `wf_${unit.toLowerCase()}_reviewer_id`
+    try {
+      const { error } = await supabase
+        .from('activities')
+        .update({ [field]: reviewerId })
+        .eq('id', activity.id)
+      if (error) throw error
+      if (onUpdate) onUpdate({ [field]: reviewerId })
+    } catch (e) {
+      toast({ title: 'Error saving reviewer', variant: 'destructive' })
+    }
   }
 
   return (
@@ -70,58 +98,63 @@ export function TabFeedback({ units = ['EOSG', 'OPS', 'COMMS'] }: TabFeedbackPro
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayUnits.map((unit, i) => (
-              <TableRow key={unit}>
-                <TableCell className="text-center">
-                  <Checkbox
-                    checked={!!selectedUnits[unit]}
-                    onCheckedChange={(checked) => handleUnitToggle(unit, checked as boolean)}
-                    aria-label={`Include ${unit} in workflow`}
-                  />
-                </TableCell>
-                <TableCell className="font-medium text-sm">{unit}</TableCell>
-                <TableCell className="text-sm">
-                  <Select
-                    value={reviewers[unit] || ''}
-                    onValueChange={(val) => handleReviewerChange(unit, val)}
-                  >
-                    <SelectTrigger className="h-8 w-full bg-background">
-                      <SelectValue placeholder="Select reviewer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {profiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.id}>
-                          {profile.name || profile.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </TableCell>
-                <TableCell>
-                  {i % 2 === 0 ? (
-                    <Badge
-                      variant="outline"
-                      className="text-amber-600 border-amber-200 bg-amber-50"
+            {displayUnits.map((unit, i) => {
+              const isChecked = !!activity?.[`wf_${unit.toLowerCase()}`]
+              const reviewerId = activity?.[`wf_${unit.toLowerCase()}_reviewer_id`] || ''
+
+              return (
+                <TableRow key={unit}>
+                  <TableCell className="text-center">
+                    <Checkbox
+                      checked={isChecked}
+                      onCheckedChange={(checked) => handleUnitToggle(unit, checked as boolean)}
+                      aria-label={`Include ${unit} in workflow`}
+                    />
+                  </TableCell>
+                  <TableCell className="font-medium text-sm">{unit}</TableCell>
+                  <TableCell className="text-sm">
+                    <Select
+                      value={reviewerId}
+                      onValueChange={(val) => handleReviewerChange(unit, val)}
                     >
-                      Pending
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="outline"
-                      className="text-emerald-600 border-emerald-200 bg-emerald-50"
-                    >
-                      Cleared
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {i % 2 === 0 ? '-' : '2026-06-15'}
-                </TableCell>
-                <TableCell className="text-sm">
-                  {i % 2 === 0 ? 'Awaiting response.' : 'Approved without conditions.'}
-                </TableCell>
-              </TableRow>
-            ))}
+                      <SelectTrigger className="h-8 w-full bg-background">
+                        <SelectValue placeholder="Select reviewer" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.id} value={profile.id}>
+                            {profile.name || profile.id}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell>
+                    {i % 2 === 0 ? (
+                      <Badge
+                        variant="outline"
+                        className="text-amber-600 border-amber-200 bg-amber-50"
+                      >
+                        Pending
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className="text-emerald-600 border-emerald-200 bg-emerald-50"
+                      >
+                        Cleared
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {i % 2 === 0 ? '-' : '2026-06-15'}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {i % 2 === 0 ? 'Awaiting response.' : 'Approved without conditions.'}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>

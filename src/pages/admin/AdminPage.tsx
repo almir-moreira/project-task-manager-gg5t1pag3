@@ -11,9 +11,22 @@ import {
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { useAppContext } from '@/stores/main'
+import { useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase/client'
 
 export default function AdminPage() {
   const { users } = useAppContext()
+  const [workflows, setWorkflows] = useState<any[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('workflows')
+      .select('*')
+      .order('stage')
+      .then(({ data }) => {
+        if (data) setWorkflows(data)
+      })
+  }, [])
 
   return (
     <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-6">
@@ -57,6 +70,12 @@ export default function AdminPage() {
               >
                 Projects
               </TabsTrigger>
+              <TabsTrigger
+                value="workflows"
+                className="data-[state=active]:bg-background data-[state=active]:border-t data-[state=active]:border-l data-[state=active]:border-r data-[state=active]:border-border border-b-transparent rounded-t-lg rounded-b-none px-6 py-2.5"
+              >
+                Workflows
+              </TabsTrigger>
             </TabsList>
           </CardHeader>
           <CardContent className="p-0">
@@ -93,6 +112,37 @@ export default function AdminPage() {
             </TabsContent>
             <TabsContent value="projects" className="m-0 p-8 text-center text-muted-foreground">
               Projects configuration table will appear here.
+            </TabsContent>
+            <TabsContent value="workflows" className="m-0">
+              <Table>
+                <TableHeader className="bg-muted/10">
+                  <TableRow>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {workflows?.map((w) => (
+                    <TableRow key={w.id}>
+                      <TableCell className="font-medium">{w.role}</TableCell>
+                      <TableCell>{w.stage}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">
+                          Edit
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {workflows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                        No workflows configured.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </TabsContent>
           </CardContent>
         </Tabs>
