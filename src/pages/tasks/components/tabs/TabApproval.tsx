@@ -39,7 +39,12 @@ export function TabApproval({
     const fetchData = async () => {
       const [profilesRes, workflowsRes, awRes] = await Promise.all([
         supabase.from('profiles').select('id, name, email').order('name'),
-        supabase.from('workflows').select('*').eq('category', 'Approval').order('step'),
+        supabase
+          .from('workflows')
+          .select('*')
+          .eq('category', 'Approval')
+          .order('stage')
+          .order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 

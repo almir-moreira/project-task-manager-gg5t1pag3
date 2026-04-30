@@ -31,7 +31,12 @@ export function TabFinalReview({ activity }: { activity?: any }) {
     const fetchData = async () => {
       const [profilesRes, workflowsRes, awRes] = await Promise.all([
         supabase.from('profiles').select('id, name, email').order('name'),
-        supabase.from('workflows').select('*').eq('category', 'Review').order('step'),
+        supabase
+          .from('workflows')
+          .select('*')
+          .eq('category', 'Review')
+          .order('stage')
+          .order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 

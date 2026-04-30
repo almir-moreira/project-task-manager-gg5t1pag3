@@ -38,7 +38,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
     const fetchAll = async () => {
       const [profilesRes, workflowsRes, activeRes] = await Promise.all([
         supabase.from('profiles').select('id, name'),
-        supabase.from('workflows').select('*').order('step'),
+        supabase.from('workflows').select('*').order('stage').order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 
@@ -99,7 +99,10 @@ export function TabWorkflow({ activity }: { activity: any }) {
   })
 
   let steps = selectedWorkflows
-    .sort((a, b) => (a.step ?? a.stage) - (b.step ?? b.stage))
+    .sort((a, b) => {
+      if (a.stage !== b.stage) return (a.stage || 0) - (b.stage || 0)
+      return (a.step || 0) - (b.step || 0)
+    })
     .map((wf) => {
       const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
       const assigneeId = active?.reviewer_id
