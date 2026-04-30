@@ -1,5 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useState, useEffect } from 'react'
+import { Plus, Trash2, Loader2, ArrowLeft } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -8,145 +11,154 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Button } from '@/components/ui/button'
-import { Plus } from 'lucide-react'
-import { useAppContext } from '@/stores/main'
-import { useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabase/client'
+import { useToast } from '@/hooks/use-toast'
+import { Link } from 'react-router-dom'
+
+interface Workflow {
+  id: string
+  role: string
+  stage: number
+}
 
 export default function AdminPage() {
-  const { users } = useAppContext()
-  const [workflows, setWorkflows] = useState<any[]>([])
+  const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [role, setRole] = useState('')
+  const [stage, setStage] = useState('')
+  const { toast } = useToast()
 
   useEffect(() => {
-    supabase
-      .from('workflows')
-      .select('*')
-      .order('stage')
-      .then(({ data }) => {
-        if (data) setWorkflows(data)
-      })
+    fetchWorkflows()
   }, [])
 
+  const fetchWorkflows = async () => {
+    setLoading(true)
+    const { data, error } = await supabase.from('workflows').select('*').order('stage')
+
+    if (error) {
+      toast({ title: 'Error fetching workflows', variant: 'destructive' })
+    } else {
+      setWorkflows(data || [])
+    }
+    setLoading(false)
+  }
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!role || !stage) return
+
+    const { data, error } = await supabase
+      .from('workflows')
+      .insert({ role, stage: parseInt(stage) })
+      .select()
+      .single()
+
+    if (error) {
+      toast({ title: 'Error adding workflow', variant: 'destructive' })
+    } else if (data) {
+      setWorkflows([...workflows, data].sort((a, b) => a.stage - b.stage))
+      setRole('')
+      setStage('')
+      toast({ title: 'Workflow added successfully' })
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('workflows').delete().eq('id', id)
+    if (error) {
+      toast({ title: 'Error deleting workflow', variant: 'destructive' })
+    } else {
+      setWorkflows(workflows.filter((w) => w.id !== id))
+      toast({ title: 'Workflow deleted successfully' })
+    }
+  }
+
   return (
-    <div className="p-4 lg:p-6 max-w-6xl mx-auto space-y-6">
-      <div className="space-y-1 mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Administration</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage reference data, users, and system configuration.
-        </p>
+    <div className="p-6 max-w-5xl mx-auto space-y-6 animate-fade-in">
+      <div className="flex items-center gap-4 mb-6">
+        <Link to="/">
+          <Button variant="ghost" size="icon">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        </Link>
+        <h1 className="text-3xl font-bold tracking-tight">Administration</h1>
       </div>
 
-      <Card className="shadow-sm border-border">
-        <Tabs defaultValue="users">
-          <CardHeader className="pb-0 pt-4 px-4 bg-muted/20 border-b border-border">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <CardTitle className="text-lg">System Tables</CardTitle>
-                <CardDescription>
-                  Editable source of truth for application dropdowns.
-                </CardDescription>
-              </div>
-              <Button size="sm" className="gap-2">
-                <Plus className="h-4 w-4" /> Add Record
-              </Button>
+      <div className="bg-card border rounded-xl shadow-sm overflow-hidden">
+        <div className="p-6 border-b bg-muted/20">
+          <h2 className="text-xl font-semibold">Workflow Stages Configuration</h2>
+          <p className="text-muted-foreground mt-1">
+            Manage the logical flow and sequencing of your review stages.
+          </p>
+        </div>
+
+        <div className="p-6">
+          <form onSubmit={handleAdd} className="flex flex-col sm:flex-row items-end gap-4 mb-8">
+            <div className="flex-1 space-y-2 w-full">
+              <label className="text-sm font-medium">Role Name</label>
+              <Input
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="e.g. Legal, Finance"
+              />
             </div>
-            <TabsList className="bg-transparent p-0 w-full justify-start h-auto rounded-none">
-              <TabsTrigger
-                value="users"
-                className="data-[state=active]:bg-background data-[state=active]:border-t data-[state=active]:border-l data-[state=active]:border-r data-[state=active]:border-border border-b-transparent rounded-t-lg rounded-b-none px-6 py-2.5"
-              >
-                Users
-              </TabsTrigger>
-              <TabsTrigger
-                value="programmes"
-                className="data-[state=active]:bg-background data-[state=active]:border-t data-[state=active]:border-l data-[state=active]:border-r data-[state=active]:border-border border-b-transparent rounded-t-lg rounded-b-none px-6 py-2.5"
-              >
-                Programmes
-              </TabsTrigger>
-              <TabsTrigger
-                value="projects"
-                className="data-[state=active]:bg-background data-[state=active]:border-t data-[state=active]:border-l data-[state=active]:border-r data-[state=active]:border-border border-b-transparent rounded-t-lg rounded-b-none px-6 py-2.5"
-              >
-                Projects
-              </TabsTrigger>
-              <TabsTrigger
-                value="workflows"
-                className="data-[state=active]:bg-background data-[state=active]:border-t data-[state=active]:border-l data-[state=active]:border-r data-[state=active]:border-border border-b-transparent rounded-t-lg rounded-b-none px-6 py-2.5"
-              >
-                Workflows
-              </TabsTrigger>
-            </TabsList>
-          </CardHeader>
-          <CardContent className="p-0">
-            <TabsContent value="users" className="m-0">
-              <Table>
-                <TableHeader className="bg-muted/10">
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Programme</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+            <div className="sm:w-32 space-y-2 w-full">
+              <label className="text-sm font-medium">Stage Order</label>
+              <Input
+                type="number"
+                value={stage}
+                onChange={(e) => setStage(e.target.value)}
+                placeholder="e.g. 1"
+                min="1"
+              />
+            </div>
+            <Button type="submit" disabled={!role || !stage} className="w-full sm:w-auto">
+              <Plus className="w-4 h-4 mr-2" /> Add Stage
+            </Button>
+          </form>
+
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[100px]">Stage</TableHead>
+                  <TableHead>Role Name</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {workflows.map((wf) => (
+                  <TableRow key={wf.id}>
+                    <TableCell className="font-medium">{wf.stage}</TableCell>
+                    <TableCell>{wf.role}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(wf.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {users?.map((u) => (
-                    <TableRow key={u.id}>
-                      <TableCell className="font-medium">{u.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{u.email}</TableCell>
-                      <TableCell>{u.role}</TableCell>
-                      <TableCell>{u.programme}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TabsContent>
-            <TabsContent value="programmes" className="m-0 p-8 text-center text-muted-foreground">
-              Programmes configuration table will appear here.
-            </TabsContent>
-            <TabsContent value="projects" className="m-0 p-8 text-center text-muted-foreground">
-              Projects configuration table will appear here.
-            </TabsContent>
-            <TabsContent value="workflows" className="m-0">
-              <Table>
-                <TableHeader className="bg-muted/10">
+                ))}
+                {workflows.length === 0 && (
                   <TableRow>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Stage</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
+                      No workflow stages configured yet.
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {workflows?.map((w) => (
-                    <TableRow key={w.id}>
-                      <TableCell className="font-medium">{w.role}</TableCell>
-                      <TableCell>{w.stage}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm">
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {workflows.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
-                        No workflows configured.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </TabsContent>
-          </CardContent>
-        </Tabs>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

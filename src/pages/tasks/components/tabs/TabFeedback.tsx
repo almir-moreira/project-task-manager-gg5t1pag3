@@ -18,69 +18,122 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
+import { AlertCircle, Loader2 } from 'lucide-react'
 
 interface Profile {
   id: string
   name: string | null
 }
 
-interface TabFeedbackProps {
-  activity?: any
-  onUpdate?: (updates: any) => void
-  units?: string[]
+interface Workflow {
+  id: string
+  role: string
+  stage: number
 }
 
-export function TabFeedback({
-  activity,
-  onUpdate,
-  units = ['EOSG', 'OPS', 'COMMS'],
-}: TabFeedbackProps) {
+interface ActivityWorkflow {
+  id: string
+  workflow_id: string
+  reviewer_id: string | null
+  status: string
+  completed_at: string | null
+}
+
+export function TabFeedback({ activity }: { activity?: any }) {
   const [profiles, setProfiles] = useState<Profile[]>([])
+  const [workflows, setWorkflows] = useState<Workflow[]>([])
+  const [activeWorkflows, setActiveWorkflows] = useState<ActivityWorkflow[]>([])
+  const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
-  // Ensure Partnerships is in the list
-  const displayUnits = Array.from(new Set([...units, 'Partnerships']))
-
   useEffect(() => {
-    const fetchProfiles = async () => {
-      const { data, error } = await supabase.from('profiles').select('id, name').order('name')
+    const fetchData = async () => {
+      if (!activity?.id) return
 
-      if (!error && data) {
-        setProfiles(data)
-      }
+      const [profilesRes, workflowsRes, activeRes] = await Promise.all([
+        supabase.from('profiles').select('id, name').order('name'),
+        supabase.from('workflows').select('*').order('stage'),
+        supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
+      ])
+
+      if (profilesRes.data) setProfiles(profilesRes.data)
+      if (workflowsRes.data) setWorkflows(workflowsRes.data)
+      if (activeRes.data) setActiveWorkflows(activeRes.data)
+      setLoading(false)
     }
 
-    fetchProfiles()
-  }, [])
+    fetchData()
+  }, [activity?.id])
 
-  const handleUnitToggle = async (unit: string, checked: boolean) => {
+  const handleUnitToggle = async (workflow: Workflow, checked: boolean) => {
     if (!activity?.id) return
-    const field = `wf_${unit.toLowerCase()}`
+
     try {
-      const { error } = await supabase
-        .from('activities')
-        .update({ [field]: checked })
-        .eq('id', activity.id)
-      if (error) throw error
-      if (onUpdate) onUpdate({ ...activity, [field]: checked })
+      if (checked) {
+        const { data, error } = await supabase
+          .from('activity_workflows')
+          .insert({
+            activity_id: activity.id,
+            workflow_id: workflow.id,
+            status: 'Pending',
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        if (data) setActiveWorkflows((prev) => [...prev, data])
+      } else {
+        const existing = activeWorkflows.find((aw) => aw.workflow_id === workflow.id)
+        if (existing) {
+          const { error } = await supabase.from('activity_workflows').delete().eq('id', existing.id)
+
+          if (error) throw error
+          setActiveWorkflows((prev) => prev.filter((aw) => aw.id !== existing.id))
+        }
+      }
     } catch (e) {
+      console.error(e)
       toast({ title: 'Error saving workflow inclusion', variant: 'destructive' })
     }
   }
 
-  const handleReviewerChange = async (unit: string, reviewerId: string) => {
-    if (!activity?.id) return
-    const field = `wf_${unit.toLowerCase()}_reviewer_id`
+  const handleReviewerChange = async (workflowId: string, reviewerId: string) => {
+    const active = activeWorkflows.find((aw) => aw.workflow_id === workflowId)
+    if (!active) return
+
     try {
       const { error } = await supabase
-        .from('activities')
-        .update({ [field]: reviewerId })
-        .eq('id', activity.id)
+        .from('activity_workflows')
+        .update({ reviewer_id: reviewerId })
+        .eq('id', active.id)
+
       if (error) throw error
-      if (onUpdate) onUpdate({ ...activity, [field]: reviewerId })
+      setActiveWorkflows((prev) =>
+        prev.map((aw) => (aw.id === active.id ? { ...aw, reviewer_id: reviewerId } : aw)),
+      )
     } catch (e) {
       toast({ title: 'Error saving reviewer', variant: 'destructive' })
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (workflows.length === 0) {
+    return (
+      <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-border">
+        <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
+        <p className="text-muted-foreground">No workflow stages configured.</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Please add workflow stages in Administration to manage them here.
+        </p>
+      </div>
+    )
   }
 
   return (
@@ -98,24 +151,26 @@ export function TabFeedback({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {displayUnits.map((unit, i) => {
-              const isChecked = !!activity?.[`wf_${unit.toLowerCase()}`]
-              const reviewerId = activity?.[`wf_${unit.toLowerCase()}_reviewer_id`] || ''
+            {workflows.map((workflow) => {
+              const active = activeWorkflows.find((aw) => aw.workflow_id === workflow.id)
+              const isChecked = !!active
+              const reviewerId = active?.reviewer_id || ''
 
               return (
-                <TableRow key={unit}>
+                <TableRow key={workflow.id}>
                   <TableCell className="text-center">
                     <Checkbox
                       checked={isChecked}
-                      onCheckedChange={(checked) => handleUnitToggle(unit, checked as boolean)}
-                      aria-label={`Include ${unit} in workflow`}
+                      onCheckedChange={(checked) => handleUnitToggle(workflow, checked as boolean)}
+                      aria-label={`Include ${workflow.role} in workflow`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-sm">{unit}</TableCell>
+                  <TableCell className="font-medium text-sm">{workflow.role}</TableCell>
                   <TableCell className="text-sm">
                     <Select
+                      disabled={!isChecked}
                       value={reviewerId}
-                      onValueChange={(val) => handleReviewerChange(unit, val)}
+                      onValueChange={(val) => handleReviewerChange(workflow.id, val)}
                     >
                       <SelectTrigger className="h-8 w-full bg-background">
                         <SelectValue placeholder="Select reviewer" />
@@ -130,27 +185,28 @@ export function TabFeedback({
                     </Select>
                   </TableCell>
                   <TableCell>
-                    {i % 2 === 0 ? (
+                    {active ? (
                       <Badge
                         variant="outline"
-                        className="text-amber-600 border-amber-200 bg-amber-50"
+                        className={
+                          active.status === 'Approved'
+                            ? 'text-emerald-600 border-emerald-200 bg-emerald-50'
+                            : active.status === 'Rejected'
+                              ? 'text-red-600 border-red-200 bg-red-50'
+                              : 'text-amber-600 border-amber-200 bg-amber-50'
+                        }
                       >
-                        Pending
+                        {active.status}
                       </Badge>
                     ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-emerald-600 border-emerald-200 bg-emerald-50"
-                      >
-                        Cleared
-                      </Badge>
+                      <span className="text-muted-foreground text-xs italic">Not included</span>
                     )}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {i % 2 === 0 ? '-' : '2026-06-15'}
+                    {active?.completed_at ? active.completed_at.substring(0, 10) : '-'}
                   </TableCell>
-                  <TableCell className="text-sm">
-                    {i % 2 === 0 ? 'Awaiting response.' : 'Approved without conditions.'}
+                  <TableCell className="text-sm text-muted-foreground">
+                    {active ? 'Awaiting response.' : ''}
                   </TableCell>
                 </TableRow>
               )

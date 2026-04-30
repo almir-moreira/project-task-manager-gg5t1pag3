@@ -25,6 +25,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
   const [currentActivity, setCurrentActivity] = useState(activity)
   const [profiles, setProfiles] = useState<Record<string, string>>({})
   const [workflows, setWorkflows] = useState<any[]>([])
+  const [activeWorkflows, setActiveWorkflows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -33,43 +34,42 @@ export function TabWorkflow({ activity }: { activity: any }) {
 
   useEffect(() => {
     if (!activity?.id) return
+
+    const fetchAll = async () => {
+      const [profilesRes, workflowsRes, activeRes] = await Promise.all([
+        supabase.from('profiles').select('id, name'),
+        supabase.from('workflows').select('*').order('stage'),
+        supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
+      ])
+
+      if (profilesRes.data) {
+        setProfiles(profilesRes.data.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.name }), {}))
+      }
+      if (workflowsRes.data) setWorkflows(workflowsRes.data)
+      if (activeRes.data) setActiveWorkflows(activeRes.data)
+      setLoading(false)
+    }
+
+    fetchAll()
+
     const channel = supabase
-      .channel(`activity_workflow_${activity.id}`)
+      .channel(`activity_workflows_${activity.id}`)
       .on(
         'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'activities', filter: `id=eq.${activity.id}` },
-        (payload) => setCurrentActivity((prev: any) => ({ ...prev, ...payload.new })),
+        {
+          event: '*',
+          schema: 'public',
+          table: 'activity_workflows',
+          filter: `activity_id=eq.${activity.id}`,
+        },
+        () => fetchAll(),
       )
       .subscribe()
+
     return () => {
       supabase.removeChannel(channel)
     }
   }, [activity?.id])
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const [profilesRes, workflowsRes] = await Promise.all([
-          supabase.from('profiles').select('id, name'),
-          supabase.from('workflows').select('*').order('stage'),
-        ])
-
-        if (profilesRes.data) {
-          setProfiles(
-            profilesRes.data.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.name }), {}),
-          )
-        }
-        if (workflowsRes.data) {
-          setWorkflows(workflowsRes.data)
-        }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
-  }, [])
 
   if (!currentActivity) {
     return (
@@ -92,23 +92,23 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  let steps = workflows
-    .filter((wf) => currentActivity[`wf_${wf.role.toLowerCase()}`])
-    .map((wf) => {
-      const unitLower = wf.role.toLowerCase()
-      const assigneeId = currentActivity[`wf_${unitLower}_reviewer_id`]
+  const selectedWorkflows = workflows.filter((wf) =>
+    activeWorkflows.some((aw) => aw.workflow_id === wf.id),
+  )
 
-      return {
-        id: `wf_${unitLower}`,
-        name: `${wf.role} Review`,
-        date: null,
-        approved: null,
-        comments: '',
-        assigneeId,
-        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
-        status: 'Pending',
-      }
-    })
+  let steps = selectedWorkflows.map((wf) => {
+    const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
+    const assigneeId = active?.reviewer_id
+    return {
+      id: wf.id,
+      name: `${wf.role} Review`,
+      date: active?.completed_at,
+      comments: active?.comments || '',
+      assigneeId,
+      assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
+      status: active?.status || 'Pending',
+    }
+  })
 
   if (steps.length > 0) {
     const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
@@ -207,8 +207,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
         ) : (
           <div
             className={cn(
-              'flex items-start gap-3 min-w-max',
-              steps.length > 5 ? 'flex-col min-w-0' : 'flex-col xl:flex-row xl:min-w-max',
+              'flex items-start gap-2 min-w-max',
+              steps.length > 6 ? 'flex-col min-w-0' : 'flex-col xl:flex-row xl:min-w-max',
             )}
           >
             {steps.map((step, index) => (
@@ -216,44 +216,44 @@ export function TabWorkflow({ activity }: { activity: any }) {
                 key={step.id}
                 className={cn(
                   'flex',
-                  steps.length > 5 ? 'flex-col' : 'flex-col xl:flex-row flex-1',
+                  steps.length > 6 ? 'flex-col' : 'flex-col xl:flex-row flex-1',
                   'items-center xl:items-start w-full xl:w-auto',
                 )}
               >
                 <div
                   className={cn(
-                    'relative flex flex-col p-3 rounded-lg border-2 w-full xl:w-48 bg-background shadow-sm transition-all duration-200 hover:shadow-md',
+                    'relative flex flex-col p-2.5 rounded-lg border w-full xl:w-40 bg-background shadow-sm transition-all duration-200 hover:shadow-md',
                     step.status === 'In Progress'
-                      ? 'border-[#3b82f6] shadow-blue-100 ring-2 ring-blue-50'
-                      : 'border-transparent',
-                    step.status === 'Approved' ? 'border-[#10b981]/20 bg-[#10b981]/5' : '',
-                    step.status === 'Rejected' ? 'border-[#ef4444]/20 bg-[#ef4444]/5' : '',
+                      ? 'border-[#3b82f6] shadow-blue-100 ring-1 ring-blue-50'
+                      : 'border-border',
+                    step.status === 'Approved' ? 'border-[#10b981]/30 bg-[#10b981]/5' : '',
+                    step.status === 'Rejected' ? 'border-[#ef4444]/30 bg-[#ef4444]/5' : '',
                     step.status === 'Skipped'
-                      ? 'border-[#c4b5fd]/20 bg-[#c4b5fd]/5 opacity-70'
+                      ? 'border-[#c4b5fd]/30 bg-[#c4b5fd]/5 opacity-70'
                       : '',
                   )}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex items-center gap-1.5 font-semibold text-sm truncate">
+                  <div className="flex justify-between items-start mb-1.5">
+                    <div className="flex items-center gap-1.5 font-semibold text-xs truncate">
                       {getStatusIcon(step.status)}
                       <span className="truncate">{step.name}</span>
                     </div>
                   </div>
-                  <div className="space-y-1.5 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1.5">
-                      <UserCircle className="w-3.5 h-3.5 shrink-0" />
+                  <div className="space-y-1 text-[10px] text-muted-foreground leading-tight">
+                    <div className="flex items-center gap-1">
+                      <UserCircle className="w-3 h-3 shrink-0" />
                       <span className="truncate">{step.assigneeName}</span>
                     </div>
                     {step.date && (
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 shrink-0" />
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 shrink-0" />
                         <span>{formatDate(step.date, 'MMM d, HH:mm')}</span>
                       </div>
                     )}
-                    <div className="mt-1.5 pt-1">
+                    <div className="mt-1 pt-0.5">
                       <Badge
                         className={cn(
-                          'pointer-events-none font-medium text-[10px] px-1.5 py-0 h-4',
+                          'pointer-events-none font-medium text-[9px] px-1 py-0 h-3.5 leading-none',
                           getStatusColor(step.status),
                         )}
                       >
@@ -262,7 +262,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
                     </div>
                   </div>
                   {step.status === 'In Progress' && (
-                    <div className="absolute -inset-1 border-2 border-[#3b82f6] rounded-lg animate-pulse opacity-20 pointer-events-none"></div>
+                    <div className="absolute -inset-[1px] border border-[#3b82f6] rounded-lg animate-pulse opacity-20 pointer-events-none"></div>
                   )}
                 </div>
 
@@ -270,15 +270,15 @@ export function TabWorkflow({ activity }: { activity: any }) {
                   <div
                     className={cn(
                       'flex items-center justify-center text-muted-foreground/40',
-                      steps.length > 5 ? 'h-6 py-1 w-full' : 'xl:w-8 xl:h-auto h-6 py-1 w-full',
+                      steps.length > 6 ? 'h-4 py-0.5 w-full' : 'xl:w-6 xl:h-auto h-4 py-0.5 w-full',
                     )}
                   >
-                    {steps.length > 5 ? (
-                      <ArrowDown className="w-5 h-5" />
+                    {steps.length > 6 ? (
+                      <ArrowDown className="w-4 h-4" />
                     ) : (
                       <>
-                        <ArrowRight className="w-5 h-5 hidden xl:block" />
-                        <ArrowDown className="w-5 h-5 block xl:hidden" />
+                        <ArrowRight className="w-4 h-4 hidden xl:block" />
+                        <ArrowDown className="w-4 h-4 block xl:hidden" />
                       </>
                     )}
                   </div>
