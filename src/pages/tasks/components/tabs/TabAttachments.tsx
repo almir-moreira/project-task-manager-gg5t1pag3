@@ -106,8 +106,10 @@ export function TabAttachments({
       const formattedData = (data || []).map((att: any) => {
         let url = att.public_or_signed_url
         if (!url && att.server_file_path) {
-          url = supabase.storage.from('activity-attachments').getPublicUrl(att.server_file_path)
-            .data.publicUrl
+          const { data: urlData } = supabase.storage
+            .from('activity-attachments')
+            .getPublicUrl(att.server_file_path)
+          url = urlData?.publicUrl
         }
         return {
           ...att,
@@ -165,7 +167,7 @@ export function TabAttachments({
         file_type: selectedFile.type || 'application/octet-stream',
         file_size: selectedFile.size,
         server_file_path: filePath,
-        public_or_signed_url: publicUrlData.publicUrl,
+        public_or_signed_url: publicUrlData?.publicUrl || null,
         uploaded_by: user.id,
         description: description,
       })
