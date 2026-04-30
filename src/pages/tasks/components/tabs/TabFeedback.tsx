@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import {
   Table,
   TableBody,
@@ -7,31 +8,94 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { supabase } from '@/lib/supabase/client'
 
-interface TabFeedbackProps {
-  units: string[]
+interface Profile {
+  id: string
+  name: string | null
 }
 
-export function TabFeedback({ units }: TabFeedbackProps) {
+interface TabFeedbackProps {
+  units?: string[]
+}
+
+export function TabFeedback({ units = ['EOSG', 'OPS', 'COMMS'] }: TabFeedbackProps) {
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [selectedUnits, setSelectedUnits] = useState<Record<string, boolean>>({})
+  const [reviewers, setReviewers] = useState<Record<string, string>>({})
+
+  // Ensure Partnerships is in the list
+  const displayUnits = Array.from(new Set([...units, 'Partnerships']))
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      const { data, error } = await supabase.from('profiles').select('id, name').order('name')
+
+      if (!error && data) {
+        setProfiles(data)
+      }
+    }
+
+    fetchProfiles()
+  }, [])
+
+  const handleUnitToggle = (unit: string, checked: boolean) => {
+    setSelectedUnits((prev) => ({ ...prev, [unit]: checked }))
+  }
+
+  const handleReviewerChange = (unit: string, reviewerId: string) => {
+    setReviewers((prev) => ({ ...prev, [unit]: reviewerId }))
+  }
+
   return (
     <div className="space-y-4 animate-fade-in">
       <div className="border border-border rounded-lg overflow-hidden">
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>
+              <TableHead className="w-[50px] text-center"></TableHead>
               <TableHead className="w-[150px]">Unit / Dept</TableHead>
-              <TableHead>Reviewer</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Feedback</TableHead>
+              <TableHead className="w-[250px]">Reviewer</TableHead>
+              <TableHead className="w-[120px]">Status</TableHead>
+              <TableHead className="w-[120px]">Date</TableHead>
+              <TableHead className="min-w-[300px]">Feedback</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {units.map((unit, i) => (
+            {displayUnits.map((unit, i) => (
               <TableRow key={unit}>
+                <TableCell className="text-center">
+                  <Checkbox
+                    checked={!!selectedUnits[unit]}
+                    onCheckedChange={(checked) => handleUnitToggle(unit, checked as boolean)}
+                    aria-label={`Include ${unit} in workflow`}
+                  />
+                </TableCell>
                 <TableCell className="font-medium text-sm">{unit}</TableCell>
                 <TableCell className="text-sm">
-                  {i % 2 === 0 ? 'Pending Assignment' : 'John Doe'}
+                  <Select
+                    value={reviewers[unit] || ''}
+                    onValueChange={(val) => handleReviewerChange(unit, val)}
+                  >
+                    <SelectTrigger className="h-8 w-full bg-background">
+                      <SelectValue placeholder="Select reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profiles.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          {profile.name || profile.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </TableCell>
                 <TableCell>
                   {i % 2 === 0 ? (
