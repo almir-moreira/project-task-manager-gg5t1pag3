@@ -18,13 +18,16 @@ interface Workflow {
   id: string
   role: string
   stage: number
+  step: number
+  category: string
 }
 
 export default function AdminPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState('')
-  const [stage, setStage] = useState('')
+  const [step, setStep] = useState('')
+  const [category, setCategory] = useState('Review')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -33,7 +36,7 @@ export default function AdminPage() {
 
   const fetchWorkflows = async () => {
     setLoading(true)
-    const { data, error } = await supabase.from('workflows').select('*').order('stage')
+    const { data, error } = await supabase.from('workflows').select('*').order('step')
 
     if (error) {
       toast({ title: 'Error fetching workflows', variant: 'destructive' })
@@ -45,20 +48,20 @@ export default function AdminPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!role || !stage) return
+    if (!role || !step) return
 
     const { data, error } = await supabase
       .from('workflows')
-      .insert({ role, stage: parseInt(stage) })
+      .insert({ role, step: parseInt(step), category, stage: parseInt(step) })
       .select()
       .single()
 
     if (error) {
       toast({ title: 'Error adding workflow', variant: 'destructive' })
     } else if (data) {
-      setWorkflows([...workflows, data].sort((a, b) => a.stage - b.stage))
+      setWorkflows([...workflows, data].sort((a, b) => a.step - b.step))
       setRole('')
-      setStage('')
+      setStep('')
       toast({ title: 'Workflow added successfully' })
     }
   }
@@ -103,16 +106,28 @@ export default function AdminPage() {
               />
             </div>
             <div className="sm:w-32 space-y-2 w-full">
-              <label className="text-sm font-medium">Stage Order</label>
+              <label className="text-sm font-medium">Step Order</label>
               <Input
                 type="number"
-                value={stage}
-                onChange={(e) => setStage(e.target.value)}
+                value={step}
+                onChange={(e) => setStep(e.target.value)}
                 placeholder="e.g. 1"
                 min="1"
               />
             </div>
-            <Button type="submit" disabled={!role || !stage} className="w-full sm:w-auto">
+            <div className="sm:w-48 space-y-2 w-full">
+              <label className="text-sm font-medium">Category</label>
+              <select
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="Review">Review</option>
+                <option value="Approval">Approval</option>
+                <option value="Feedback">Feedback</option>
+              </select>
+            </div>
+            <Button type="submit" disabled={!role || !step} className="w-full sm:w-auto h-10">
               <Plus className="w-4 h-4 mr-2" /> Add Stage
             </Button>
           </form>
@@ -125,16 +140,18 @@ export default function AdminPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Stage</TableHead>
+                  <TableHead className="w-[100px]">Step</TableHead>
                   <TableHead>Role Name</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {workflows.map((wf) => (
                   <TableRow key={wf.id}>
-                    <TableCell className="font-medium">{wf.stage}</TableCell>
+                    <TableCell className="font-medium">{wf.step ?? wf.stage}</TableCell>
                     <TableCell>{wf.role}</TableCell>
+                    <TableCell>{wf.category || 'Review'}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

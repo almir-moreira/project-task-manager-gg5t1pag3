@@ -3,7 +3,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { TabHistory } from './tabs/TabHistory'
 import { TabFeedback } from './tabs/TabFeedback'
 import { TabComments } from './tabs/TabComments'
-import { TabApprovalMatrix } from './tabs/TabApprovalMatrix'
+import { TabApproval } from './tabs/TabApproval'
+import { TabFinalReview } from './tabs/TabFinalReview'
 import { TabEventDetails, TabRBM, TabInvolvedParties, TabSGParticipation } from './tabs/TabGeneric'
 import { TabAttachments } from './tabs/TabAttachments'
 import { TabActivityDetails } from './tabs/TabTaskDetails'
@@ -21,7 +22,8 @@ const tabsConfig = [
     label: 'Feedback',
     component: ({ activity }: any) => <TabFeedback activity={activity} />,
   },
-  { id: 'approval', label: 'Approval Matrix', component: TabApprovalMatrix },
+  { id: 'final-review', label: 'Final Review', component: TabFinalReview },
+  { id: 'approval', label: 'Approval', component: TabApproval },
   { id: 'comments', label: 'Comments', component: TabComments },
   { id: 'attachments', label: 'Attachments', component: TabAttachments },
   { id: 'workflow', label: 'Review Workflow', component: TabWorkflow },
