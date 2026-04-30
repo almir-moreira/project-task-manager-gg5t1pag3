@@ -12,43 +12,36 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 
 const tabsConfig = [
   { id: 'activity-details', label: 'Activity Details', component: TabActivityDetails },
-  { id: 'workflow', label: 'Review Workflow', component: TabWorkflow },
   { id: 'event', label: 'Event Details', component: TabEventDetails },
   { id: 'parties', label: 'Involved Parties', component: TabInvolvedParties },
   { id: 'sg', label: 'SG Participation', component: TabSGParticipation },
   { id: 'rbm', label: 'RBM', component: TabRBM },
+  {
+    id: 'feedback',
+    label: 'Feedback',
+    component: ({ activity, onUpdate }: any) => (
+      <TabFeedback
+        units={[
+          'RELEX',
+          'Legal',
+          'Governing Bodies',
+          'Protocol',
+          'EMS',
+          'Procurement',
+          'IT',
+          'M&E',
+          'Communications',
+          'Social Media',
+        ]}
+        task={activity}
+        onUpdate={onUpdate}
+      />
+    ),
+  },
   { id: 'approval', label: 'Approval Matrix', component: TabApprovalMatrix },
   { id: 'comments', label: 'Comments', component: TabComments },
   { id: 'attachments', label: 'Attachments', component: TabAttachments },
-  {
-    id: 'eosg',
-    label: 'EOSG',
-    component: ({ activity, onUpdate }: any) => (
-      <TabFeedback
-        units={['RELEX', 'Legal', 'Governing Bodies', 'Protocol']}
-        task={activity}
-        onUpdate={onUpdate}
-      />
-    ),
-  },
-  {
-    id: 'ops',
-    label: 'OPS',
-    component: ({ activity, onUpdate }: any) => (
-      <TabFeedback
-        units={['EMS', 'Procurement', 'IT', 'M&E']}
-        task={activity}
-        onUpdate={onUpdate}
-      />
-    ),
-  },
-  {
-    id: 'comms',
-    label: 'COMMS',
-    component: ({ activity, onUpdate }: any) => (
-      <TabFeedback units={['Communications', 'Social Media']} task={activity} onUpdate={onUpdate} />
-    ),
-  },
+  { id: 'workflow', label: 'Review Workflow', component: TabWorkflow },
   { id: 'history', label: 'History', component: TabHistory },
 ]
 
