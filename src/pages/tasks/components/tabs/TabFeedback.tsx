@@ -29,6 +29,8 @@ interface Workflow {
   id: string
   role: string
   stage: number
+  step?: number | null
+  category?: string | null
 }
 
 interface ActivityWorkflow {
@@ -55,7 +57,7 @@ export function TabFeedback({ activity }: { activity?: any }) {
 
       const [profilesRes, workflowsRes, activeRes] = await Promise.all([
         supabase.from('profiles').select('id, name').order('name'),
-        supabase.from('workflows').select('*').order('stage'),
+        supabase.from('workflows').select('*').eq('category', 'Feedback').order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 
