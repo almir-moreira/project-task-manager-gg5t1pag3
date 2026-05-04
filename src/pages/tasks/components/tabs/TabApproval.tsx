@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { updateActivity } from '@/services/activities'
+import { Lock } from 'lucide-react'
 
 export function TabApproval({
   activity,
@@ -49,7 +50,13 @@ export function TabApproval({
       ])
 
       if (profilesRes.data) setProfiles(profilesRes.data)
-      if (workflowsRes.data) setWorkflows(workflowsRes.data)
+      if (workflowsRes.data) {
+        const sorted = [...workflowsRes.data].sort((a, b) => {
+          if (a.stage !== b.stage) return a.stage - b.stage
+          return (a.step || 0) - (b.step || 0)
+        })
+        setWorkflows(sorted)
+      }
 
       const awMap: Record<string, any> = {}
       if (awRes.data) {
@@ -111,11 +118,23 @@ export function TabApproval({
     }
   }
 
+  const isStepEnabled = (index: number) => {
+    if (index === 0) return true
+    const prevWf = workflows[index - 1]
+    const prevAw = activityWorkflows[prevWf.id]
+    return prevAw && (prevAw.status === 'Approved' || prevAw.status === 'Concluído')
+  }
+
   if (!activity) return null
 
   return (
     <div className="space-y-8 animate-fade-in pb-10">
-      <h3 className="text-lg font-medium">Approval</h3>
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-medium">Approval Stage</h3>
+        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full border border-border">
+          Sequential workflow enforced
+        </span>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 mb-6 max-w-2xl">
         <div className="grid gap-2">
@@ -147,7 +166,7 @@ export function TabApproval({
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Final Approval</h3>
+        <h3 className="text-sm font-semibold">Final Approval Steps</h3>
         <div className="border border-border rounded-lg overflow-hidden">
           <Table>
             <TableHeader className="bg-muted/30">
@@ -173,13 +192,21 @@ export function TabApproval({
                   </TableCell>
                 </TableRow>
               ) : (
-                workflows.map((wf) => {
+                workflows.map((wf, index) => {
                   const aw = activityWorkflows[wf.id] || {}
+                  const enabled = isStepEnabled(index)
+
                   return (
-                    <TableRow key={wf.id}>
-                      <TableCell className="font-medium text-sm">{wf.role}</TableCell>
+                    <TableRow key={wf.id} className={!enabled ? 'bg-muted/30 opacity-60' : ''}>
+                      <TableCell className="font-medium text-sm">
+                        <div className="flex items-center gap-2">
+                          {!enabled && <Lock className="w-3 h-3 text-muted-foreground" />}
+                          {wf.role}
+                        </div>
+                      </TableCell>
                       <TableCell className="align-top pt-4">
                         <Select
+                          disabled={!enabled}
                           value={aw.reviewer_id || 'unassigned'}
                           onValueChange={(val) =>
                             handleWorkflowChange(
@@ -204,6 +231,7 @@ export function TabApproval({
                       </TableCell>
                       <TableCell className="align-top py-3">
                         <Textarea
+                          disabled={!enabled}
                           className="min-h-[60px] resize-y"
                           defaultValue={aw.comments || ''}
                           onBlur={(e) =>
@@ -215,6 +243,7 @@ export function TabApproval({
                       </TableCell>
                       <TableCell className="align-top pt-4">
                         <Input
+                          disabled={!enabled}
                           type="date"
                           className="h-9"
                           defaultValue={aw.completed_at ? aw.completed_at.split('T')[0] : ''}
@@ -233,7 +262,8 @@ export function TabApproval({
                       <TableCell className="text-center align-top pt-5">
                         <div className="flex justify-center">
                           <Checkbox
-                            checked={aw.status === 'Approved'}
+                            disabled={!enabled}
+                            checked={aw.status === 'Approved' || aw.status === 'Concluído'}
                             onCheckedChange={(v) =>
                               handleWorkflowChange(wf.id, 'status', v ? 'Approved' : 'Pending')
                             }
