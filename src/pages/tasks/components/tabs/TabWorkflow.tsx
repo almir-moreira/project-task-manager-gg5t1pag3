@@ -219,24 +219,12 @@ export function TabWorkflow({ activity }: { activity: any }) {
             </p>
           </div>
         ) : (
-          <div
-            className={cn(
-              'flex items-start gap-2 min-w-max',
-              steps.length > 6 ? 'flex-col min-w-0' : 'flex-col xl:flex-row xl:min-w-max',
-            )}
-          >
+          <div className="flex items-center gap-2 min-w-max pb-2">
             {steps.map((step, index) => (
-              <div
-                key={step.id}
-                className={cn(
-                  'flex',
-                  steps.length > 6 ? 'flex-col' : 'flex-col xl:flex-row flex-1',
-                  'items-center xl:items-start w-full xl:w-auto',
-                )}
-              >
+              <div key={step.id} className="flex items-center shrink-0">
                 <div
                   className={cn(
-                    'relative flex flex-col p-2.5 rounded-lg border w-full xl:w-40 bg-background shadow-sm transition-all duration-200 hover:shadow-md',
+                    'relative flex flex-col p-2.5 rounded-lg border w-40 sm:w-48 bg-background shadow-sm transition-all duration-200 hover:shadow-md shrink-0',
                     step.status === 'In Progress'
                       ? 'border-[#3b82f6] shadow-blue-100 ring-1 ring-blue-50'
                       : 'border-border',
@@ -281,20 +269,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
                 </div>
 
                 {index < steps.length - 1 && (
-                  <div
-                    className={cn(
-                      'flex items-center justify-center text-muted-foreground/40',
-                      steps.length > 6 ? 'h-4 py-0.5 w-full' : 'xl:w-6 xl:h-auto h-4 py-0.5 w-full',
-                    )}
-                  >
-                    {steps.length > 6 ? (
-                      <ArrowDown className="w-4 h-4" />
-                    ) : (
-                      <>
-                        <ArrowRight className="w-4 h-4 hidden xl:block" />
-                        <ArrowDown className="w-4 h-4 block xl:hidden" />
-                      </>
-                    )}
+                  <div className="flex items-center justify-center text-muted-foreground/40 w-6 sm:w-8 shrink-0">
+                    <ArrowRight className="w-4 h-4" />
                   </div>
                 )}
               </div>
@@ -317,47 +293,70 @@ export function TabWorkflow({ activity }: { activity: any }) {
               steps.map((step) => (
                 <div
                   key={step.id}
-                  className="flex flex-col sm:flex-row gap-3 p-3 sm:p-4 rounded-xl border bg-muted/10 hover:bg-muted/30 transition-colors"
+                  className="flex flex-col xl:flex-row items-start xl:items-center gap-3 p-3 rounded-lg border bg-muted/10 hover:bg-muted/30 transition-colors"
                 >
-                  <div className="flex items-start justify-center pt-1 hidden sm:flex">
-                    {getStatusIcon(step.status)}
-                  </div>
-                  <div className="flex-1 space-y-1.5">
-                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="sm:hidden">{getStatusIcon(step.status)}</div>
-                        <h4 className="font-semibold text-sm">{step.name}</h4>
+                  <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
+                    <div className="flex items-center justify-center w-5 shrink-0 hidden sm:flex">
+                      {getStatusIcon(step.status)}
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 w-full sm:w-[200px] shrink-0">
+                        <div className="sm:hidden shrink-0">{getStatusIcon(step.status)}</div>
+                        <h4 className="font-semibold text-sm truncate" title={step.name}>
+                          {step.name}
+                        </h4>
                       </div>
-                      <Badge
-                        className={cn('text-[10px] px-1.5 py-0 h-4', getStatusColor(step.status))}
+
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div
+                          className="text-xs text-muted-foreground flex items-center gap-1.5 w-[140px] shrink-0 truncate"
+                          title={step.assigneeName}
+                        >
+                          <UserCircle className="w-3.5 h-3.5 shrink-0" />
+                          <span className="truncate">{step.assigneeName}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-1.5 w-[130px] shrink-0">
+                          {step.date ? (
+                            <>
+                              <Clock className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{formatDate(step.date)}</span>
+                            </>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <Badge
+                          className={cn(
+                            'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap',
+                            getStatusColor(step.status),
+                          )}
+                        >
+                          {step.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+
+                  {step.comments && (
+                    <div className="w-full xl:w-auto xl:max-w-xs mt-2 xl:mt-0 p-2 xl:p-0 bg-background xl:bg-transparent rounded-lg border xl:border-none text-xs flex gap-2 items-start shrink-0">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5 xl:hidden" />
+                      <p
+                        className="text-foreground text-xs leading-relaxed line-clamp-2 xl:line-clamp-1"
+                        title={step.comments}
                       >
-                        {step.status}
-                      </Badge>
+                        {step.comments}
+                      </p>
                     </div>
-                    <div className="text-xs text-muted-foreground flex flex-col sm:flex-row sm:gap-4 gap-1">
-                      <span className="flex items-center gap-1">
-                        <UserCircle className="w-3.5 h-3.5" /> {step.assigneeName}
-                      </span>
-                      {step.date && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5" /> {formatDate(step.date)}
-                        </span>
-                      )}
-                    </div>
-                    {step.comments && (
-                      <div className="mt-2 p-2 sm:p-3 bg-background rounded-lg border text-xs flex gap-2 items-start shadow-sm">
-                        <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5" />
-                        <p className="text-foreground leading-relaxed">{step.comments}</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="sm:ml-auto flex items-start mt-2 sm:mt-0">
+                  )}
+
+                  <div className="w-full xl:w-auto mt-2 xl:mt-0 shrink-0">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-full sm:w-auto h-8 text-xs bg-background sm:bg-transparent border sm:border-transparent"
+                      className="w-full xl:w-auto h-8 text-xs bg-background xl:bg-transparent border xl:border-transparent"
                     >
-                      View Details
+                      View
                     </Button>
                   </div>
                 </div>
