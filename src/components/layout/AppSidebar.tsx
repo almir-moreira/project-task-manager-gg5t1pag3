@@ -6,6 +6,7 @@ import {
   Briefcase,
   Settings,
   LogOut,
+  LineChart,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -78,6 +79,20 @@ export function AppSidebar() {
                   </SidebarMenuSub>
                 )}
               </SidebarMenuItem>
+              {profile?.role === 'Administrator' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname.startsWith('/monitoring')}
+                    tooltip="Monitoring Dashboard"
+                  >
+                    <Link to="/monitoring">
+                      <LineChart />
+                      <span>Monitoring Dashboard</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild

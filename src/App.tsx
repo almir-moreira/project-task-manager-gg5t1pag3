@@ -11,6 +11,7 @@ import Layout from './components/Layout'
 import TasksPage from './pages/tasks/TasksPage'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import AdminPage from './pages/admin/AdminPage'
+import MonitoringPage from './pages/monitoring/MonitoringPage'
 import LoginPage from './pages/auth/LoginPage'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/monitoring" element={<MonitoringPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
