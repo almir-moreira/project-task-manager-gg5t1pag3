@@ -29,6 +29,9 @@ import { useToast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { FunnelChart, Funnel, LabelList, Cell } from 'recharts'
+import { SimpleCrud } from '@/components/admin/SimpleCrud'
+import { ProjectsCrud } from '@/components/admin/ProjectsCrud'
+import { UsersCrud } from '@/components/admin/UsersCrud'
 
 const STAGES = ['Preparation', 'Feedback', 'Review', 'Approval', 'Done']
 
@@ -229,12 +232,27 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="mb-6 h-12">
+        <TabsList className="mb-6 h-auto flex-wrap gap-2">
           <TabsTrigger value="dashboard" className="px-6 py-2.5">
             Monitoring Dashboard
           </TabsTrigger>
           <TabsTrigger value="configuration" className="px-6 py-2.5">
             Workflow Configuration
+          </TabsTrigger>
+          <TabsTrigger value="programmes" className="px-6 py-2.5">
+            Programmes
+          </TabsTrigger>
+          <TabsTrigger value="projects" className="px-6 py-2.5">
+            Projects
+          </TabsTrigger>
+          <TabsTrigger value="users" className="px-6 py-2.5">
+            Users
+          </TabsTrigger>
+          <TabsTrigger value="statuses" className="px-6 py-2.5">
+            Statuses
+          </TabsTrigger>
+          <TabsTrigger value="categories" className="px-6 py-2.5">
+            Categories
           </TabsTrigger>
         </TabsList>
 
@@ -589,6 +607,36 @@ export default function AdminPage() {
                 </Table>
               )}
             </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="programmes">
+          <div className="bg-card border rounded-xl p-6">
+            <SimpleCrud table="programmes" title="Programmes" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="projects">
+          <div className="bg-card border rounded-xl p-6">
+            <ProjectsCrud />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="users">
+          <div className="bg-card border rounded-xl p-6">
+            <UsersCrud />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="statuses">
+          <div className="bg-card border rounded-xl p-6">
+            <SimpleCrud table="statuses" title="Statuses" />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="categories">
+          <div className="bg-card border rounded-xl p-6">
+            <SimpleCrud table="categories" title="Categories" />
           </div>
         </TabsContent>
       </Tabs>

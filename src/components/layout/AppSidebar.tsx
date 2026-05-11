@@ -15,6 +15,9 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarGroup,
   SidebarGroupContent,
 } from '@/components/ui/sidebar'
@@ -22,14 +25,6 @@ import { useAuth } from '@/hooks/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-
-const navItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Activities', url: '/tasks', icon: CheckSquare },
-  { title: 'Programs', url: '/admin', icon: FolderKanban },
-  { title: 'Projects', url: '/admin', icon: Briefcase },
-  { title: 'Administration', url: '/admin', icon: Settings },
-]
 
 export function AppSidebar() {
   const location = useLocation()
@@ -60,21 +55,41 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive =
-                  location.pathname === item.url ||
-                  (item.url !== '/' && location.pathname.startsWith(item.url))
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
-                      <Link to={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname === '/'} tooltip="Dashboard">
+                  <Link to="/">
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+                {profile?.role === 'Administrator' && (
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={location.pathname.startsWith('/admin')}
+                      >
+                        <Link to="/admin">
+                          <Settings className="w-4 h-4 mr-2" />
+                          <span>Administration</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                )}
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith('/tasks')}
+                  tooltip="Activities"
+                >
+                  <Link to="/tasks">
+                    <CheckSquare />
+                    <span>Activities</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
