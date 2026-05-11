@@ -38,7 +38,12 @@ export function TabWorkflow({ activity }: { activity: any }) {
     const fetchAll = async () => {
       const [profilesRes, workflowsRes, activeRes] = await Promise.all([
         supabase.from('profiles').select('id, name'),
-        supabase.from('workflows').select('*').order('stage').order('step'),
+        supabase
+          .from('workflows')
+          .select('*')
+          .or(`activity_id.eq.${activity.id},activity_id.is.null`)
+          .order('stage')
+          .order('step'),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
 
