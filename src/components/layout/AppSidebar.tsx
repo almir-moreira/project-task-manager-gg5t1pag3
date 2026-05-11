@@ -63,21 +63,6 @@ export function AppSidebar() {
                     <span>Dashboard</span>
                   </Link>
                 </SidebarMenuButton>
-                {profile?.role === 'Administrator' && (
-                  <SidebarMenuSub>
-                    <SidebarMenuSubItem>
-                      <SidebarMenuSubButton
-                        asChild
-                        isActive={location.pathname.startsWith('/admin')}
-                      >
-                        <Link to="/admin">
-                          <Settings className="w-4 h-4 mr-2" />
-                          <span>Administration</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  </SidebarMenuSub>
-                )}
               </SidebarMenuItem>
               {profile?.role === 'Administrator' && (
                 <SidebarMenuItem>
@@ -105,6 +90,20 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {profile?.role === 'Administrator' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname.startsWith('/admin')}
+                    tooltip="Administration"
+                  >
+                    <Link to="/admin">
+                      <Settings />
+                      <span>Administration</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
