@@ -8,6 +8,73 @@ import {
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
 import { Plus, Trash2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Input } from '@/components/ui/input'
+
+function CurrencyMaskInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: number | null | undefined
+  onChange: (val: number | null) => void
+  placeholder?: string
+}) {
+  const format = (v: number | null | undefined) => {
+    if (v === null || v === undefined || isNaN(v)) return ''
+    return new Intl.NumberFormat('en-IE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(v)
+  }
+
+  const [displayValue, setDisplayValue] = useState(format(value))
+  const [isFocused, setIsFocused] = useState(false)
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(format(value))
+    }
+  }, [value, isFocused])
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    const parsed = parseFloat(displayValue.replace(/,/g, ''))
+    if (!isNaN(parsed)) {
+      onChange(parsed)
+      setDisplayValue(format(parsed))
+    } else {
+      onChange(null)
+      setDisplayValue('')
+    }
+  }
+
+  const handleFocus = () => {
+    setIsFocused(true)
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      setDisplayValue(value.toString())
+    } else {
+      setDisplayValue('')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-medium">
+        €
+      </span>
+      <Input
+        type="text"
+        value={displayValue}
+        onChange={(e) => setDisplayValue(e.target.value.replace(/[^0-9.,]/g, ''))}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        className="h-9 pl-6 text-xs"
+        placeholder={placeholder || '0.00'}
+      />
+    </div>
+  )
+}
 
 export function ActivityBudgetLines({
   budgetLines,
@@ -53,30 +120,12 @@ export function ActivityBudgetLines({
                     onValueChange={(v) => onUpdate(line.id, 'cost_center_id', v)}
                   >
                     <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Select code" />
                     </SelectTrigger>
                     <SelectContent>
                       {masterData.costCenters?.map((cc: any) => (
                         <SelectItem key={cc.id} value={cc.id}>
-                          {cc.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Budget Line</Label>
-                  <Select
-                    value={line.budget_line_id || ''}
-                    onValueChange={(v) => onUpdate(line.id, 'budget_line_id', v)}
-                  >
-                    <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {masterData.budgetLines?.map((bl: any) => (
-                        <SelectItem key={bl.id} value={bl.id}>
-                          {bl.name}
+                          {cc.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -89,12 +138,12 @@ export function ActivityBudgetLines({
                     onValueChange={(v) => onUpdate(line.id, 'workorder_id', v)}
                   >
                     <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Select code" />
                     </SelectTrigger>
                     <SelectContent>
                       {masterData.workorders?.map((wo: any) => (
                         <SelectItem key={wo.id} value={wo.id}>
-                          {wo.name}
+                          {wo.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -107,16 +156,24 @@ export function ActivityBudgetLines({
                     onValueChange={(v) => onUpdate(line.id, 'account_id', v)}
                   >
                     <SelectTrigger className="h-9 text-xs">
-                      <SelectValue placeholder="Select" />
+                      <SelectValue placeholder="Select code" />
                     </SelectTrigger>
                     <SelectContent>
                       {masterData.accounts?.map((ac: any) => (
                         <SelectItem key={ac.id} value={ac.id}>
-                          {ac.name}
+                          {ac.code}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="grid gap-1.5">
+                  <Label className="text-xs text-muted-foreground">Amount</Label>
+                  <CurrencyMaskInput
+                    value={line.amount}
+                    onChange={(val) => onUpdate(line.id, 'amount', val)}
+                    placeholder="0.00"
+                  />
                 </div>
               </div>
               <Button

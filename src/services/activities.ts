@@ -13,6 +13,8 @@ export async function getActivities() {
     assignee:profiles!activities_assignee_id_fkey(name),
     programme:programmes(name),
     type:task_types(name),
+    project_obj:projects(name),
+    category_obj:categories(name),
     activity_budget_lines(*)
   `)
     .order('created_at', { ascending: false })
@@ -29,6 +31,8 @@ export async function getActivity(id: string) {
     assignee:profiles!activities_assignee_id_fkey(name),
     programme:programmes(name),
     type:task_types(name),
+    project_obj:projects(name),
+    category_obj:categories(name),
     activity_budget_lines(*)
   `)
     .eq('id', id)
@@ -43,6 +47,8 @@ export async function getActivity(id: string) {
       assignee:profiles!activities_assignee_id_fkey(name),
       programme:programmes(name),
       type:task_types(name),
+      project_obj:projects(name),
+      category_obj:categories(name),
       activity_budget_lines(*)
     `)
       .eq('task_number', id)

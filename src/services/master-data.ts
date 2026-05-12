@@ -9,6 +9,8 @@ export async function getMasterData() {
     { data: budgetLines },
     { data: workorders },
     { data: accounts },
+    { data: projects },
+    { data: categories },
   ] = await Promise.all([
     supabase.from('profiles').select('*').order('name'),
     supabase.from('programmes').select('*').order('name'),
@@ -17,6 +19,8 @@ export async function getMasterData() {
     supabase.from('budget_lines').select('*').order('name'),
     supabase.from('workorders').select('*').order('name'),
     supabase.from('accounts').select('*').order('name'),
+    supabase.from('projects').select('*').order('name'),
+    supabase.from('categories').select('*').order('name'),
   ])
 
   return {
@@ -27,5 +31,7 @@ export async function getMasterData() {
     budgetLines: budgetLines || [],
     workorders: workorders || [],
     accounts: accounts || [],
+    projects: projects || [],
+    categories: categories || [],
   }
 }

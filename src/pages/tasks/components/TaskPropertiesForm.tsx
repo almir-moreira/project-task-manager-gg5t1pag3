@@ -13,6 +13,71 @@ import { useState, useEffect } from 'react'
 import { getMasterData } from '@/services/master-data'
 import { updateActivity, getActivities } from '@/services/activities'
 
+function CurrencyMaskInput({
+  value,
+  onChange,
+  placeholder,
+}: {
+  value: number | null | undefined
+  onChange: (val: number | null) => void
+  placeholder?: string
+}) {
+  const format = (v: number | null | undefined) => {
+    if (v === null || v === undefined || isNaN(v)) return ''
+    return new Intl.NumberFormat('en-IE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(v)
+  }
+
+  const [displayValue, setDisplayValue] = useState(format(value))
+  const [isFocused, setIsFocused] = useState(false)
+
+  useEffect(() => {
+    if (!isFocused) {
+      setDisplayValue(format(value))
+    }
+  }, [value, isFocused])
+
+  const handleBlur = () => {
+    setIsFocused(false)
+    const parsed = parseFloat(displayValue.replace(/,/g, ''))
+    if (!isNaN(parsed)) {
+      onChange(parsed)
+      setDisplayValue(format(parsed))
+    } else {
+      onChange(null)
+      setDisplayValue('')
+    }
+  }
+
+  const handleFocus = () => {
+    setIsFocused(true)
+    if (value !== null && value !== undefined && !isNaN(value)) {
+      setDisplayValue(value.toString())
+    } else {
+      setDisplayValue('')
+    }
+  }
+
+  return (
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">
+        €
+      </span>
+      <Input
+        type="text"
+        value={displayValue}
+        onChange={(e) => setDisplayValue(e.target.value.replace(/[^0-9.,]/g, ''))}
+        onBlur={handleBlur}
+        onFocus={handleFocus}
+        className="h-9 pl-7"
+        placeholder={placeholder || '0.00'}
+      />
+    </div>
+  )
+}
+
 const allStatuses = [
   'To Do',
   'In Progress',
@@ -115,14 +180,21 @@ export function ActivityPropertiesForm({
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Project
           </Label>
-          <Input
-            defaultValue={activity.project || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.project && handleChange('project', e.target.value)
-            }
-            className="h-9"
-            placeholder="Project name"
-          />
+          <Select
+            value={activity.project_id || ''}
+            onValueChange={(v) => handleChange('project_id', v)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select project" />
+            </SelectTrigger>
+            <SelectContent>
+              {masterData.projects?.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid gap-2">
@@ -174,18 +246,32 @@ export function ActivityPropertiesForm({
           <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
             Category
           </Label>
-          <Select value={activity.type_id || ''} onValueChange={(v) => handleChange('type_id', v)}>
+          <Select
+            value={activity.category_id || ''}
+            onValueChange={(v) => handleChange('category_id', v)}
+          >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              {masterData.taskTypes.map((t: any) => (
-                <SelectItem key={t.id} value={t.id}>
-                  {t.name}
+              {masterData.categories?.map((c: any) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </div>
+
+        <div className="grid gap-2">
+          <Label className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+            Cost Estimate
+          </Label>
+          <CurrencyMaskInput
+            value={activity.cost_estimated}
+            onChange={(val) => handleChange('cost_estimated', val)}
+            placeholder="0.00"
+          />
         </div>
 
         <div className="grid gap-2">
