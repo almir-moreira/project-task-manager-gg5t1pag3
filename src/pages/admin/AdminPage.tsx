@@ -18,14 +18,6 @@ import { SimpleCrud } from '@/components/admin/SimpleCrud'
 import { ProjectsCrud } from '@/components/admin/ProjectsCrud'
 import { UsersCrud } from '@/components/admin/UsersCrud'
 import { CodeNameCrud } from '@/components/admin/CodeNameCrud'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
 
 interface Workflow {
   id: string
@@ -33,24 +25,17 @@ interface Workflow {
   stage: number
   step: number
   category: string
-  activity_id?: string | null
-  activities?: {
-    task_number: string | null
-    activity_name: string
-  } | null
 }
 
 type SortKey = keyof Workflow
 
 export default function AdminPage() {
   const [workflows, setWorkflows] = useState<Workflow[]>([])
-  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [role, setRole] = useState('')
   const [step, setStep] = useState('')
   const [stageOrder, setStageOrder] = useState('')
   const [category, setCategory] = useState('Review')
-  const [activityId, setActivityId] = useState('none')
   const { toast } = useToast()
 
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -58,7 +43,6 @@ export default function AdminPage() {
   const [editStep, setEditStep] = useState('')
   const [editStageOrder, setEditStageOrder] = useState('')
   const [editCategory, setEditCategory] = useState('')
-  const [editActivityId, setEditActivityId] = useState('none')
 
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' }>({
     key: 'stage',
@@ -71,25 +55,13 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true)
-    const [wfRes, actRes] = await Promise.all([
-      supabase
-        .from('workflows')
-        .select('*, activities(task_number, activity_name)')
-        .order('stage')
-        .order('step'),
-      supabase
-        .from('activities')
-        .select('id, task_number, activity_name')
-        .order('created_at', { ascending: false }),
-    ])
+
+    const wfRes = await supabase.from('workflows').select('*').order('stage').order('step')
 
     if (wfRes.error) {
       toast({ title: 'Error fetching workflows', variant: 'destructive' })
     } else {
       setWorkflows(wfRes.data || [])
-    }
-    if (actRes.data) {
-      setActivities(actRes.data)
     }
     setLoading(false)
   }
@@ -128,9 +100,8 @@ export default function AdminPage() {
         step: parseInt(step),
         category,
         stage: parseInt(stageOrder),
-        activity_id: activityId === 'none' ? null : activityId,
       })
-      .select('*, activities(task_number, activity_name)')
+      .select('*')
       .single()
 
     if (error) {
@@ -140,7 +111,6 @@ export default function AdminPage() {
       setRole('')
       setStep('')
       setStageOrder('')
-      setActivityId('none')
       toast({ title: 'Workflow added successfully' })
     }
   }
@@ -161,7 +131,6 @@ export default function AdminPage() {
     setEditStep(String(wf.step || 1))
     setEditStageOrder(String(wf.stage))
     setEditCategory(wf.category || '')
-    setEditActivityId(wf.activity_id || 'none')
   }
 
   const cancelEdit = () => {
@@ -178,10 +147,9 @@ export default function AdminPage() {
         step: parseInt(editStep),
         category: editCategory,
         stage: parseInt(editStageOrder),
-        activity_id: editActivityId === 'none' ? null : editActivityId,
       })
       .eq('id', id)
-      .select('*, activities(task_number, activity_name)')
+      .select('*')
       .single()
 
     if (error) {
@@ -295,23 +263,6 @@ export default function AdminPage() {
                     min="1"
                   />
                 </div>
-                <div className="w-full md:w-48 space-y-2">
-                  <label className="text-sm font-medium">Activity (Optional)</label>
-                  <Select value={activityId} onValueChange={setActivityId}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Global" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Global (All)</SelectItem>
-                      {activities.map((a) => (
-                        <SelectItem key={a.id} value={a.id}>
-                          {a.task_number ? `${a.task_number} - ` : ''}
-                          {a.activity_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
                 <Button
                   type="submit"
                   disabled={!role || !step || !stageOrder || !category}
@@ -361,7 +312,6 @@ export default function AdminPage() {
                           Category <ArrowUpDown className="h-3 w-3" />
                         </div>
                       </TableHead>
-                      <TableHead>Activity</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -403,25 +353,6 @@ export default function AdminPage() {
                                 className="h-8"
                               />
                             </TableCell>
-                            <TableCell>
-                              <Select value={editActivityId} onValueChange={setEditActivityId}>
-                                <SelectTrigger className="h-8 w-32">
-                                  <SelectValue placeholder="Global" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Global</SelectItem>
-                                  {activities.map((a) => (
-                                    <SelectItem
-                                      key={a.id}
-                                      value={a.id}
-                                      className="truncate max-w-[200px]"
-                                    >
-                                      {a.task_number || a.activity_name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button
                                 variant="ghost"
@@ -452,17 +383,6 @@ export default function AdminPage() {
                             </TableCell>
                             <TableCell>{wf.role}</TableCell>
                             <TableCell>{wf.category}</TableCell>
-                            <TableCell>
-                              {wf.activities ? (
-                                <span className="text-xs font-medium bg-secondary text-secondary-foreground px-2 py-1 rounded-md">
-                                  {wf.activities.task_number || wf.activities.activity_name}
-                                </span>
-                              ) : (
-                                <Badge variant="outline" className="text-xs">
-                                  Global
-                                </Badge>
-                              )}
-                            </TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button
                                 variant="ghost"
@@ -487,7 +407,7 @@ export default function AdminPage() {
                     ))}
                     {workflows.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                           No workflow stages configured yet.
                         </TableCell>
                       </TableRow>
