@@ -32,7 +32,6 @@ export const mockTasks: Task[] = [
     purpose: 'Quarterly financial compliance',
     endDate: '2026-07-15',
     costCenterId: 'CC-100',
-    budgetLineId: 'BL-200',
     workorderId: 'WO-300',
     accountId: 'ACC-400',
     comments: 'Requires attention from SPM',

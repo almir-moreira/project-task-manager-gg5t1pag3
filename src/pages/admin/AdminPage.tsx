@@ -199,9 +199,6 @@ export default function AdminPage() {
           <TabsTrigger value="accounts" className="px-6 py-2.5">
             Accounts
           </TabsTrigger>
-          <TabsTrigger value="budget-lines" className="px-6 py-2.5">
-            Budget Lines
-          </TabsTrigger>
           <TabsTrigger value="cost-centers" className="px-6 py-2.5">
             Cost Centers
           </TabsTrigger>
@@ -452,12 +449,6 @@ export default function AdminPage() {
         <TabsContent value="accounts">
           <div className="bg-card border rounded-xl p-6">
             <CodeNameCrud table="accounts" title="Accounts" />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="budget-lines">
-          <div className="bg-card border rounded-xl p-6">
-            <CodeNameCrud table="budget_lines" title="Budget Lines" />
           </div>
         </TabsContent>
 

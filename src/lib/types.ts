@@ -40,7 +40,6 @@ export interface Task {
   activityName?: string
   endDate?: string
   costCenterId?: string
-  budgetLineId?: string
   workorderId?: string
   accountId?: string
   comments?: string
