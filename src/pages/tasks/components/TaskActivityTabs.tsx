@@ -12,14 +12,14 @@ import {
   Paperclip,
   GitCommit,
   Clock,
+  ClipboardCheck,
 } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent } from '@/components/ui/card'
 import { TabHistory } from './tabs/TabHistory'
 import { TabFeedback } from './tabs/TabFeedback'
 import { TabComments } from './tabs/TabComments'
-import { TabApproval } from './tabs/TabApproval'
-import { TabFinalReview } from './tabs/TabFinalReview'
+import { TabReviewApproval } from './tabs/TabReviewApproval'
 import { TabEventDetails, TabRBM, TabInvolvedParties, TabSGParticipation } from './tabs/TabGeneric'
 import { TabAttachments } from './tabs/TabAttachments'
 import { TabActivityDetails } from './tabs/TabTaskDetails'
@@ -40,8 +40,12 @@ const tabsConfig = [
       <TabFeedback activity={activity} onUpdate={onUpdate} task={task} />
     ),
   },
-  { id: 'final-review', label: 'Final Review', icon: CheckSquare, component: TabFinalReview },
-  { id: 'approval', label: 'Approval', icon: ThumbsUp, component: TabApproval },
+  {
+    id: 'review-approval',
+    label: 'Review & Approval',
+    icon: ClipboardCheck,
+    component: TabReviewApproval,
+  },
   { id: 'comments', label: 'Comments', icon: MessageCircle, component: TabComments },
   { id: 'attachments', label: 'Attachments', icon: Paperclip, component: TabAttachments },
   { id: 'workflow', label: 'Review Workflow', icon: GitCommit, component: TabWorkflow },
