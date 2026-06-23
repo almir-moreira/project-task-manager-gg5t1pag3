@@ -54,20 +54,12 @@ const tabsConfig = [
 export function ActivityTabs({
   activity,
   onUpdate,
-  leftPanel,
 }: {
   activity: any
   onUpdate: (a: any) => void
-  leftPanel?: React.ReactNode
 }) {
   return (
-    <div className="flex flex-col xl:flex-row gap-6 w-full flex-1 h-full min-h-0">
-      {leftPanel && (
-        <div className="w-full xl:w-[320px] 2xl:w-[350px] flex flex-col gap-6 flex-shrink-0 xl:h-[calc(100vh-10rem)] xl:overflow-y-auto pb-4 pr-1">
-          {leftPanel}
-        </div>
-      )}
-
+    <div className="flex flex-col gap-6 w-full flex-1 h-full min-h-0">
       <div className="flex-1 w-full min-w-0 flex flex-col h-full xl:h-[calc(100vh-10rem)]">
         <Tabs
           defaultValue="activity-details"

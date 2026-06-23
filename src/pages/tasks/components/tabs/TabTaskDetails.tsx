@@ -17,7 +17,23 @@ import {
   addActivityBudgetLine,
   updateActivityBudgetLine,
   removeActivityBudgetLine,
+  getActivities,
 } from '@/services/activities'
+import { Badge } from '@/components/ui/badge'
+import { getStatusColor } from '@/lib/status-colors'
+
+const allStatuses = [
+  'To Do',
+  'In Progress',
+  'On Hold',
+  'SPM Clearance',
+  'Head Clearance',
+  'Head Approval',
+  'CPO Approval',
+  'SG Approval',
+  'Rejected',
+  'Done',
+]
 
 function CurrencyMaskInput({
   value,
@@ -92,10 +108,12 @@ export function TabActivityDetails({
   onUpdate: (a: any) => void
 }) {
   const [masterData, setMasterData] = useState<any>(null)
+  const [activitiesList, setActivitiesList] = useState<any[]>([])
   const [budgetLines, setBudgetLines] = useState<any[]>(activity?.activity_budget_lines || [])
 
   useEffect(() => {
     getMasterData().then(setMasterData)
+    getActivities().then(setActivitiesList)
   }, [])
 
   useEffect(() => {
@@ -150,48 +168,231 @@ export function TabActivityDetails({
     return <div className="p-4 text-sm text-muted-foreground">Loading details...</div>
 
   return (
-    <div className="space-y-6 max-w-5xl animate-fade-in pb-10">
-      <div>
-        <h3 className="text-lg font-medium">Activity Details</h3>
-      </div>
+    <div className="space-y-8 max-w-6xl animate-fade-in pb-10">
+      {/* Overview Section */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-medium border-b border-border pb-2">Core Metadata</h3>
 
-      <div className="space-y-5">
-        <div className="grid gap-2">
-          <Label className="text-sm font-semibold">Purpose</Label>
-          <Input
-            defaultValue={activity.purpose || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.purpose && handleChange('purpose', e.target.value)
-            }
-            placeholder="Enter purpose of the activity"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Task Number</Label>
+            <Input
+              readOnly
+              value={activity.task_number || activity.id.slice(0, 8)}
+              className="bg-muted text-muted-foreground font-mono"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Status</Label>
+              <Badge
+                className={`px-2 py-0 text-[10px] ${getStatusColor(activity.status)} border-0 font-medium`}
+              >
+                {activity.status || 'To Do'}
+              </Badge>
+            </div>
+            <Select
+              value={activity.status || 'To Do'}
+              onValueChange={(v) => handleChange('status', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {allStatuses.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Priority</Label>
+            <Select
+              value={activity.priority || 'Medium'}
+              onValueChange={(v) => handleChange('priority', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select priority" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Low">Low</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Urgent">Urgent</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Sub Activity ID</Label>
+            <Select
+              value={activity.sub_task_id || 'none'}
+              onValueChange={(v) => handleChange('sub_task_id', v === 'none' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select activity" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {activitiesList
+                  .filter((a) => a.id !== activity.id)
+                  .map((a: any) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.task_number || a.id.slice(0, 8)} - {a.activity_name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+
+      {/* Organization Section */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-medium border-b border-border pb-2">Organization</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Project</Label>
+            <Select
+              value={activity.project_id || ''}
+              onValueChange={(v) => handleChange('project_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select project" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.projects?.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Programme</Label>
+            <Select
+              value={activity.programme_id || ''}
+              onValueChange={(v) => handleChange('programme_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select programme" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.programmes?.map((p: any) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Category</Label>
+            <Select
+              value={activity.category_id || ''}
+              onValueChange={(v) => handleChange('category_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select category" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.categories?.map((c: any) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Project Owner</Label>
+            <Select
+              value={activity.project_owner_id || ''}
+              onValueChange={(v) => handleChange('project_owner_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select owner" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.profiles?.map((u: any) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </section>
+
+      {/* Details Section */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-medium border-b border-border pb-2">Activity Details</h3>
+
+        <div className="grid gap-4">
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Activity Name</Label>
+            <Input
+              defaultValue={activity.activity_name || ''}
+              onBlur={(e) =>
+                e.target.value !== activity.activity_name &&
+                handleChange('activity_name', e.target.value)
+              }
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Purpose</Label>
+            <Input
+              defaultValue={activity.purpose || ''}
+              onBlur={(e) =>
+                e.target.value !== activity.purpose && handleChange('purpose', e.target.value)
+              }
+              placeholder="Enter purpose of the activity"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Description</Label>
+            <Textarea
+              defaultValue={activity.short_description || ''}
+              onBlur={(e) =>
+                e.target.value !== activity.short_description &&
+                handleChange('short_description', e.target.value)
+              }
+              placeholder="Provide a detailed description..."
+              className="min-h-[100px] resize-y"
+            />
+          </div>
         </div>
 
-        <div className="grid gap-2">
-          <Label className="text-sm font-semibold">Activity Name</Label>
-          <Input
-            defaultValue={activity.activity_name || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.activity_name &&
-              handleChange('activity_name', e.target.value)
-            }
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label className="text-sm font-semibold">Description</Label>
-          <Textarea
-            defaultValue={activity.short_description || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.short_description &&
-              handleChange('short_description', e.target.value)
-            }
-            placeholder="Provide a detailed description..."
-            className="min-h-[100px] resize-y"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end mt-4">
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Assignee</Label>
+            <Select
+              value={activity.assignee_id || ''}
+              onValueChange={(v) => handleChange('assignee_id', v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select assignee" />
+              </SelectTrigger>
+              <SelectContent>
+                {masterData.profiles?.map((u: any) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-2">
             <Label className="text-sm font-semibold">Start Date</Label>
             <Input
@@ -212,6 +413,17 @@ export function TabActivityDetails({
               }
             />
           </div>
+          <div className="grid gap-2">
+            <Label className="text-sm font-semibold">Cost Estimated</Label>
+            <CurrencyMaskInput
+              value={activity.cost_estimated}
+              onChange={(val) => handleChange('cost_estimated', val)}
+              placeholder="0.00"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-md border border-input h-10">
             <Label className="text-sm font-medium">In Budget</Label>
             <Switch
@@ -228,36 +440,7 @@ export function TabActivityDetails({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Assignee</Label>
-            <Select
-              value={activity.assignee_id || ''}
-              onValueChange={(v) => handleChange('assignee_id', v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select assignee" />
-              </SelectTrigger>
-              <SelectContent>
-                {masterData.profiles.map((u: any) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Cost Estimated</Label>
-            <CurrencyMaskInput
-              value={activity.cost_estimated}
-              onChange={(val) => handleChange('cost_estimated', val)}
-              placeholder="0.00"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-2">
+        <div className="grid gap-2 mt-4">
           <Label className="text-sm font-semibold">Comments</Label>
           <Textarea
             defaultValue={activity.comments || ''}
@@ -268,7 +451,11 @@ export function TabActivityDetails({
             placeholder="Add internal notes or comments regarding this activity..."
           />
         </div>
+      </section>
 
+      {/* Budget Lines Section */}
+      <section className="space-y-4">
+        <h3 className="text-lg font-medium border-b border-border pb-2">Budget Lines</h3>
         <ActivityBudgetLines
           budgetLines={budgetLines}
           masterData={masterData}
@@ -276,7 +463,7 @@ export function TabActivityDetails({
           onUpdate={handleUpdateBudgetLine}
           onRemove={handleRemoveBudgetLine}
         />
-      </div>
+      </section>
     </div>
   )
 }

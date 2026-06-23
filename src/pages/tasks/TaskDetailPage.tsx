@@ -1,13 +1,21 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getActivity, updateActivity } from '@/services/activities'
-import { ActivityPropertiesForm } from './components/TaskPropertiesForm'
+import { getMasterData } from '@/services/master-data'
 import { ActivityTabs } from './components/TaskActivityTabs'
 import { ArrowLeft, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 
 const STAGES = ['Preparation', 'Feedback', 'Review', 'Approval', 'Done']
 
@@ -21,6 +29,11 @@ export default function ActivityDetailPage() {
 
   const [workflows, setWorkflows] = useState<any[]>([])
   const [activityWorkflows, setActivityWorkflows] = useState<any[]>([])
+  const [masterData, setMasterData] = useState<any>(null)
+
+  useEffect(() => {
+    getMasterData().then(setMasterData)
+  }, [])
 
   useEffect(() => {
     if (id) {
@@ -120,6 +133,11 @@ export default function ActivityDetailPage() {
     }
   }
 
+  const projectName = useMemo(() => {
+    if (!activity?.project_id || !masterData?.projects) return 'Project'
+    return masterData.projects.find((p: any) => p.id === activity.project_id)?.name || 'Project'
+  }, [activity?.project_id, masterData])
+
   if (loading) {
     return <div className="p-6 flex justify-center text-muted-foreground">Loading activity...</div>
   }
@@ -140,13 +158,39 @@ export default function ActivityDetailPage() {
   }
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 max-w-[1600px] mx-auto min-h-[calc(100vh-3.5rem)] flex flex-col animate-fade-in">
+    <div className="p-4 lg:p-6 space-y-4 max-w-[1600px] w-full mx-auto min-h-[calc(100vh-3.5rem)] flex flex-col animate-fade-in">
+      <div className="mb-2">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/tasks">Activities List</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to={`/tasks?project=${activity.project_id}`}>{projectName}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>
+                {activity.activity_name || activity.task_number || 'Activity Details'}
+              </BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </div>
+
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-2">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="h-8 w-8">
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-xl font-bold tracking-tight">Activity Matrix</h1>
+          <h1 className="text-xl font-bold tracking-tight">
+            {activity.activity_name || 'Activity Matrix'}
+          </h1>
           <Badge
             variant="outline"
             className="ml-2 font-medium bg-blue-50 text-blue-700 border-blue-200"
@@ -170,11 +214,7 @@ export default function ActivityDetailPage() {
       </div>
 
       <div className="flex-1 w-full mb-6 flex flex-col">
-        <ActivityTabs
-          activity={activity}
-          onUpdate={setActivity}
-          leftPanel={<ActivityPropertiesForm activity={activity} onUpdate={setActivity} />}
-        />
+        <ActivityTabs activity={activity} onUpdate={setActivity} />
       </div>
     </div>
   )
