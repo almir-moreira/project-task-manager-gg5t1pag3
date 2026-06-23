@@ -30,7 +30,6 @@ const tabsConfig = [
   { id: 'activity-details', label: 'Activity Details', icon: Info, component: TabActivityDetails },
   { id: 'event', label: 'Event Details', icon: Calendar, component: TabEventDetails },
   { id: 'parties', label: 'Involved Parties & SG', icon: Users, component: TabInvolvedParties },
-  { id: 'rbm', label: 'RBM', icon: Target, component: TabRBM },
   {
     id: 'feedback',
     label: 'Feedback',
@@ -39,14 +38,15 @@ const tabsConfig = [
       <TabFeedback activity={activity} onUpdate={onUpdate} task={task} />
     ),
   },
+  { id: 'comments', label: 'Comments', icon: MessageCircle, component: TabComments },
+  { id: 'attachments', label: 'Attachments', icon: Paperclip, component: TabAttachments },
+  { id: 'rbm', label: 'RBM', icon: Target, component: TabRBM },
   {
     id: 'review-approval',
     label: 'Review & Approval',
     icon: ClipboardCheck,
     component: TabReviewApproval,
   },
-  { id: 'comments', label: 'Comments', icon: MessageCircle, component: TabComments },
-  { id: 'attachments', label: 'Attachments', icon: Paperclip, component: TabAttachments },
   { id: 'workflow', label: 'Review Workflow', icon: GitCommit, component: TabWorkflow },
   { id: 'history', label: 'History', icon: Clock, component: TabHistory },
 ]
