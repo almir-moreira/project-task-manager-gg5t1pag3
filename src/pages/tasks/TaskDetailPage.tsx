@@ -164,7 +164,7 @@ export default function ActivityDetailPage() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
-                <Link to="/tasks">Activities List</Link>
+                <Link to="/tasks">Projects</Link>
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
