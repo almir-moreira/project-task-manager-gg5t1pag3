@@ -151,7 +151,7 @@ export function TabInvolvedParties({
 
   return (
     <div className="space-y-6 max-w-3xl animate-fade-in pb-10">
-      <h3 className="text-lg font-medium">Involved Parties</h3>
+      <h3 className="text-lg font-medium">Involved Parties & SG Participation</h3>
 
       <div className="space-y-4 border p-4 rounded-md">
         <div className="flex items-center space-x-2">
@@ -201,6 +201,9 @@ export function TabInvolvedParties({
             Protocol
           </Label>
         </div>
+      </div>
+
+      <div className="space-y-4 border p-4 rounded-md">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="sg"
@@ -208,9 +211,35 @@ export function TabInvolvedParties({
             onCheckedChange={(v) => handleChange('inv_sg', v)}
           />
           <Label htmlFor="sg" className="font-semibold">
-            SG
+            SG Participation
           </Label>
         </div>
+        {activity.inv_sg && (
+          <div className="grid gap-4 pl-6 pt-2 animate-fade-in duration-200">
+            <div className="grid gap-2">
+              <Label>SG Role</Label>
+              <Input
+                defaultValue={activity?.sg_role || ''}
+                onBlur={(e) =>
+                  e.target.value !== activity?.sg_role && handleChange('sg_role', e.target.value)
+                }
+                placeholder="Describe SG Role"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Speaking Notes / Welcome Remarks</Label>
+              <Textarea
+                defaultValue={activity?.sg_speaking_notes || ''}
+                onBlur={(e) =>
+                  e.target.value !== activity?.sg_speaking_notes &&
+                  handleChange('sg_speaking_notes', e.target.value)
+                }
+                className="min-h-[150px]"
+                placeholder="Enter notes..."
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4 border p-4 rounded-md">
@@ -419,51 +448,6 @@ export function TabRBM({ activity, onUpdate }: { activity?: any; onUpdate?: (a: 
           }
           placeholder="List the tangible deliverables..."
           className="min-h-[120px]"
-        />
-      </div>
-    </div>
-  )
-}
-
-export function TabSGParticipation({
-  activity,
-  onUpdate,
-}: {
-  activity?: any
-  onUpdate?: (a: any) => void
-}) {
-  const handleChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
-    try {
-      const updated = await updateActivity(activity.id, { [field]: val })
-      onUpdate(updated)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-  return (
-    <div className="space-y-6 max-w-3xl animate-fade-in">
-      <h3 className="text-lg font-medium">SG Participation</h3>
-      <div className="grid gap-2">
-        <Label>SG Role</Label>
-        <Input
-          defaultValue={activity?.sg_role || ''}
-          onBlur={(e) =>
-            e.target.value !== activity?.sg_role && handleChange('sg_role', e.target.value)
-          }
-          placeholder="Describe SG Role"
-        />
-      </div>
-      <div className="grid gap-2">
-        <Label>Speaking Notes / Welcome Remarks</Label>
-        <Textarea
-          defaultValue={activity?.sg_speaking_notes || ''}
-          onBlur={(e) =>
-            e.target.value !== activity?.sg_speaking_notes &&
-            handleChange('sg_speaking_notes', e.target.value)
-          }
-          className="min-h-[200px]"
-          placeholder="Enter notes..."
         />
       </div>
     </div>

@@ -20,7 +20,7 @@ import { TabHistory } from './tabs/TabHistory'
 import { TabFeedback } from './tabs/TabFeedback'
 import { TabComments } from './tabs/TabComments'
 import { TabReviewApproval } from './tabs/TabReviewApproval'
-import { TabEventDetails, TabRBM, TabInvolvedParties, TabSGParticipation } from './tabs/TabGeneric'
+import { TabEventDetails, TabRBM, TabInvolvedParties } from './tabs/TabGeneric'
 import { TabAttachments } from './tabs/TabAttachments'
 import { TabActivityDetails } from './tabs/TabTaskDetails'
 import { TabWorkflow } from './tabs/TabWorkflow'
@@ -29,8 +29,7 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 const tabsConfig = [
   { id: 'activity-details', label: 'Activity Details', icon: Info, component: TabActivityDetails },
   { id: 'event', label: 'Event Details', icon: Calendar, component: TabEventDetails },
-  { id: 'parties', label: 'Involved Parties', icon: Users, component: TabInvolvedParties },
-  { id: 'sg', label: 'SG Participation', icon: Star, component: TabSGParticipation },
+  { id: 'parties', label: 'Involved Parties & SG', icon: Users, component: TabInvolvedParties },
   { id: 'rbm', label: 'RBM', icon: Target, component: TabRBM },
   {
     id: 'feedback',
