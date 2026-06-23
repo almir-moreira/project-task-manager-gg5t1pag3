@@ -1,3 +1,4 @@
+import * as React from 'react'
 import {
   Info,
   Calendar,
@@ -50,45 +51,56 @@ const tabsConfig = [
 export function ActivityTabs({
   activity,
   onUpdate,
+  leftPanel,
 }: {
   activity: any
   onUpdate: (a: any) => void
+  leftPanel?: React.ReactNode
 }) {
   return (
-    <Card className="shadow-sm border-border h-full flex flex-col overflow-hidden">
-      <Tabs defaultValue="activity-details" className="flex flex-1 w-full overflow-hidden flex-col">
-        <div className="w-full border-b border-border bg-muted/10 flex-shrink-0">
-          <ScrollArea className="w-full whitespace-nowrap">
-            <TabsList className="flex h-14 w-max min-w-full justify-start rounded-none bg-transparent p-0">
+    <Tabs
+      defaultValue="activity-details"
+      orientation="vertical"
+      className="flex flex-col xl:flex-row gap-6 w-full flex-1 h-full"
+    >
+      <div className="w-full xl:w-[320px] 2xl:w-[350px] flex flex-col gap-6 flex-shrink-0 xl:h-[calc(100vh-10rem)] xl:overflow-y-auto pb-4 pr-1">
+        {leftPanel}
+        <Card className="shadow-sm border-border flex flex-col overflow-hidden flex-shrink-0">
+          <ScrollArea className="w-full">
+            <TabsList className="flex flex-row xl:flex-col h-auto w-max xl:w-full min-w-full xl:min-w-0 justify-start items-stretch rounded-none bg-transparent p-0">
               {tabsConfig.map((tab) => {
                 const Icon = tab.icon
                 return (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="relative flex items-center gap-2 rounded-none border-b-2 border-transparent px-4 py-4 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-primary/5 data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:shadow-none"
+                    className="relative flex items-center gap-3 rounded-none border-b-2 xl:border-b-0 xl:border-l-2 border-transparent px-4 py-3 xl:py-4 text-sm font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground data-[state=active]:border-primary data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:shadow-none justify-start"
                   >
-                    <Icon className="h-4 w-4" />
-                    {tab.label}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{tab.label}</span>
                   </TabsTrigger>
                 )
               })}
             </TabsList>
-            <ScrollBar orientation="horizontal" />
+            <ScrollBar orientation="horizontal" className="xl:hidden" />
           </ScrollArea>
-        </div>
-        <CardContent className="flex-1 p-4 sm:p-6 overflow-y-auto bg-card m-0 relative">
-          {tabsConfig.map((tab) => (
-            <TabsContent
-              key={tab.id}
-              value={tab.id}
-              className="m-0 h-full focus-visible:outline-none data-[state=inactive]:hidden"
-            >
-              <tab.component activity={activity} onUpdate={onUpdate} task={activity} />
-            </TabsContent>
-          ))}
-        </CardContent>
-      </Tabs>
-    </Card>
+        </Card>
+      </div>
+      <div className="flex-1 w-full xl:h-[calc(100vh-10rem)] min-h-[600px]">
+        <Card className="shadow-sm border-border h-full flex flex-col overflow-hidden">
+          <CardContent className="flex-1 p-0 overflow-hidden bg-card m-0 relative flex flex-col">
+            {tabsConfig.map((tab) => (
+              <TabsContent
+                key={tab.id}
+                value={tab.id}
+                className="m-0 h-full flex-1 overflow-y-auto focus-visible:outline-none data-[state=inactive]:hidden p-4 sm:p-6"
+              >
+                <tab.component activity={activity} onUpdate={onUpdate} task={activity} />
+              </TabsContent>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    </Tabs>
   )
 }

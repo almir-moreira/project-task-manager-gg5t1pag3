@@ -169,13 +169,12 @@ export default function ActivityDetailPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 flex-1 items-start mb-6">
-        <div className="xl:col-span-4 2xl:col-span-3">
-          <ActivityPropertiesForm activity={activity} onUpdate={setActivity} />
-        </div>
-        <div className="xl:col-span-8 2xl:col-span-9 h-[calc(100vh-10rem)] min-h-[600px]">
-          <ActivityTabs activity={activity} onUpdate={setActivity} />
-        </div>
+      <div className="flex-1 w-full mb-6 flex flex-col">
+        <ActivityTabs
+          activity={activity}
+          onUpdate={setActivity}
+          leftPanel={<ActivityPropertiesForm activity={activity} onUpdate={setActivity} />}
+        />
       </div>
     </div>
   )
