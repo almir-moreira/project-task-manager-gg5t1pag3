@@ -9,6 +9,18 @@ const WORKFLOW_ROLES = [
   'SG Approval',
 ]
 
+const DEPARTMENTAL_ROLES = ['COMMS', 'EOSG', 'OPS', 'Partnerships']
+
+export async function getDepartmentalWorkflowConfigs() {
+  const { data, error } = await supabase
+    .from('workflows')
+    .select('*')
+    .in('role', DEPARTMENTAL_ROLES)
+    .order('step', { ascending: true })
+  if (error) throw error
+  return data
+}
+
 export async function getWorkflowConfigs() {
   const { data, error } = await supabase
     .from('workflows')
