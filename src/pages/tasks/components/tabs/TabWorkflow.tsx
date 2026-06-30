@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -8,10 +8,8 @@ import {
   XCircle,
   Clock,
   ArrowRight,
-  ArrowDown,
   UserCircle,
   PlayCircle,
-  SkipForward,
   FileText,
   Share2,
   RefreshCw,
@@ -20,76 +18,78 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
+import { REVIEWER_ROLES, APPROVER_ROLES } from './review-roles'
+
+const STATUS_STYLES = {
+  Approved: {
+    color: 'bg-[#10b981] text-white border-[#10b981]',
+    icon: <CheckCircle2 className="w-4 h-4 text-[#10b981]" />,
+  },
+  'In Progress': {
+    color: 'bg-[#3b82f6] text-white border-[#3b82f6]',
+    icon: <PlayCircle className="w-4 h-4 text-[#3b82f6]" />,
+  },
+  Pending: {
+    color: 'bg-[#d1d5db] text-gray-700 border-[#d1d5db]',
+    icon: <Clock className="w-4 h-4 text-gray-400" />,
+  },
+  Rejected: {
+    color: 'bg-[#ef4444] text-white border-[#ef4444]',
+    icon: <XCircle className="w-4 h-4 text-[#ef4444]" />,
+  },
+}
+
+const fmtDate = (d: string | null, p = 'MMM d, yyyy') => {
+  if (!d) return ''
+  try {
+    return format(new Date(d), p)
+  } catch {
+    return d
+  }
+}
 
 export function TabWorkflow({ activity }: { activity: any }) {
-  const [currentActivity, setCurrentActivity] = useState(activity)
   const [profiles, setProfiles] = useState<Record<string, string>>({})
-  const [workflows, setWorkflows] = useState<any[]>([])
-  const [activeWorkflows, setActiveWorkflows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setCurrentActivity(activity)
-  }, [activity])
+    supabase
+      .from('profiles')
+      .select('id, name')
+      .then(({ data }) => {
+        if (data) setProfiles(data.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.name }), {}))
+        setLoading(false)
+      })
+  }, [])
 
-  useEffect(() => {
-    if (!activity?.id) return
+  const steps = useMemo(() => {
+    const all: any[] = []
+    const allRoles = [
+      ...REVIEWER_ROLES.map((r) => ({ ...r, type: 'Review' })),
+      ...APPROVER_ROLES.map((a) => ({ ...a, type: 'Approval' })),
+    ]
+    allRoles.forEach((role) => {
+      if (!activity?.[role.requiredField]) return
+      const assigneeId = activity?.[role.idField]
+      all.push({
+        id: role.idField,
+        name: `${role.label} ${role.type}`,
+        date: activity?.[role.dateField],
+        comments: activity?.[role.commentsField] || '',
+        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned' : 'Unassigned',
+        status: activity?.[role.approvedField] ? 'Approved' : 'Pending',
+      })
+    })
+    const firstPending = all.findIndex((s) => s.status === 'Pending')
+    if (firstPending !== -1) all[firstPending].status = 'In Progress'
+    return all
+  }, [activity, profiles])
 
-    const fetchAll = async () => {
-      const [profilesRes, workflowsRes, activeRes] = await Promise.all([
-        supabase.from('profiles').select('id, name'),
-        supabase
-          .from('workflows')
-          .select('*')
-          .or(`activity_id.eq.${activity.id},activity_id.is.null`)
-          .order('stage')
-          .order('step'),
-        supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
-      ])
-
-      if (profilesRes.data) {
-        setProfiles(profilesRes.data.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.name }), {}))
-      }
-      if (workflowsRes.data) setWorkflows(workflowsRes.data)
-      if (activeRes.data) setActiveWorkflows(activeRes.data)
-      setLoading(false)
-    }
-
-    fetchAll()
-
-    const channel = supabase
-      .channel(`activity_workflows_${activity.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'activity_workflows',
-          filter: `activity_id=eq.${activity.id}`,
-        },
-        () => fetchAll(),
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [activity?.id])
-
-  if (!currentActivity) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center space-y-3">
-          <XCircle className="w-10 h-10 text-muted-foreground mx-auto" />
-          <h3 className="text-lg font-medium">Activity not found</h3>
-        </div>
-      </div>
-    )
-  }
+  const completedCount = steps.filter((s) => s.status === 'Approved').length
 
   if (loading) {
     return (
-      <div className="p-6 space-y-6 h-full flex flex-col">
+      <div className="p-6 space-y-6">
         <Skeleton className="h-24 w-full rounded-xl" />
         <Skeleton className="h-48 w-full rounded-xl" />
         <Skeleton className="flex-1 w-full rounded-xl" />
@@ -97,101 +97,16 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  // Steps in Final Review (Review) and Approval are mandatory. Feedback is selectable.
-  const selectedWorkflows = workflows.filter((wf) => {
-    if (wf.category === 'Review' || wf.category === 'Approval') return true
-    return activeWorkflows.some((aw) => aw.workflow_id === wf.id)
-  })
-
-  let steps = selectedWorkflows
-    .sort((a, b) => {
-      if (a.stage !== b.stage) return (a.stage || 0) - (b.stage || 0)
-      return (a.step || 0) - (b.step || 0)
-    })
-    .map((wf) => {
-      const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
-      const assigneeId = active?.reviewer_id
-      const categoryName =
-        wf.category === 'Approval'
-          ? 'Approval'
-          : wf.category === 'Review'
-            ? 'Review'
-            : wf.category || 'Review'
-
-      return {
-        id: wf.id,
-        name: `${wf.role} ${categoryName}`,
-        date: active?.completed_at,
-        comments: active?.comments || '',
-        assigneeId,
-        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
-        status: active?.status || 'Pending',
-      }
-    })
-
-  if (steps.length > 0) {
-    const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
-    if (firstPendingIndex !== -1) steps[firstPendingIndex].status = 'In Progress'
-  }
-
-  const completedCount = steps.filter((s) => s.status === 'Approved').length
-  const totalCount = steps.length
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Approved':
-        return 'bg-[#10b981] text-white border-[#10b981]'
-      case 'In Progress':
-        return 'bg-[#3b82f6] text-white border-[#3b82f6]'
-      case 'Pending':
-        return 'bg-[#d1d5db] text-gray-700 border-[#d1d5db]'
-      case 'Rejected':
-        return 'bg-[#ef4444] text-white border-[#ef4444]'
-      case 'Skipped':
-        return 'bg-[#c4b5fd] text-purple-900 border-[#c4b5fd]'
-      default:
-        return 'bg-gray-200 text-gray-700'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Approved':
-        return <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-      case 'In Progress':
-        return <PlayCircle className="w-4 h-4 text-[#3b82f6]" />
-      case 'Pending':
-        return <Clock className="w-4 h-4 text-gray-400" />
-      case 'Rejected':
-        return <XCircle className="w-4 h-4 text-[#ef4444]" />
-      case 'Skipped':
-        return <SkipForward className="w-4 h-4 text-[#c4b5fd]" />
-      default:
-        return <Clock className="w-4 h-4" />
-    }
-  }
-
-  const formatDate = (dateStr: string | null, pattern = 'MMM d, yyyy HH:mm') => {
-    if (!dateStr) return ''
-    try {
-      return format(new Date(dateStr), pattern)
-    } catch {
-      return dateStr
-    }
-  }
-
   return (
     <div className="flex flex-col h-full space-y-6 p-4 sm:p-6 animate-fade-in bg-muted/5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-xl border shadow-sm shrink-0">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {currentActivity.activity_name || currentActivity.title || 'Activity Workflow'}
+            {activity.activity_name || 'Activity Workflow'}
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
-            <span>ID: {currentActivity.task_number || currentActivity.id?.split('-')[0]}</span>
-            {currentActivity.end_date && (
-              <span>• Est. Completion: {formatDate(currentActivity.end_date, 'MMM d, yyyy')}</span>
-            )}
+            <span>ID: {activity.task_number || activity.id?.split('-')[0]}</span>
+            {activity.end_date && <span>• Est. Completion: {fmtDate(activity.end_date)}</span>}
           </div>
         </div>
         <div className="flex flex-col items-start sm:items-end w-full sm:w-auto">
@@ -199,11 +114,11 @@ export function TabWorkflow({ activity }: { activity: any }) {
             variant="outline"
             className="text-sm px-3 py-1 bg-muted/50 w-full sm:w-auto justify-center"
           >
-            {completedCount} of {totalCount} approvals complete
+            {completedCount} of {steps.length} approvals complete
           </Badge>
           <div className="flex items-center gap-2 mt-3 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
-              <Share2 className="w-4 h-4 mr-2" /> Share Status
+              <Share2 className="w-4 h-4 mr-2" /> Share
             </Button>
             <Button variant="default" size="sm" className="flex-1 sm:flex-none">
               <RefreshCw className="w-4 h-4 mr-2" /> Resubmit
@@ -214,37 +129,31 @@ export function TabWorkflow({ activity }: { activity: any }) {
 
       <div className="bg-card p-6 rounded-xl border shadow-sm overflow-x-auto shrink-0">
         <h3 className="text-lg font-semibold mb-4">Workflow Status</h3>
-
         {steps.length === 0 ? (
           <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-border">
             <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground">No workflow steps configured.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Please configure workflow stages to track progress.
+              Select required roles in Activity Details to build the workflow.
             </p>
           </div>
         ) : (
           <div className="flex items-center gap-2 min-w-max pb-2">
-            {steps.map((step, index) => (
+            {steps.map((step, i) => (
               <div key={step.id} className="flex items-center shrink-0">
                 <div
                   className={cn(
                     'relative flex flex-col p-2.5 rounded-lg border w-40 sm:w-48 bg-background shadow-sm transition-all duration-200 hover:shadow-md shrink-0',
                     step.status === 'In Progress'
-                      ? 'border-[#3b82f6] shadow-blue-100 ring-1 ring-blue-50'
+                      ? 'border-[#3b82f6] ring-1 ring-blue-50'
                       : 'border-border',
                     step.status === 'Approved' ? 'border-[#10b981]/30 bg-[#10b981]/5' : '',
                     step.status === 'Rejected' ? 'border-[#ef4444]/30 bg-[#ef4444]/5' : '',
-                    step.status === 'Skipped'
-                      ? 'border-[#c4b5fd]/30 bg-[#c4b5fd]/5 opacity-70'
-                      : '',
                   )}
                 >
-                  <div className="flex justify-between items-start mb-1.5">
-                    <div className="flex items-center gap-1.5 font-semibold text-xs truncate">
-                      {getStatusIcon(step.status)}
-                      <span className="truncate">{step.name}</span>
-                    </div>
+                  <div className="flex items-center gap-1.5 font-semibold text-xs truncate mb-1.5">
+                    {STATUS_STYLES[step.status as keyof typeof STATUS_STYLES]?.icon}
+                    <span className="truncate">{step.name}</span>
                   </div>
                   <div className="space-y-1 text-[10px] text-muted-foreground leading-tight">
                     <div className="flex items-center gap-1">
@@ -254,14 +163,14 @@ export function TabWorkflow({ activity }: { activity: any }) {
                     {step.date && (
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3 shrink-0" />
-                        <span>{formatDate(step.date, 'MMM d, HH:mm')}</span>
+                        <span>{fmtDate(step.date)}</span>
                       </div>
                     )}
                     <div className="mt-1 pt-0.5">
                       <Badge
                         className={cn(
                           'pointer-events-none font-medium text-[9px] px-1 py-0 h-3.5 leading-none',
-                          getStatusColor(step.status),
+                          STATUS_STYLES[step.status as keyof typeof STATUS_STYLES]?.color,
                         )}
                       >
                         {step.status}
@@ -269,11 +178,10 @@ export function TabWorkflow({ activity }: { activity: any }) {
                     </div>
                   </div>
                   {step.status === 'In Progress' && (
-                    <div className="absolute -inset-[1px] border border-[#3b82f6] rounded-lg animate-pulse opacity-20 pointer-events-none"></div>
+                    <div className="absolute -inset-[1px] border border-[#3b82f6] rounded-lg animate-pulse opacity-20 pointer-events-none" />
                   )}
                 </div>
-
-                {index < steps.length - 1 && (
+                {i < steps.length - 1 && (
                   <div className="flex items-center justify-center text-muted-foreground/40 w-6 sm:w-8 shrink-0">
                     <ArrowRight className="w-4 h-4" />
                   </div>
@@ -302,16 +210,14 @@ export function TabWorkflow({ activity }: { activity: any }) {
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0 w-full">
                     <div className="flex items-center justify-center w-5 shrink-0 hidden sm:flex">
-                      {getStatusIcon(step.status)}
+                      {STATUS_STYLES[step.status as keyof typeof STATUS_STYLES]?.icon}
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 flex-1 min-w-0">
                       <div className="flex items-center gap-2 w-full sm:w-[200px] shrink-0">
-                        <div className="sm:hidden shrink-0">{getStatusIcon(step.status)}</div>
                         <h4 className="font-semibold text-sm truncate" title={step.name}>
                           {step.name}
                         </h4>
                       </div>
-
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <div
                           className="text-xs text-muted-foreground flex items-center gap-1.5 w-[140px] shrink-0 truncate"
@@ -321,20 +227,19 @@ export function TabWorkflow({ activity }: { activity: any }) {
                           <span className="truncate">{step.assigneeName}</span>
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5 w-[130px] shrink-0">
-                          {step.date ? (
+                          {step.date && (
                             <>
                               <Clock className="w-3.5 h-3.5 shrink-0" />
-                              <span className="truncate">{formatDate(step.date)}</span>
+                              <span className="truncate">{fmtDate(step.date)}</span>
                             </>
-                          ) : null}
+                          )}
                         </div>
                       </div>
-
                       <div className="flex items-center gap-3 shrink-0">
                         <Badge
                           className={cn(
                             'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap',
-                            getStatusColor(step.status),
+                            STATUS_STYLES[step.status as keyof typeof STATUS_STYLES]?.color,
                           )}
                         >
                           {step.status}
@@ -342,7 +247,6 @@ export function TabWorkflow({ activity }: { activity: any }) {
                       </div>
                     </div>
                   </div>
-
                   {step.comments && (
                     <div className="w-full xl:w-auto xl:max-w-xs mt-2 xl:mt-0 p-2 xl:p-0 bg-background xl:bg-transparent rounded-lg border xl:border-none text-xs flex gap-2 items-start shrink-0">
                       <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5 xl:hidden" />
@@ -354,7 +258,6 @@ export function TabWorkflow({ activity }: { activity: any }) {
                       </p>
                     </div>
                   )}
-
                   <div className="w-full xl:w-auto mt-2 xl:mt-0 shrink-0">
                     <Button
                       variant="ghost"

@@ -41,6 +41,15 @@ interface ActivityWorkflow {
   completed_at: string | null
 }
 
+const WF_FLAG_MAP: Record<string, string> = {
+  comms: 'wf_comms',
+  communications: 'wf_comms',
+  eosg: 'wf_eosg',
+  ops: 'wf_ops',
+  operations: 'wf_ops',
+  partnerships: 'wf_partnerships',
+}
+
 export function TabFeedback({ activity }: { activity?: any }) {
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [workflows, setWorkflows] = useState<Workflow[]>([])
@@ -126,6 +135,11 @@ export function TabFeedback({ activity }: { activity?: any }) {
     }
   }
 
+  const visibleWorkflows = workflows.filter((wf) => {
+    const flag = WF_FLAG_MAP[wf.role?.toLowerCase()]
+    return !flag || activity?.[flag] === true
+  })
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -134,7 +148,7 @@ export function TabFeedback({ activity }: { activity?: any }) {
     )
   }
 
-  if (workflows.length === 0) {
+  if (visibleWorkflows.length === 0) {
     return (
       <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-border">
         <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
@@ -161,7 +175,7 @@ export function TabFeedback({ activity }: { activity?: any }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {workflows.map((workflow) => {
+            {visibleWorkflows.map((workflow) => {
               const active = activeWorkflows.find((aw) => aw.workflow_id === workflow.id)
               const isChecked = !!active
               const reviewerId = active?.reviewer_id || ''

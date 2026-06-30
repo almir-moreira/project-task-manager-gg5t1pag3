@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -20,6 +20,8 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { updateActivity } from '@/services/activities'
+import { useToast } from '@/hooks/use-toast'
+import { REVIEWER_ROLES, APPROVER_ROLES, type RoleConfig } from './review-roles'
 
 export function TabReviewApproval({
   activity,
@@ -30,6 +32,7 @@ export function TabReviewApproval({
 }) {
   const [profiles, setProfiles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
     supabase
@@ -42,36 +45,63 @@ export function TabReviewApproval({
       })
   }, [])
 
-  const handleActivityChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
-    try {
-      const updated = await updateActivity(activity.id, { [field]: val } as any)
-      onUpdate(updated)
-    } catch (e) {
-      console.error(e)
-    }
+  const handleChange = useCallback(
+    async (field: string, val: any) => {
+      if (!activity || !onUpdate) return
+      try {
+        onUpdate(await updateActivity(activity.id, { [field]: val } as any))
+      } catch {
+        toast({ title: 'Error updating field', variant: 'destructive' })
+      }
+    },
+    [activity, onUpdate, toast],
+  )
+
+  const handleToggle = useCallback(
+    async (requiredField: string, clearFields: Record<string, any>, checked: boolean) => {
+      if (!activity || !onUpdate) return
+      try {
+        const updates: any = { [requiredField]: checked }
+        if (!checked) Object.assign(updates, clearFields)
+        onUpdate(await updateActivity(activity.id, updates))
+      } catch {
+        toast({ title: 'Error updating workflow config', variant: 'destructive' })
+      }
+    },
+    [activity, onUpdate, toast],
+  )
+
+  const buildClearFields = (role: RoleConfig): Record<string, any> => {
+    const fields: Record<string, any> = { [role.idField]: null }
+    fields[role.commentsField] = null
+    fields[role.dateField] = null
+    fields[role.approvedField] = false
+    return fields
   }
 
-  const renderRow = (roleLabel: string, prefix: string) => {
-    const idField = `${prefix}_id`
-    const commentsField = `${prefix}_comments`
-    const dateField = `${prefix}_date`
-    const approvedField = `${prefix}_approved`
-
-    const idVal = activity[idField] || 'unassigned'
-    const commentsVal = activity[commentsField] || ''
-    const dateVal = activity[dateField] ? activity[dateField].split('T')[0] : ''
-    const approvedVal = !!activity[approvedField]
+  const renderRow = (role: RoleConfig) => {
+    const isRequired = !!activity?.[role.requiredField]
+    const idVal = activity?.[role.idField] || 'unassigned'
+    const commentsVal = activity?.[role.commentsField] || ''
+    const dateVal = activity?.[role.dateField] ? String(activity[role.dateField]).split('T')[0] : ''
+    const approvedVal = !!activity?.[role.approvedField]
 
     return (
-      <TableRow key={prefix}>
-        <TableCell className="font-medium text-sm">{roleLabel}</TableCell>
+      <TableRow key={role.idField}>
+        <TableCell className="font-medium text-sm">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              checked={isRequired}
+              onCheckedChange={(v) => handleToggle(role.requiredField, buildClearFields(role), !!v)}
+            />
+            {role.label}
+          </div>
+        </TableCell>
         <TableCell className="align-top pt-4">
           <Select
             value={idVal}
-            onValueChange={(val) =>
-              handleActivityChange(idField, val === 'unassigned' ? null : val)
-            }
+            onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
+            disabled={!isRequired}
           >
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select user..." />
@@ -91,9 +121,10 @@ export function TabReviewApproval({
             className="min-h-[60px] resize-y"
             defaultValue={commentsVal}
             onBlur={(e) =>
-              e.target.value !== commentsVal && handleActivityChange(commentsField, e.target.value)
+              e.target.value !== commentsVal && handleChange(role.commentsField, e.target.value)
             }
             placeholder="Add comments..."
+            disabled={!isRequired}
           />
         </TableCell>
         <TableCell className="align-top pt-4">
@@ -101,19 +132,18 @@ export function TabReviewApproval({
             type="date"
             className="h-9"
             defaultValue={dateVal}
-            onBlur={(e) => {
-              const val = e.target.value
-              if (val !== dateVal) {
-                handleActivityChange(dateField, val || null)
-              }
-            }}
+            onBlur={(e) =>
+              e.target.value !== dateVal && handleChange(role.dateField, e.target.value || null)
+            }
+            disabled={!isRequired}
           />
         </TableCell>
         <TableCell className="text-center align-top pt-5">
           <div className="flex justify-center">
             <Checkbox
               checked={approvedVal}
-              onCheckedChange={(v) => handleActivityChange(approvedField, !!v)}
+              onCheckedChange={(v) => handleChange(role.approvedField, !!v)}
+              disabled={!isRequired}
             />
           </div>
         </TableCell>
@@ -124,17 +154,13 @@ export function TabReviewApproval({
   if (!activity) return null
 
   return (
-    <div className="space-y-8 animate-fade-in pb-10">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Review & Approval</h3>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mb-6 max-w-2xl">
+    <div className="space-y-6 animate-fade-in pb-10">
+      <div className="grid grid-cols-2 gap-4 max-w-2xl">
         <div className="grid gap-2">
           <Label>Urgency of Approval</Label>
           <Select
             value={activity.urgency_of_approval || 'Standard'}
-            onValueChange={(val) => handleActivityChange('urgency_of_approval', val)}
+            onValueChange={(v) => handleChange('urgency_of_approval', v)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select urgency..." />
@@ -151,14 +177,14 @@ export function TabReviewApproval({
             defaultValue={activity.nature_of_urgency || ''}
             onBlur={(e) =>
               e.target.value !== activity.nature_of_urgency &&
-              handleActivityChange('nature_of_urgency', e.target.value)
+              handleChange('nature_of_urgency', e.target.value)
             }
-            placeholder="Describe nature of urgency..."
+            placeholder="Describe..."
           />
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <h3 className="text-sm font-semibold">Reviewers</h3>
         <div className="border border-border rounded-lg overflow-hidden">
           <Table>
@@ -179,18 +205,14 @@ export function TabReviewApproval({
                   </TableCell>
                 </TableRow>
               ) : (
-                <>
-                  {renderRow('Team Leader', 'reviewer_team_leader')}
-                  {renderRow('Head of Unit', 'reviewer_head')}
-                  {renderRow('CPO', 'reviewer_cpo')}
-                </>
+                REVIEWER_ROLES.map((r) => renderRow(r))
               )}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         <h3 className="text-sm font-semibold">Approvers</h3>
         <div className="border border-border rounded-lg overflow-hidden">
           <Table>
@@ -211,11 +233,7 @@ export function TabReviewApproval({
                   </TableCell>
                 </TableRow>
               ) : (
-                <>
-                  {renderRow('Head of Unit', 'approver_head')}
-                  {renderRow('CPO', 'approver_cpo')}
-                  {renderRow('SG', 'approver_sg')}
-                </>
+                APPROVER_ROLES.map((a) => renderRow(a))
               )}
             </TableBody>
           </Table>
