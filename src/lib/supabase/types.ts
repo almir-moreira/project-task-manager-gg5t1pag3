@@ -121,16 +121,34 @@ export type Database = {
           wf_comms_reviewer_id: string | null
           wf_cpo_approver_required: boolean | null
           wf_cpo_reviewer_required: boolean | null
+          wf_ems: boolean | null
+          wf_ems_reviewer_id: string | null
           wf_eosg: boolean | null
           wf_eosg_reviewer_id: string | null
+          wf_gob: boolean | null
+          wf_gob_reviewer_id: string | null
           wf_head_approver_required: boolean | null
           wf_head_reviewer_required: boolean | null
+          wf_legal: boolean | null
+          wf_legal_reviewer_id: string | null
+          wf_mne: boolean | null
+          wf_mne_reviewer_id: string | null
           wf_ops: boolean | null
           wf_ops_reviewer_id: string | null
           wf_partnerships: boolean | null
           wf_partnerships_reviewer_id: string | null
+          wf_procurement: boolean | null
+          wf_procurement_reviewer_id: string | null
+          wf_protocol: boolean | null
+          wf_protocol_reviewer_id: string | null
+          wf_relex: boolean | null
+          wf_relex_reviewer_id: string | null
           wf_sg_approver_required: boolean | null
+          wf_social_media: boolean | null
+          wf_social_media_reviewer_id: string | null
           wf_team_leader_required: boolean | null
+          wf_technology: boolean | null
+          wf_technology_reviewer_id: string | null
           workorder_id: string | null
         }
         Insert: {
@@ -223,16 +241,34 @@ export type Database = {
           wf_comms_reviewer_id?: string | null
           wf_cpo_approver_required?: boolean | null
           wf_cpo_reviewer_required?: boolean | null
+          wf_ems?: boolean | null
+          wf_ems_reviewer_id?: string | null
           wf_eosg?: boolean | null
           wf_eosg_reviewer_id?: string | null
+          wf_gob?: boolean | null
+          wf_gob_reviewer_id?: string | null
           wf_head_approver_required?: boolean | null
           wf_head_reviewer_required?: boolean | null
+          wf_legal?: boolean | null
+          wf_legal_reviewer_id?: string | null
+          wf_mne?: boolean | null
+          wf_mne_reviewer_id?: string | null
           wf_ops?: boolean | null
           wf_ops_reviewer_id?: string | null
           wf_partnerships?: boolean | null
           wf_partnerships_reviewer_id?: string | null
+          wf_procurement?: boolean | null
+          wf_procurement_reviewer_id?: string | null
+          wf_protocol?: boolean | null
+          wf_protocol_reviewer_id?: string | null
+          wf_relex?: boolean | null
+          wf_relex_reviewer_id?: string | null
           wf_sg_approver_required?: boolean | null
+          wf_social_media?: boolean | null
+          wf_social_media_reviewer_id?: string | null
           wf_team_leader_required?: boolean | null
+          wf_technology?: boolean | null
+          wf_technology_reviewer_id?: string | null
           workorder_id?: string | null
         }
         Update: {
@@ -325,16 +361,34 @@ export type Database = {
           wf_comms_reviewer_id?: string | null
           wf_cpo_approver_required?: boolean | null
           wf_cpo_reviewer_required?: boolean | null
+          wf_ems?: boolean | null
+          wf_ems_reviewer_id?: string | null
           wf_eosg?: boolean | null
           wf_eosg_reviewer_id?: string | null
+          wf_gob?: boolean | null
+          wf_gob_reviewer_id?: string | null
           wf_head_approver_required?: boolean | null
           wf_head_reviewer_required?: boolean | null
+          wf_legal?: boolean | null
+          wf_legal_reviewer_id?: string | null
+          wf_mne?: boolean | null
+          wf_mne_reviewer_id?: string | null
           wf_ops?: boolean | null
           wf_ops_reviewer_id?: string | null
           wf_partnerships?: boolean | null
           wf_partnerships_reviewer_id?: string | null
+          wf_procurement?: boolean | null
+          wf_procurement_reviewer_id?: string | null
+          wf_protocol?: boolean | null
+          wf_protocol_reviewer_id?: string | null
+          wf_relex?: boolean | null
+          wf_relex_reviewer_id?: string | null
           wf_sg_approver_required?: boolean | null
+          wf_social_media?: boolean | null
+          wf_social_media_reviewer_id?: string | null
           wf_team_leader_required?: boolean | null
+          wf_technology?: boolean | null
+          wf_technology_reviewer_id?: string | null
           workorder_id?: string | null
         }
         Relationships: [
@@ -458,8 +512,36 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'activities_wf_ems_reviewer_id_fkey'
+            columns: ['wf_ems_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'activities_wf_eosg_reviewer_id_fkey'
             columns: ['wf_eosg_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_gob_reviewer_id_fkey'
+            columns: ['wf_gob_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_legal_reviewer_id_fkey'
+            columns: ['wf_legal_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_mne_reviewer_id_fkey'
+            columns: ['wf_mne_reviewer_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -474,6 +556,41 @@ export type Database = {
           {
             foreignKeyName: 'activities_wf_partnerships_reviewer_id_fkey'
             columns: ['wf_partnerships_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_procurement_reviewer_id_fkey'
+            columns: ['wf_procurement_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_protocol_reviewer_id_fkey'
+            columns: ['wf_protocol_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_relex_reviewer_id_fkey'
+            columns: ['wf_relex_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_social_media_reviewer_id_fkey'
+            columns: ['wf_social_media_reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_wf_technology_reviewer_id_fkey'
+            columns: ['wf_technology_reviewer_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']

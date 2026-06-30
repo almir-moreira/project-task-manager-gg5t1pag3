@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { REVIEWER_ROLES, APPROVER_ROLES } from './review-roles'
-import { getWorkflowConfigs, getActivityWorkflows } from '@/services/activity-workflows'
+import { DEPT_FIELD_MAPPINGS } from './workflow-dept-config'
+import { getAllWorkflowConfigs, getActivityWorkflows } from '@/services/activity-workflows'
 
 const ALL_ROLES = [...REVIEWER_ROLES, ...APPROVER_ROLES]
 
@@ -36,7 +37,7 @@ const fmtDate = (d: string | null) => {
 
 export function TabWorkflow({ activity }: { activity: any }) {
   const [profiles, setProfiles] = useState<Record<string, string>>({})
-  const [workflowConfigs, setWorkflowConfigs] = useState<any[]>([])
+  const [allWorkflowConfigs, setAllWorkflowConfigs] = useState<any[]>([])
   const [activityWorkflows, setActivityWorkflows] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -47,12 +48,12 @@ export function TabWorkflow({ activity }: { activity: any }) {
     }
     Promise.all([
       supabase.from('profiles').select('id, name'),
-      getWorkflowConfigs(),
+      getAllWorkflowConfigs(),
       getActivityWorkflows(activity.id),
     ]).then(([pRes, wfs, awfs]) => {
       if (pRes.data)
         setProfiles(pRes.data.reduce((a: any, p: any) => ({ ...a, [p.id]: p.name }), {}))
-      setWorkflowConfigs(wfs)
+      setAllWorkflowConfigs(wfs)
       setActivityWorkflows(awfs)
       setLoading(false)
     })
@@ -60,27 +61,48 @@ export function TabWorkflow({ activity }: { activity: any }) {
 
   const steps = useMemo(() => {
     const result: any[] = []
-    workflowConfigs.forEach((wf) => {
+    allWorkflowConfigs.forEach((wf) => {
       const role = ALL_ROLES.find((r) => r.workflowRole === wf.role)
-      if (!role || !activity?.[role.requiredField]) return
-      const awf = activityWorkflows.find((a) => a.workflow_id === wf.id)
-      const isApproved = awf?.status === 'Approved' || !!activity[role.approvedField]
-      const assigneeId = activity[role.idField]
-      result.push({
-        id: role.idField,
-        name: `${role.label} ${wf.category}`,
-        date: activity[role.dateField],
-        comments: awf?.comments || activity[role.commentsField] || '',
-        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned' : 'Unassigned',
-        status: isApproved ? 'Approved' : 'Pending',
-        stage: wf.stage,
-        step: wf.step,
-      })
+      if (role) {
+        if (!activity?.[role.requiredField]) return
+        const awf = activityWorkflows.find((a) => a.workflow_id === wf.id)
+        const isApproved = awf?.status === 'Approved' || !!activity[role.approvedField]
+        const assigneeId = activity[role.idField]
+        result.push({
+          id: role.idField,
+          name: `${role.label} ${wf.category}`,
+          date: activity[role.dateField],
+          comments: awf?.comments || activity[role.commentsField] || '',
+          assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned' : 'Unassigned',
+          status: isApproved ? 'Approved' : 'Pending',
+          stage: wf.stage,
+          step: wf.step,
+        })
+        return
+      }
+      const dept = DEPT_FIELD_MAPPINGS[wf.role]
+      if (dept) {
+        if (!activity?.[dept.enabledField]) return
+        const awf = activityWorkflows.find((a) => a.workflow_id === wf.id)
+        const isApproved = awf?.status === 'Approved'
+        const assigneeId = activity[dept.reviewerIdField]
+        result.push({
+          id: dept.reviewerIdField,
+          name: dept.label,
+          date: null,
+          comments: awf?.comments || '',
+          assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned' : 'Unassigned',
+          status: isApproved ? 'Approved' : 'Pending',
+          stage: wf.stage,
+          step: wf.step,
+        })
+      }
     })
+    result.sort((a, b) => a.stage - b.stage || a.step - b.step)
     const firstPending = result.findIndex((s) => s.status === 'Pending')
     if (firstPending !== -1) result[firstPending].status = 'In Progress'
     return result
-  }, [activity, profiles, workflowConfigs, activityWorkflows])
+  }, [activity, profiles, allWorkflowConfigs, activityWorkflows])
 
   if (loading) {
     return (
@@ -117,7 +139,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
             <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground">No workflow steps configured.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Select required roles in Review &amp; Approval to build the workflow.
+              Select required roles in Review &amp; Approval or enable departments in Feedback to
+              build the workflow.
             </p>
           </div>
         ) : (
