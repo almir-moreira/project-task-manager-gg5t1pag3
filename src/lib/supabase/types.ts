@@ -119,12 +119,18 @@ export type Database = {
           urgency_of_approval: string | null
           wf_comms: boolean | null
           wf_comms_reviewer_id: string | null
+          wf_cpo_approver_required: boolean | null
+          wf_cpo_reviewer_required: boolean | null
           wf_eosg: boolean | null
           wf_eosg_reviewer_id: string | null
+          wf_head_approver_required: boolean | null
+          wf_head_reviewer_required: boolean | null
           wf_ops: boolean | null
           wf_ops_reviewer_id: string | null
           wf_partnerships: boolean | null
           wf_partnerships_reviewer_id: string | null
+          wf_sg_approver_required: boolean | null
+          wf_team_leader_required: boolean | null
           workorder_id: string | null
         }
         Insert: {
@@ -215,12 +221,18 @@ export type Database = {
           urgency_of_approval?: string | null
           wf_comms?: boolean | null
           wf_comms_reviewer_id?: string | null
+          wf_cpo_approver_required?: boolean | null
+          wf_cpo_reviewer_required?: boolean | null
           wf_eosg?: boolean | null
           wf_eosg_reviewer_id?: string | null
+          wf_head_approver_required?: boolean | null
+          wf_head_reviewer_required?: boolean | null
           wf_ops?: boolean | null
           wf_ops_reviewer_id?: string | null
           wf_partnerships?: boolean | null
           wf_partnerships_reviewer_id?: string | null
+          wf_sg_approver_required?: boolean | null
+          wf_team_leader_required?: boolean | null
           workorder_id?: string | null
         }
         Update: {
@@ -311,12 +323,18 @@ export type Database = {
           urgency_of_approval?: string | null
           wf_comms?: boolean | null
           wf_comms_reviewer_id?: string | null
+          wf_cpo_approver_required?: boolean | null
+          wf_cpo_reviewer_required?: boolean | null
           wf_eosg?: boolean | null
           wf_eosg_reviewer_id?: string | null
+          wf_head_approver_required?: boolean | null
+          wf_head_reviewer_required?: boolean | null
           wf_ops?: boolean | null
           wf_ops_reviewer_id?: string | null
           wf_partnerships?: boolean | null
           wf_partnerships_reviewer_id?: string | null
+          wf_sg_approver_required?: boolean | null
+          wf_team_leader_required?: boolean | null
           workorder_id?: string | null
         }
         Relationships: [

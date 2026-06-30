@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { AlertCircle, Loader2 } from 'lucide-react'
+import { REVIEWER_ROLES, APPROVER_ROLES } from './review-roles'
 
 interface Profile {
   id: string
@@ -160,9 +161,76 @@ export function TabFeedback({ activity }: { activity?: any }) {
     )
   }
 
+  const hasRequiredRoles =
+    REVIEWER_ROLES.some((r) => activity?.[r.requiredField]) ||
+    APPROVER_ROLES.some((r) => activity?.[r.requiredField])
+
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="border border-border rounded-lg overflow-hidden">
+    <div className="space-y-6 animate-fade-in">
+      {hasRequiredRoles && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold">Review &amp; Approval Status</h3>
+          <div className="border border-border rounded-lg overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/50">
+                <TableRow>
+                  <TableHead className="w-[150px]">Role</TableHead>
+                  <TableHead className="w-[120px]">Type</TableHead>
+                  <TableHead className="w-[120px]">Status</TableHead>
+                  <TableHead className="min-w-[200px]">Comments</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {REVIEWER_ROLES.filter((r) => activity?.[r.requiredField]).map((role) => (
+                  <TableRow key={role.idField}>
+                    <TableCell className="font-medium text-sm">{role.label}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">Reviewer</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          activity?.[role.approvedField]
+                            ? 'text-emerald-600 border-emerald-200 bg-emerald-50'
+                            : 'text-amber-600 border-amber-200 bg-amber-50'
+                        }
+                      >
+                        {activity?.[role.approvedField] ? 'Approved' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {activity?.[role.commentsField] || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {APPROVER_ROLES.filter((r) => activity?.[r.requiredField]).map((role) => (
+                  <TableRow key={role.idField}>
+                    <TableCell className="font-medium text-sm">{role.label}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">Approver</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          activity?.[role.approvedField]
+                            ? 'text-emerald-600 border-emerald-200 bg-emerald-50'
+                            : 'text-amber-600 border-amber-200 bg-amber-50'
+                        }
+                      >
+                        {activity?.[role.approvedField] ? 'Approved' : 'Pending'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {activity?.[role.commentsField] || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold">Department Feedback</h3>
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow>

@@ -250,13 +250,13 @@ export function TabActivityDetails({
         </CardContent>
       </Card>
 
-      {/* Review & Approval */}
+      {/* Workflow Roles */}
       <Card>
         <CardHeader>
-          <CardTitle>Review & Approval</CardTitle>
+          <CardTitle>Workflow Roles</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <Label className="text-sm font-semibold">Reviewers</Label>
               {REVIEWER_ROLES.map((role) => (
@@ -265,13 +265,13 @@ export function TabActivityDetails({
                     checked={!!activity[role.requiredField]}
                     onCheckedChange={(v) => handleRoleToggle(role.requiredField, role.idField, !!v)}
                   />
-                  <Label className="text-sm w-36 shrink-0">{role.label}</Label>
+                  <Label className="text-sm w-28 shrink-0">{role.label}</Label>
                   <Select
                     value={activity[role.idField] || 'unassigned'}
                     onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
                     disabled={!activity[role.requiredField]}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 h-9">
                       <SelectValue placeholder="Select reviewer..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -294,13 +294,13 @@ export function TabActivityDetails({
                     checked={!!activity[role.requiredField]}
                     onCheckedChange={(v) => handleRoleToggle(role.requiredField, role.idField, !!v)}
                   />
-                  <Label className="text-sm w-36 shrink-0">{role.label}</Label>
+                  <Label className="text-sm w-28 shrink-0">{role.label}</Label>
                   <Select
                     value={activity[role.idField] || 'unassigned'}
                     onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
                     disabled={!activity[role.requiredField]}
                   >
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 h-9">
                       <SelectValue placeholder="Select approver..." />
                     </SelectTrigger>
                     <SelectContent>
