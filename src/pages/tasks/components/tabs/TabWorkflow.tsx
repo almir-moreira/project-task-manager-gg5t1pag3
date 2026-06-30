@@ -97,8 +97,28 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  // Steps in Final Review (Review) and Approval are mandatory. Feedback is selectable.
+  const getRequiredField = (role: string, category: string | null): string | null => {
+    const roleLower = (role || '').toLowerCase().trim()
+    const catLower = (category || '').toLowerCase().trim()
+    if (catLower === 'review') {
+      if (roleLower.includes('team leader')) return 'wf_team_leader_required'
+      if (roleLower.includes('head')) return 'wf_head_reviewer_required'
+      if (roleLower.includes('cpo')) return 'wf_cpo_reviewer_required'
+    }
+    if (catLower === 'approval') {
+      if (roleLower.includes('head')) return 'wf_head_approver_required'
+      if (roleLower.includes('cpo')) return 'wf_cpo_approver_required'
+      if (roleLower.includes('sg') || roleLower.includes('secretary'))
+        return 'wf_sg_approver_required'
+    }
+    return null
+  }
+
   const selectedWorkflows = workflows.filter((wf) => {
+    const requiredField = getRequiredField(wf.role, wf.category)
+    if (requiredField) {
+      return currentActivity[requiredField] === true
+    }
     if (wf.category === 'Review' || wf.category === 'Approval') return true
     return activeWorkflows.some((aw) => aw.workflow_id === wf.id)
   })

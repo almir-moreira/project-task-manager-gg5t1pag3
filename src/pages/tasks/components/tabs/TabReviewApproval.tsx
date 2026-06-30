@@ -52,7 +52,7 @@ export function TabReviewApproval({
     }
   }
 
-  const renderRow = (roleLabel: string, prefix: string) => {
+  const renderRow = (roleLabel: string, prefix: string, requiredField: string) => {
     const idField = `${prefix}_id`
     const commentsField = `${prefix}_comments`
     const dateField = `${prefix}_date`
@@ -62,9 +62,18 @@ export function TabReviewApproval({
     const commentsVal = activity[commentsField] || ''
     const dateVal = activity[dateField] ? activity[dateField].split('T')[0] : ''
     const approvedVal = !!activity[approvedField]
+    const requiredVal = !!activity[requiredField]
 
     return (
       <TableRow key={prefix}>
+        <TableCell className="text-center align-top pt-5">
+          <div className="flex justify-center">
+            <Checkbox
+              checked={requiredVal}
+              onCheckedChange={(v) => handleActivityChange(requiredField, !!v)}
+            />
+          </div>
+        </TableCell>
         <TableCell className="font-medium text-sm">{roleLabel}</TableCell>
         <TableCell className="align-top pt-4">
           <Select
@@ -164,6 +173,7 @@ export function TabReviewApproval({
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
+                <TableHead className="text-center w-[80px]">Required</TableHead>
                 <TableHead className="w-[150px]">Role</TableHead>
                 <TableHead className="w-[200px]">Reviewer</TableHead>
                 <TableHead className="min-w-[200px]">Comments</TableHead>
@@ -174,15 +184,15 @@ export function TabReviewApproval({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : (
                 <>
-                  {renderRow('Team Leader', 'reviewer_team_leader')}
-                  {renderRow('Head of Unit', 'reviewer_head')}
-                  {renderRow('CPO', 'reviewer_cpo')}
+                  {renderRow('Team Leader', 'reviewer_team_leader', 'wf_team_leader_required')}
+                  {renderRow('Head of Unit', 'reviewer_head', 'wf_head_reviewer_required')}
+                  {renderRow('CPO', 'reviewer_cpo', 'wf_cpo_reviewer_required')}
                 </>
               )}
             </TableBody>
@@ -196,6 +206,7 @@ export function TabReviewApproval({
           <Table>
             <TableHeader className="bg-muted/30">
               <TableRow>
+                <TableHead className="text-center w-[80px]">Required</TableHead>
                 <TableHead className="w-[150px]">Role</TableHead>
                 <TableHead className="w-[200px]">Approver</TableHead>
                 <TableHead className="min-w-[200px]">Comments</TableHead>
@@ -206,15 +217,15 @@ export function TabReviewApproval({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : (
                 <>
-                  {renderRow('Head of Unit', 'approver_head')}
-                  {renderRow('CPO', 'approver_cpo')}
-                  {renderRow('SG', 'approver_sg')}
+                  {renderRow('Head of Unit', 'approver_head', 'wf_head_approver_required')}
+                  {renderRow('CPO', 'approver_cpo', 'wf_cpo_approver_required')}
+                  {renderRow('SG', 'approver_sg', 'wf_sg_approver_required')}
                 </>
               )}
             </TableBody>
