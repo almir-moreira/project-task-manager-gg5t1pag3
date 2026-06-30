@@ -20,6 +20,12 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { updateActivity } from '@/services/activities'
+import {
+  getWorkflowConfigs,
+  upsertActivityWorkflow,
+  deleteActivityWorkflow,
+  updateActivityWorkflowFields,
+} from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
 import { REVIEWER_ROLES, APPROVER_ROLES, type RoleConfig } from './review-roles'
 
@@ -31,53 +37,79 @@ export function TabReviewApproval({
   onUpdate?: (a: any) => void
 }) {
   const [profiles, setProfiles] = useState<any[]>([])
+  const [workflowConfigs, setWorkflowConfigs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
   useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('id, name, email')
-      .order('name')
-      .then(({ data }) => {
-        if (data) setProfiles(data)
-        setLoading(false)
-      })
+    Promise.all([
+      supabase.from('profiles').select('id, name, email').order('name'),
+      getWorkflowConfigs(),
+    ]).then(([pRes, wfs]) => {
+      if (pRes.data) setProfiles(pRes.data)
+      setWorkflowConfigs(wfs)
+      setLoading(false)
+    })
   }, [])
 
+  const getWfId = (role: RoleConfig) =>
+    workflowConfigs.find((wf) => wf.role === role.workflowRole)?.id
+
   const handleChange = useCallback(
-    async (field: string, val: any) => {
+    async (field: string, val: any, role?: RoleConfig) => {
       if (!activity || !onUpdate) return
       try {
-        onUpdate(await updateActivity(activity.id, { [field]: val } as any))
+        const updated = await updateActivity(activity.id, { [field]: val })
+        if (role) {
+          const wfId = getWfId(role)
+          if (wfId) {
+            if (field === role.idField) {
+              await updateActivityWorkflowFields(activity.id, wfId, { reviewer_id: val })
+            } else if (field === role.approvedField) {
+              await updateActivityWorkflowFields(activity.id, wfId, {
+                status: val ? 'Approved' : 'Pending',
+                completed_at: val ? new Date().toISOString() : null,
+              })
+            } else if (field === role.commentsField) {
+              await updateActivityWorkflowFields(activity.id, wfId, { comments: val })
+            }
+          }
+        }
+        onUpdate(updated)
       } catch {
         toast({ title: 'Error updating field', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, toast],
+    [activity, onUpdate, toast, workflowConfigs],
   )
 
   const handleToggle = useCallback(
-    async (requiredField: string, clearFields: Record<string, any>, checked: boolean) => {
+    async (role: RoleConfig, checked: boolean) => {
       if (!activity || !onUpdate) return
       try {
-        const updates: any = { [requiredField]: checked }
-        if (!checked) Object.assign(updates, clearFields)
-        onUpdate(await updateActivity(activity.id, updates))
+        const updates: any = { [role.requiredField]: checked }
+        if (!checked) {
+          updates[role.idField] = null
+          updates[role.commentsField] = null
+          updates[role.dateField] = null
+          updates[role.approvedField] = false
+        }
+        const updated = await updateActivity(activity.id, updates)
+        const wfId = getWfId(role)
+        if (wfId) {
+          if (checked) {
+            await upsertActivityWorkflow(activity.id, wfId)
+          } else {
+            await deleteActivityWorkflow(activity.id, wfId)
+          }
+        }
+        onUpdate(updated)
       } catch {
         toast({ title: 'Error updating workflow config', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, toast],
+    [activity, onUpdate, toast, workflowConfigs],
   )
-
-  const buildClearFields = (role: RoleConfig): Record<string, any> => {
-    const fields: Record<string, any> = { [role.idField]: null }
-    fields[role.commentsField] = null
-    fields[role.dateField] = null
-    fields[role.approvedField] = false
-    return fields
-  }
 
   const renderRow = (role: RoleConfig) => {
     const isRequired = !!activity?.[role.requiredField]
@@ -90,17 +122,14 @@ export function TabReviewApproval({
       <TableRow key={role.idField}>
         <TableCell className="font-medium text-sm">
           <div className="flex items-center gap-2">
-            <Checkbox
-              checked={isRequired}
-              onCheckedChange={(v) => handleToggle(role.requiredField, buildClearFields(role), !!v)}
-            />
+            <Checkbox checked={isRequired} onCheckedChange={(v) => handleToggle(role, !!v)} />
             {role.label}
           </div>
         </TableCell>
         <TableCell className="align-top pt-4">
           <Select
             value={idVal}
-            onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
+            onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v, role)}
             disabled={!isRequired}
           >
             <SelectTrigger className="h-9">
@@ -121,7 +150,8 @@ export function TabReviewApproval({
             className="min-h-[60px] resize-y"
             defaultValue={commentsVal}
             onBlur={(e) =>
-              e.target.value !== commentsVal && handleChange(role.commentsField, e.target.value)
+              e.target.value !== commentsVal &&
+              handleChange(role.commentsField, e.target.value, role)
             }
             placeholder="Add comments..."
             disabled={!isRequired}
@@ -133,7 +163,8 @@ export function TabReviewApproval({
             className="h-9"
             defaultValue={dateVal}
             onBlur={(e) =>
-              e.target.value !== dateVal && handleChange(role.dateField, e.target.value || null)
+              e.target.value !== dateVal &&
+              handleChange(role.dateField, e.target.value || null, role)
             }
             disabled={!isRequired}
           />
@@ -142,7 +173,7 @@ export function TabReviewApproval({
           <div className="flex justify-center">
             <Checkbox
               checked={approvedVal}
-              onCheckedChange={(v) => handleChange(role.approvedField, !!v)}
+              onCheckedChange={(v) => handleChange(role.approvedField, !!v, role)}
               disabled={!isRequired}
             />
           </div>
@@ -152,6 +183,36 @@ export function TabReviewApproval({
   }
 
   if (!activity) return null
+
+  const renderTable = (title: string, roles: RoleConfig[]) => (
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold">{title}</h3>
+      <div className="border border-border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/30">
+            <TableRow>
+              <TableHead className="w-[150px]">Role</TableHead>
+              <TableHead className="w-[200px]">Assignee</TableHead>
+              <TableHead className="min-w-[200px]">Comments</TableHead>
+              <TableHead className="w-[150px]">Date</TableHead>
+              <TableHead className="text-center w-[100px]">Approved</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  Loading...
+                </TableCell>
+              </TableRow>
+            ) : (
+              roles.map((r) => renderRow(r))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
@@ -183,62 +244,8 @@ export function TabReviewApproval({
           />
         </div>
       </div>
-
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Reviewers</h3>
-        <div className="border border-border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="w-[150px]">Role</TableHead>
-                <TableHead className="w-[200px]">Reviewer</TableHead>
-                <TableHead className="min-w-[200px]">Comments</TableHead>
-                <TableHead className="w-[150px]">Date</TableHead>
-                <TableHead className="text-center w-[100px]">Approved</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : (
-                REVIEWER_ROLES.map((r) => renderRow(r))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold">Approvers</h3>
-        <div className="border border-border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow>
-                <TableHead className="w-[150px]">Role</TableHead>
-                <TableHead className="w-[200px]">Approver</TableHead>
-                <TableHead className="min-w-[200px]">Comments</TableHead>
-                <TableHead className="w-[150px]">Date</TableHead>
-                <TableHead className="text-center w-[100px]">Approved</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
-                    Loading...
-                  </TableCell>
-                </TableRow>
-              ) : (
-                APPROVER_ROLES.map((a) => renderRow(a))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      {renderTable('Reviewers', REVIEWER_ROLES)}
+      {renderTable('Approvers', APPROVER_ROLES)}
     </div>
   )
 }

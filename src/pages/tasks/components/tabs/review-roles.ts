@@ -5,6 +5,7 @@ export interface RoleConfig {
   commentsField: string
   dateField: string
   approvedField: string
+  workflowRole: string
 }
 
 export const REVIEWER_ROLES: RoleConfig[] = [
@@ -15,6 +16,7 @@ export const REVIEWER_ROLES: RoleConfig[] = [
     commentsField: 'reviewer_team_leader_comments',
     dateField: 'reviewer_team_leader_date',
     approvedField: 'reviewer_team_leader_approved',
+    workflowRole: 'Team Leader Review',
   },
   {
     label: 'Head',
@@ -23,6 +25,7 @@ export const REVIEWER_ROLES: RoleConfig[] = [
     commentsField: 'reviewer_head_comments',
     dateField: 'reviewer_head_date',
     approvedField: 'reviewer_head_approved',
+    workflowRole: 'Head Review',
   },
   {
     label: 'CPO',
@@ -31,6 +34,7 @@ export const REVIEWER_ROLES: RoleConfig[] = [
     commentsField: 'reviewer_cpo_comments',
     dateField: 'reviewer_cpo_date',
     approvedField: 'reviewer_cpo_approved',
+    workflowRole: 'CPO Review',
   },
 ]
 
@@ -42,6 +46,7 @@ export const APPROVER_ROLES: RoleConfig[] = [
     commentsField: 'approver_head_comments',
     dateField: 'approver_head_date',
     approvedField: 'approver_head_approved',
+    workflowRole: 'Head Approval',
   },
   {
     label: 'CPO',
@@ -50,6 +55,7 @@ export const APPROVER_ROLES: RoleConfig[] = [
     commentsField: 'approver_cpo_comments',
     dateField: 'approver_cpo_date',
     approvedField: 'approver_cpo_approved',
+    workflowRole: 'CPO Approval',
   },
   {
     label: 'SG',
@@ -58,5 +64,6 @@ export const APPROVER_ROLES: RoleConfig[] = [
     commentsField: 'approver_sg_comments',
     dateField: 'approver_sg_date',
     approvedField: 'approver_sg_approved',
+    workflowRole: 'SG Approval',
   },
 ]

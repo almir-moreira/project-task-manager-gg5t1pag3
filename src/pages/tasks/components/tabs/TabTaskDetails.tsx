@@ -10,7 +10,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { getMasterData } from '@/services/master-data'
 import { ActivityBudgetLines } from './ActivityBudgetLines'
@@ -21,7 +20,6 @@ import {
   removeActivityBudgetLine,
   getActivities,
 } from '@/services/activities'
-import { REVIEWER_ROLES, APPROVER_ROLES } from './review-roles'
 import { Badge } from '@/components/ui/badge'
 import { getStatusColor } from '@/lib/status-colors'
 
@@ -134,17 +132,6 @@ export function TabActivityDetails({
     }
   }
 
-  const handleRoleToggle = async (requiredField: string, idField: string, checked: boolean) => {
-    const updates: any = { [requiredField]: checked }
-    if (!checked) updates[idField] = null
-    try {
-      const updated = await updateActivity(activity.id, updates)
-      onUpdate({ ...activity, ...updated })
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
   const handleAddBudgetLine = async () => {
     try {
       const newLine = await addActivityBudgetLine(activity.id)
@@ -245,75 +232,6 @@ export function TabActivityDetails({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Workflow Roles */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Workflow Roles</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Reviewers</Label>
-              {REVIEWER_ROLES.map((role) => (
-                <div key={role.idField} className="flex items-center gap-3">
-                  <Checkbox
-                    checked={!!activity[role.requiredField]}
-                    onCheckedChange={(v) => handleRoleToggle(role.requiredField, role.idField, !!v)}
-                  />
-                  <Label className="text-sm w-28 shrink-0">{role.label}</Label>
-                  <Select
-                    value={activity[role.idField] || 'unassigned'}
-                    onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
-                    disabled={!activity[role.requiredField]}
-                  >
-                    <SelectTrigger className="flex-1 h-9">
-                      <SelectValue placeholder="Select reviewer..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {masterData.profiles?.map((u: any) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
-            </div>
-            <div className="space-y-3">
-              <Label className="text-sm font-semibold">Approvers</Label>
-              {APPROVER_ROLES.map((role) => (
-                <div key={role.idField} className="flex items-center gap-3">
-                  <Checkbox
-                    checked={!!activity[role.requiredField]}
-                    onCheckedChange={(v) => handleRoleToggle(role.requiredField, role.idField, !!v)}
-                  />
-                  <Label className="text-sm w-28 shrink-0">{role.label}</Label>
-                  <Select
-                    value={activity[role.idField] || 'unassigned'}
-                    onValueChange={(v) => handleChange(role.idField, v === 'unassigned' ? null : v)}
-                    disabled={!activity[role.requiredField]}
-                  >
-                    <SelectTrigger className="flex-1 h-9">
-                      <SelectValue placeholder="Select approver..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {masterData.profiles?.map((u: any) => (
-                        <SelectItem key={u.id} value={u.id}>
-                          {u.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              ))}
             </div>
           </div>
         </CardContent>
