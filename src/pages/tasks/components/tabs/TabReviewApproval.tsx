@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
   Table,
   TableBody,
@@ -20,6 +20,14 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { updateActivity } from '@/services/activities'
+import {
+  getWorkflowConfigs,
+  upsertActivityWorkflow,
+  deleteActivityWorkflow,
+  updateActivityWorkflowFields,
+} from '@/services/activity-workflows'
+import { useToast } from '@/hooks/use-toast'
+import { REVIEWER_ROLES, APPROVER_ROLES, RoleConfig } from './review-roles'
 
 export function TabReviewApproval({
   activity,
@@ -29,59 +37,104 @@ export function TabReviewApproval({
   onUpdate?: (a: any) => void
 }) {
   const [profiles, setProfiles] = useState<any[]>([])
+  const [workflowMap, setWorkflowMap] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
 
   useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('id, name, email')
-      .order('name')
-      .then(({ data }) => {
-        if (data) setProfiles(data)
-        setLoading(false)
+    Promise.all([
+      supabase.from('profiles').select('id, name, email').order('name'),
+      getWorkflowConfigs(),
+    ]).then(([pRes, wfs]) => {
+      if (pRes.data) setProfiles(pRes.data)
+      const wfMap = new Map<string, string>()
+      ;(wfs || []).forEach((wf: any) => {
+        if (wf.role) wfMap.set(wf.role, wf.id)
       })
+      setWorkflowMap(wfMap)
+      setLoading(false)
+    })
   }, [])
 
-  const handleActivityChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
-    try {
-      const updated = await updateActivity(activity.id, { [field]: val } as any)
-      onUpdate(updated)
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  const handleRequiredToggle = useCallback(
+    async (role: RoleConfig, checked: boolean) => {
+      if (!activity || !onUpdate) return
+      try {
+        const updated = await updateActivity(activity.id, {
+          [role.requiredField]: checked,
+        } as any)
+        const wfId = workflowMap.get(role.workflowRole)
+        if (wfId) {
+          if (checked) {
+            const existingReviewer = activity[role.idField] || null
+            await upsertActivityWorkflow(activity.id, wfId, existingReviewer)
+          } else {
+            await deleteActivityWorkflow(activity.id, wfId)
+          }
+        }
+        onUpdate(updated)
+      } catch {
+        toast({ title: 'Error updating requirement', variant: 'destructive' })
+      }
+    },
+    [activity, onUpdate, workflowMap, toast],
+  )
 
-  const renderRow = (roleLabel: string, prefix: string, requiredField: string) => {
-    const idField = `${prefix}_id`
-    const commentsField = `${prefix}_comments`
-    const dateField = `${prefix}_date`
-    const approvedField = `${prefix}_approved`
+  const handleUserChange = useCallback(
+    async (role: RoleConfig, val: string) => {
+      if (!activity || !onUpdate) return
+      const userId = val === 'unassigned' ? null : val
+      try {
+        const updated = await updateActivity(activity.id, {
+          [role.idField]: userId,
+        } as any)
+        const wfId = workflowMap.get(role.workflowRole)
+        if (wfId) {
+          await updateActivityWorkflowFields(activity.id, wfId, {
+            reviewer_id: userId,
+          })
+        }
+        onUpdate(updated)
+      } catch {
+        toast({ title: 'Error updating reviewer', variant: 'destructive' })
+      }
+    },
+    [activity, onUpdate, workflowMap, toast],
+  )
 
-    const idVal = activity[idField] || 'unassigned'
-    const commentsVal = activity[commentsField] || ''
-    const dateVal = activity[dateField] ? activity[dateField].split('T')[0] : ''
-    const approvedVal = !!activity[approvedField]
-    const requiredVal = !!activity[requiredField]
+  const handleFieldChange = useCallback(
+    async (field: string, val: any) => {
+      if (!activity || !onUpdate) return
+      try {
+        const updated = await updateActivity(activity.id, { [field]: val } as any)
+        onUpdate(updated)
+      } catch {
+        toast({ title: 'Error updating field', variant: 'destructive' })
+      }
+    },
+    [activity, onUpdate, toast],
+  )
+
+  const renderRow = (role: RoleConfig) => {
+    const idVal = activity[role.idField] || 'unassigned'
+    const commentsVal = activity[role.commentsField] || ''
+    const dateVal = activity[role.dateField] ? String(activity[role.dateField]).split('T')[0] : ''
+    const approvedVal = !!activity[role.approvedField]
+    const requiredVal = !!activity[role.requiredField]
 
     return (
-      <TableRow key={prefix}>
+      <TableRow key={role.idField}>
         <TableCell className="text-center align-top pt-5">
           <div className="flex justify-center">
             <Checkbox
               checked={requiredVal}
-              onCheckedChange={(v) => handleActivityChange(requiredField, !!v)}
+              onCheckedChange={(v) => handleRequiredToggle(role, !!v)}
             />
           </div>
         </TableCell>
-        <TableCell className="font-medium text-sm">{roleLabel}</TableCell>
+        <TableCell className="font-medium text-sm">{role.label}</TableCell>
         <TableCell className="align-top pt-4">
-          <Select
-            value={idVal}
-            onValueChange={(val) =>
-              handleActivityChange(idField, val === 'unassigned' ? null : val)
-            }
-          >
+          <Select value={idVal} onValueChange={(val) => handleUserChange(role, val)}>
             <SelectTrigger className="h-9">
               <SelectValue placeholder="Select user..." />
             </SelectTrigger>
@@ -100,7 +153,8 @@ export function TabReviewApproval({
             className="min-h-[60px] resize-y"
             defaultValue={commentsVal}
             onBlur={(e) =>
-              e.target.value !== commentsVal && handleActivityChange(commentsField, e.target.value)
+              e.target.value !== commentsVal &&
+              handleFieldChange(role.commentsField, e.target.value)
             }
             placeholder="Add comments..."
           />
@@ -113,7 +167,7 @@ export function TabReviewApproval({
             onBlur={(e) => {
               const val = e.target.value
               if (val !== dateVal) {
-                handleActivityChange(dateField, val || null)
+                handleFieldChange(role.dateField, val || null)
               }
             }}
           />
@@ -122,7 +176,7 @@ export function TabReviewApproval({
           <div className="flex justify-center">
             <Checkbox
               checked={approvedVal}
-              onCheckedChange={(v) => handleActivityChange(approvedField, !!v)}
+              onCheckedChange={(v) => handleFieldChange(role.approvedField, !!v)}
             />
           </div>
         </TableCell>
@@ -143,7 +197,7 @@ export function TabReviewApproval({
           <Label>Urgency of Approval</Label>
           <Select
             value={activity.urgency_of_approval || 'Standard'}
-            onValueChange={(val) => handleActivityChange('urgency_of_approval', val)}
+            onValueChange={(val) => handleFieldChange('urgency_of_approval', val)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select urgency..." />
@@ -160,7 +214,7 @@ export function TabReviewApproval({
             defaultValue={activity.nature_of_urgency || ''}
             onBlur={(e) =>
               e.target.value !== activity.nature_of_urgency &&
-              handleActivityChange('nature_of_urgency', e.target.value)
+              handleFieldChange('nature_of_urgency', e.target.value)
             }
             placeholder="Describe nature of urgency..."
           />
@@ -189,11 +243,7 @@ export function TabReviewApproval({
                   </TableCell>
                 </TableRow>
               ) : (
-                <>
-                  {renderRow('Team Leader', 'reviewer_team_leader', 'wf_team_leader_required')}
-                  {renderRow('Head of Unit', 'reviewer_head', 'wf_head_reviewer_required')}
-                  {renderRow('CPO', 'reviewer_cpo', 'wf_cpo_reviewer_required')}
-                </>
+                REVIEWER_ROLES.map((role) => renderRow(role))
               )}
             </TableBody>
           </Table>
@@ -222,11 +272,7 @@ export function TabReviewApproval({
                   </TableCell>
                 </TableRow>
               ) : (
-                <>
-                  {renderRow('Head of Unit', 'approver_head', 'wf_head_approver_required')}
-                  {renderRow('CPO', 'approver_cpo', 'wf_cpo_approver_required')}
-                  {renderRow('SG', 'approver_sg', 'wf_sg_approver_required')}
-                </>
+                APPROVER_ROLES.map((role) => renderRow(role))
               )}
             </TableBody>
           </Table>

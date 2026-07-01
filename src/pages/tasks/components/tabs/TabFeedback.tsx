@@ -158,7 +158,8 @@ export function TabFeedback({
         const updated = await updateActivity(activity.id, updates)
         if (dept.workflowId) {
           if (checked) {
-            await upsertActivityWorkflow(activity.id, dept.workflowId)
+            const existingReviewer = activity[dept.reviewerIdField] || null
+            await upsertActivityWorkflow(activity.id, dept.workflowId, existingReviewer)
           } else {
             await deleteActivityWorkflow(activity.id, dept.workflowId)
           }
