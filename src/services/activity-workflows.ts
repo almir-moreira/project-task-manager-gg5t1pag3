@@ -13,7 +13,7 @@ export async function getDepartmentalWorkflowConfigs() {
   const { data, error } = await supabase
     .from('workflows')
     .select('*')
-    .eq('category', 'Departmental')
+    .in('category', ['Departmental', 'Feedback'])
     .order('stage', { ascending: true })
     .order('step', { ascending: true })
   if (error) throw error

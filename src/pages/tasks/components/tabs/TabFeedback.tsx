@@ -29,11 +29,13 @@ import { DEPT_FIELD_MAPPINGS, type DeptFieldMapping } from './workflow-dept-conf
 
 const EXTRA_DEPT_MAPPINGS: Record<string, DeptFieldMapping> = {
   'Governing Bodies': {
+    workflowRole: 'Governing Bodies',
     label: 'Governing Bodies',
     enabledField: 'wf_gob',
     reviewerIdField: 'wf_gob_reviewer_id',
   },
   Partnerships: {
+    workflowRole: 'Partnerships',
     label: 'Partnerships',
     enabledField: 'wf_partnerships',
     reviewerIdField: 'wf_partnerships_reviewer_id',
