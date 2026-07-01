@@ -31,7 +31,7 @@ const FEEDBACK_DEPTS: (DeptFieldMapping & { order: number })[] = [
   {
     order: 1,
     workflowRole: 'Relex',
-    label: 'RELEC',
+    label: 'RELEX',
     enabledField: 'wf_relex',
     reviewerIdField: 'wf_relex_reviewer_id',
   },
