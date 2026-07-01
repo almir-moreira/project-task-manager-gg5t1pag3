@@ -1,64 +1,61 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { format } from 'date-fns'
 import {
-  CheckCircle2,
   XCircle,
   Clock,
   ArrowRight,
-  ArrowDown,
   UserCircle,
-  PlayCircle,
-  SkipForward,
+  AlertCircle,
   FileText,
   Share2,
   RefreshCw,
-  AlertCircle,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
+import { WORKFLOW_STEPS, getStatusColor, getStatusIcon, formatDate } from './workflow-steps-config'
+
+interface WorkflowStep {
+  id: string
+  name: string
+  order: number
+  reviewerName: string
+  status: string
+  comments: string
+  date: string | null
+}
 
 export function TabWorkflow({ activity }: { activity: any }) {
-  const [currentActivity, setCurrentActivity] = useState(activity)
   const [profiles, setProfiles] = useState<Record<string, string>>({})
-  const [workflows, setWorkflows] = useState<any[]>([])
-  const [activeWorkflows, setActiveWorkflows] = useState<any[]>([])
+  const [awList, setAwList] = useState<any[]>([])
+  const [wfMap, setWfMap] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setCurrentActivity(activity)
-  }, [activity])
-
-  useEffect(() => {
-    if (!activity?.id) return
-
+    if (!activity?.id) {
+      setLoading(false)
+      return
+    }
     const fetchAll = async () => {
-      const [profilesRes, workflowsRes, activeRes] = await Promise.all([
+      const [pRes, wRes, aRes] = await Promise.all([
         supabase.from('profiles').select('id, name'),
         supabase
           .from('workflows')
-          .select('*')
-          .or(`activity_id.eq.${activity.id},activity_id.is.null`)
-          .order('stage')
-          .order('step'),
+          .select('id, role')
+          .or(`activity_id.eq.${activity.id},activity_id.is.null`),
         supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
       ])
-
-      if (profilesRes.data) {
-        setProfiles(profilesRes.data.reduce((acc: any, p: any) => ({ ...acc, [p.id]: p.name }), {}))
-      }
-      if (workflowsRes.data) setWorkflows(workflowsRes.data)
-      if (activeRes.data) setActiveWorkflows(activeRes.data)
+      if (pRes.data)
+        setProfiles(pRes.data.reduce((a: any, p: any) => ({ ...a, [p.id]: p.name }), {}))
+      if (wRes.data) setWfMap(wRes.data.reduce((a: any, w: any) => ({ ...a, [w.role]: w.id }), {}))
+      if (aRes.data) setAwList(aRes.data)
       setLoading(false)
     }
-
     fetchAll()
-
-    const channel = supabase
-      .channel(`activity_workflows_${activity.id}`)
+    const ch = supabase
+      .channel(`aw_${activity.id}`)
       .on(
         'postgres_changes',
         {
@@ -67,16 +64,47 @@ export function TabWorkflow({ activity }: { activity: any }) {
           table: 'activity_workflows',
           filter: `activity_id=eq.${activity.id}`,
         },
-        () => fetchAll(),
+        fetchAll,
       )
       .subscribe()
-
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(ch)
     }
   }, [activity?.id])
 
-  if (!currentActivity) {
+  const steps = useMemo<WorkflowStep[]>(() => {
+    if (!activity) return []
+    const built = WORKFLOW_STEPS.filter((s) => !!activity[s.enabledField]).map((s) => {
+      const wfId = wfMap[s.workflowRole] ?? null
+      const aw = wfId ? awList.find((a) => a.workflow_id === wfId) : null
+      const revId = activity[s.reviewerIdField] || aw?.reviewer_id || null
+      let status = 'Pending'
+      let comments = ''
+      let date: string | null = null
+      if (s.approvedField && activity[s.approvedField]) status = 'Approved'
+      if (s.commentsField) comments = activity[s.commentsField] || ''
+      if (s.dateField && activity[s.dateField]) date = activity[s.dateField]
+      if (aw) {
+        if (aw.status) status = aw.status
+        if (aw.comments) comments = aw.comments
+        if (aw.completed_at) date = aw.completed_at
+      }
+      return {
+        id: s.id,
+        name: s.displayName,
+        order: s.order,
+        reviewerName: revId ? profiles[revId] || 'Assigned' : 'Unassigned',
+        status,
+        comments,
+        date,
+      }
+    })
+    const fp = built.findIndex((s) => s.status === 'Pending')
+    if (fp !== -1) built[fp].status = 'In Progress'
+    return built
+  }, [activity, wfMap, awList, profiles])
+
+  if (!activity) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center space-y-3">
@@ -97,122 +125,19 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  const getRequiredField = (role: string, category: string | null): string | null => {
-    const roleLower = (role || '').toLowerCase().trim()
-    const catLower = (category || '').toLowerCase().trim()
-    if (catLower === 'review') {
-      if (roleLower.includes('team leader')) return 'wf_team_leader_required'
-      if (roleLower.includes('head')) return 'wf_head_reviewer_required'
-      if (roleLower.includes('cpo')) return 'wf_cpo_reviewer_required'
-    }
-    if (catLower === 'approval') {
-      if (roleLower.includes('head')) return 'wf_head_approver_required'
-      if (roleLower.includes('cpo')) return 'wf_cpo_approver_required'
-      if (roleLower.includes('sg') || roleLower.includes('secretary'))
-        return 'wf_sg_approver_required'
-    }
-    if (roleLower.includes('governing bodies') || roleLower === 'gob') return 'wf_gob'
-    if (roleLower.includes('partnerships')) return 'wf_partnerships'
-    return null
-  }
-
-  const selectedWorkflows = workflows.filter((wf) => {
-    const requiredField = getRequiredField(wf.role, wf.category)
-    if (requiredField) {
-      return currentActivity[requiredField] === true
-    }
-    if (wf.category === 'Review' || wf.category === 'Approval') return true
-    return activeWorkflows.some((aw) => aw.workflow_id === wf.id)
-  })
-
-  let steps = selectedWorkflows
-    .sort((a, b) => {
-      if (a.stage !== b.stage) return (a.stage || 0) - (b.stage || 0)
-      return (a.step || 0) - (b.step || 0)
-    })
-    .map((wf) => {
-      const active = activeWorkflows.find((aw) => aw.workflow_id === wf.id)
-      const assigneeId = active?.reviewer_id
-      const categoryName =
-        wf.category === 'Approval'
-          ? 'Approval'
-          : wf.category === 'Review'
-            ? 'Review'
-            : wf.category || 'Review'
-
-      return {
-        id: wf.id,
-        name: `${wf.role} ${categoryName}`,
-        date: active?.completed_at,
-        comments: active?.comments || '',
-        assigneeId,
-        assigneeName: assigneeId ? profiles[assigneeId] || 'Assigned Reviewer' : 'Unassigned',
-        status: active?.status || 'Pending',
-      }
-    })
-
-  if (steps.length > 0) {
-    const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
-    if (firstPendingIndex !== -1) steps[firstPendingIndex].status = 'In Progress'
-  }
-
   const completedCount = steps.filter((s) => s.status === 'Approved').length
-  const totalCount = steps.length
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Approved':
-        return 'bg-[#10b981] text-white border-[#10b981]'
-      case 'In Progress':
-        return 'bg-[#3b82f6] text-white border-[#3b82f6]'
-      case 'Pending':
-        return 'bg-[#d1d5db] text-gray-700 border-[#d1d5db]'
-      case 'Rejected':
-        return 'bg-[#ef4444] text-white border-[#ef4444]'
-      case 'Skipped':
-        return 'bg-[#c4b5fd] text-purple-900 border-[#c4b5fd]'
-      default:
-        return 'bg-gray-200 text-gray-700'
-    }
-  }
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Approved':
-        return <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
-      case 'In Progress':
-        return <PlayCircle className="w-4 h-4 text-[#3b82f6]" />
-      case 'Pending':
-        return <Clock className="w-4 h-4 text-gray-400" />
-      case 'Rejected':
-        return <XCircle className="w-4 h-4 text-[#ef4444]" />
-      case 'Skipped':
-        return <SkipForward className="w-4 h-4 text-[#c4b5fd]" />
-      default:
-        return <Clock className="w-4 h-4" />
-    }
-  }
-
-  const formatDate = (dateStr: string | null, pattern = 'MMM d, yyyy HH:mm') => {
-    if (!dateStr) return ''
-    try {
-      return format(new Date(dateStr), pattern)
-    } catch {
-      return dateStr
-    }
-  }
 
   return (
     <div className="flex flex-col h-full space-y-6 p-4 sm:p-6 animate-fade-in bg-muted/5">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-card p-6 rounded-xl border shadow-sm shrink-0">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {currentActivity.activity_name || currentActivity.title || 'Activity Workflow'}
+            {activity.activity_name || activity.title || 'Activity Workflow'}
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
-            <span>ID: {currentActivity.task_number || currentActivity.id?.split('-')[0]}</span>
-            {currentActivity.end_date && (
-              <span>• Est. Completion: {formatDate(currentActivity.end_date, 'MMM d, yyyy')}</span>
+            <span>ID: {activity.task_number || activity.id?.split('-')[0]}</span>
+            {activity.end_date && (
+              <span>• Est. Completion: {formatDate(activity.end_date, 'MMM d, yyyy')}</span>
             )}
           </div>
         </div>
@@ -221,7 +146,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
             variant="outline"
             className="text-sm px-3 py-1 bg-muted/50 w-full sm:w-auto justify-center"
           >
-            {completedCount} of {totalCount} approvals complete
+            {completedCount} of {steps.length} approvals complete
           </Badge>
           <div className="flex items-center gap-2 mt-3 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
@@ -236,18 +161,17 @@ export function TabWorkflow({ activity }: { activity: any }) {
 
       <div className="bg-card p-6 rounded-xl border shadow-sm overflow-x-auto shrink-0">
         <h3 className="text-lg font-semibold mb-4">Workflow Status</h3>
-
         {steps.length === 0 ? (
           <div className="text-center p-8 bg-muted/20 rounded-lg border border-dashed border-border">
             <AlertCircle className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground">No workflow steps configured.</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Please configure workflow stages to track progress.
+              Enable departments in the Feedback tab or roles in the Review & Approval tab.
             </p>
           </div>
         ) : (
           <div className="flex items-center gap-2 min-w-max pb-2">
-            {steps.map((step, index) => (
+            {steps.map((step, i) => (
               <div key={step.id} className="flex items-center shrink-0">
                 <div
                   className={cn(
@@ -255,11 +179,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
                     step.status === 'In Progress'
                       ? 'border-[#3b82f6] shadow-blue-100 ring-1 ring-blue-50'
                       : 'border-border',
-                    step.status === 'Approved' ? 'border-[#10b981]/30 bg-[#10b981]/5' : '',
-                    step.status === 'Rejected' ? 'border-[#ef4444]/30 bg-[#ef4444]/5' : '',
-                    step.status === 'Skipped'
-                      ? 'border-[#c4b5fd]/30 bg-[#c4b5fd]/5 opacity-70'
-                      : '',
+                    step.status === 'Approved' && 'border-[#10b981]/30 bg-[#10b981]/5',
+                    step.status === 'Rejected' && 'border-[#ef4444]/30 bg-[#ef4444]/5',
                   )}
                 >
                   <div className="flex justify-between items-start mb-1.5">
@@ -271,7 +192,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
                   <div className="space-y-1 text-[10px] text-muted-foreground leading-tight">
                     <div className="flex items-center gap-1">
                       <UserCircle className="w-3 h-3 shrink-0" />
-                      <span className="truncate">{step.assigneeName}</span>
+                      <span className="truncate">{step.reviewerName}</span>
                     </div>
                     {step.date && (
                       <div className="flex items-center gap-1">
@@ -290,12 +211,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
                       </Badge>
                     </div>
                   </div>
-                  {step.status === 'In Progress' && (
-                    <div className="absolute -inset-[1px] border border-[#3b82f6] rounded-lg animate-pulse opacity-20 pointer-events-none"></div>
-                  )}
                 </div>
-
-                {index < steps.length - 1 && (
+                {i < steps.length - 1 && (
                   <div className="flex items-center justify-center text-muted-foreground/40 w-6 sm:w-8 shrink-0">
                     <ArrowRight className="w-4 h-4" />
                   </div>
@@ -333,38 +250,33 @@ export function TabWorkflow({ activity }: { activity: any }) {
                           {step.name}
                         </h4>
                       </div>
-
                       <div className="flex items-center gap-4 flex-1 min-w-0">
                         <div
                           className="text-xs text-muted-foreground flex items-center gap-1.5 w-[140px] shrink-0 truncate"
-                          title={step.assigneeName}
+                          title={step.reviewerName}
                         >
                           <UserCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span className="truncate">{step.assigneeName}</span>
+                          <span className="truncate">{step.reviewerName}</span>
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-1.5 w-[130px] shrink-0">
-                          {step.date ? (
+                          {step.date && (
                             <>
                               <Clock className="w-3.5 h-3.5 shrink-0" />
                               <span className="truncate">{formatDate(step.date)}</span>
                             </>
-                          ) : null}
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3 shrink-0">
-                        <Badge
-                          className={cn(
-                            'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap',
-                            getStatusColor(step.status),
-                          )}
-                        >
-                          {step.status}
-                        </Badge>
-                      </div>
+                      <Badge
+                        className={cn(
+                          'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap',
+                          getStatusColor(step.status),
+                        )}
+                      >
+                        {step.status}
+                      </Badge>
                     </div>
                   </div>
-
                   {step.comments && (
                     <div className="w-full xl:w-auto xl:max-w-xs mt-2 xl:mt-0 p-2 xl:p-0 bg-background xl:bg-transparent rounded-lg border xl:border-none text-xs flex gap-2 items-start shrink-0">
                       <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-0.5 xl:hidden" />
@@ -376,7 +288,6 @@ export function TabWorkflow({ activity }: { activity: any }) {
                       </p>
                     </div>
                   )}
-
                   <div className="w-full xl:w-auto mt-2 xl:mt-0 shrink-0">
                     <Button
                       variant="ghost"
