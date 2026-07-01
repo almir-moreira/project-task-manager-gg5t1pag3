@@ -1,0 +1,9 @@
+DO $$
+BEGIN
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_team_leader_required BOOLEAN DEFAULT false;
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_head_reviewer_required BOOLEAN DEFAULT false;
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_cpo_reviewer_required BOOLEAN DEFAULT false;
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_head_approver_required BOOLEAN DEFAULT false;
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_cpo_approver_required BOOLEAN DEFAULT false;
+  ALTER TABLE public.activities ADD COLUMN IF NOT EXISTS wf_sg_approver_required BOOLEAN DEFAULT false;
+END $$;

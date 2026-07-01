@@ -27,8 +27,6 @@ export default function ActivityDetailPage() {
   const [activity, setActivity] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  const [workflows, setWorkflows] = useState<any[]>([])
-  const [activityWorkflows, setActivityWorkflows] = useState<any[]>([])
   const [masterData, setMasterData] = useState<any>(null)
 
   useEffect(() => {
@@ -47,31 +45,6 @@ export default function ActivityDetailPage() {
   useEffect(() => {
     if (!activity?.id) return
 
-    const fetchAw = async () => {
-      const [wfRes, awRes] = await Promise.all([
-        supabase.from('workflows').select('*'),
-        supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
-      ])
-      if (wfRes.data) setWorkflows(wfRes.data)
-      if (awRes.data) setActivityWorkflows(awRes.data)
-    }
-
-    fetchAw()
-
-    const subAw = supabase
-      .channel(`aw_${activity.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'activity_workflows',
-          filter: `activity_id=eq.${activity.id}`,
-        },
-        fetchAw,
-      )
-      .subscribe()
-
     const subAct = supabase
       .channel(`act_${activity.id}`)
       .on(
@@ -84,7 +57,6 @@ export default function ActivityDetailPage() {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(subAw)
       supabase.removeChannel(subAct)
     }
   }, [activity?.id])
@@ -96,28 +68,28 @@ export default function ActivityDetailPage() {
   const canAdvance = useMemo(() => {
     if (currentStage === 'Done') return false
     if (currentStage === 'Preparation') return true
+    if (currentStage === 'Feedback') return true
 
-    if (currentStage === 'Feedback') {
-      const activeFeedbackWfs = activityWorkflows.filter((aw) => {
-        const wf = workflows.find((w) => w.id === aw.workflow_id)
-        return wf?.category === 'Feedback'
-      })
-      if (activeFeedbackWfs.length === 0) return true
-      return activeFeedbackWfs.every((aw) => aw.status === 'Approved' || aw.status === 'Concluído')
+    if (currentStage === 'Review') {
+      const checks: boolean[] = []
+      if (activity?.wf_team_leader_required) checks.push(!!activity.reviewer_team_leader_approved)
+      if (activity?.wf_head_reviewer_required) checks.push(!!activity.reviewer_head_approved)
+      if (activity?.wf_cpo_reviewer_required) checks.push(!!activity.reviewer_cpo_approved)
+      if (checks.length === 0) return true
+      return checks.every(Boolean)
     }
 
-    if (currentStage === 'Review' || currentStage === 'Approval') {
-      const mandatoryWfs = workflows.filter((w) => w.category === currentStage)
-      if (mandatoryWfs.length === 0) return true
-
-      return mandatoryWfs.every((wf) => {
-        const aw = activityWorkflows.find((a) => a.workflow_id === wf.id)
-        return aw && (aw.status === 'Approved' || aw.status === 'Concluído')
-      })
+    if (currentStage === 'Approval') {
+      const checks: boolean[] = []
+      if (activity?.wf_head_approver_required) checks.push(!!activity.approver_head_approved)
+      if (activity?.wf_cpo_approver_required) checks.push(!!activity.approver_cpo_approved)
+      if (activity?.wf_sg_approver_required) checks.push(!!activity.approver_sg_approved)
+      if (checks.length === 0) return true
+      return checks.every(Boolean)
     }
 
     return true
-  }, [currentStage, workflows, activityWorkflows])
+  }, [currentStage, activity])
 
   const handleAdvanceStage = async () => {
     if (!canAdvance || !nextStage) return
