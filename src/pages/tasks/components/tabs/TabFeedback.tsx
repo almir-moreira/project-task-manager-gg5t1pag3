@@ -25,32 +25,83 @@ import {
   updateActivityWorkflowFields,
 } from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
-import { DEPT_FIELD_MAPPINGS, type DeptFieldMapping } from './workflow-dept-config'
+import type { DeptFieldMapping } from './workflow-dept-config'
 
-const EXTRA_DEPT_MAPPINGS: Record<string, DeptFieldMapping> = {
-  'Governing Bodies': {
-    workflowRole: 'Governing Bodies',
+const FEEDBACK_DEPTS: (DeptFieldMapping & { order: number })[] = [
+  {
+    order: 1,
+    workflowRole: 'Relex',
+    label: 'RELEC',
+    enabledField: 'wf_relex',
+    reviewerIdField: 'wf_relex_reviewer_id',
+  },
+  {
+    order: 2,
+    workflowRole: 'Legal',
+    label: 'Legal',
+    enabledField: 'wf_legal',
+    reviewerIdField: 'wf_legal_reviewer_id',
+  },
+  {
+    order: 3,
+    workflowRole: 'GoB',
     label: 'Governing Bodies',
     enabledField: 'wf_gob',
     reviewerIdField: 'wf_gob_reviewer_id',
   },
-  Partnerships: {
-    workflowRole: 'Partnerships',
-    label: 'Partnerships',
-    enabledField: 'wf_partnerships',
-    reviewerIdField: 'wf_partnerships_reviewer_id',
+  {
+    order: 4,
+    workflowRole: 'Protocol',
+    label: 'Protocol',
+    enabledField: 'wf_protocol',
+    reviewerIdField: 'wf_protocol_reviewer_id',
   },
-}
-
-const ALL_DEPT_MAPPINGS: Record<string, DeptFieldMapping> = {
-  ...DEPT_FIELD_MAPPINGS,
-  ...EXTRA_DEPT_MAPPINGS,
-}
+  {
+    order: 5,
+    workflowRole: 'EMS',
+    label: 'EMS',
+    enabledField: 'wf_ems',
+    reviewerIdField: 'wf_ems_reviewer_id',
+  },
+  {
+    order: 6,
+    workflowRole: 'Procurement',
+    label: 'Procurement',
+    enabledField: 'wf_procurement',
+    reviewerIdField: 'wf_procurement_reviewer_id',
+  },
+  {
+    order: 7,
+    workflowRole: 'Technology',
+    label: 'Technology',
+    enabledField: 'wf_technology',
+    reviewerIdField: 'wf_technology_reviewer_id',
+  },
+  {
+    order: 8,
+    workflowRole: 'M&E',
+    label: 'M&E',
+    enabledField: 'wf_mne',
+    reviewerIdField: 'wf_mne_reviewer_id',
+  },
+  {
+    order: 9,
+    workflowRole: 'COMMS',
+    label: 'Communications',
+    enabledField: 'wf_comms',
+    reviewerIdField: 'wf_comms_reviewer_id',
+  },
+  {
+    order: 10,
+    workflowRole: 'Social Media',
+    label: 'Social Media',
+    enabledField: 'wf_social_media',
+    reviewerIdField: 'wf_social_media_reviewer_id',
+  },
+]
 
 interface DeptRow extends DeptFieldMapping {
-  workflowId: string
-  stage: number
-  step: number
+  workflowId: string | null
 }
 
 export function TabFeedback({
@@ -75,14 +126,17 @@ export function TabFeedback({
       getDepartmentalWorkflowConfigs(),
     ]).then(([pRes, wfs]) => {
       if (pRes.data) setProfiles(pRes.data)
-      const rows: DeptRow[] = (wfs || [])
-        .map((wf: any) => {
-          const mapping = ALL_DEPT_MAPPINGS[wf.role]
-          if (!mapping) return null
-          return { ...mapping, workflowId: wf.id, stage: wf.stage, step: wf.step || 1 }
-        })
-        .filter((r): r is DeptRow => r !== null)
-        .sort((a, b) => a.stage - b.stage || a.step - b.step)
+      const wfMap = new Map<string, string>()
+      ;(wfs || []).forEach((wf: any) => {
+        if (wf.role) wfMap.set(wf.role, wf.id)
+      })
+      const rows: DeptRow[] = FEEDBACK_DEPTS.map((dept) => ({
+        workflowRole: dept.workflowRole,
+        label: dept.label,
+        enabledField: dept.enabledField,
+        reviewerIdField: dept.reviewerIdField,
+        workflowId: wfMap.get(dept.workflowRole) ?? null,
+      }))
       setDeptRows(rows)
       setLoading(false)
     })
@@ -95,10 +149,12 @@ export function TabFeedback({
         const updates: any = { [dept.enabledField]: checked }
         if (!checked) updates[dept.reviewerIdField] = null
         const updated = await updateActivity(activity.id, updates)
-        if (checked) {
-          await upsertActivityWorkflow(activity.id, dept.workflowId)
-        } else {
-          await deleteActivityWorkflow(activity.id, dept.workflowId)
+        if (dept.workflowId) {
+          if (checked) {
+            await upsertActivityWorkflow(activity.id, dept.workflowId)
+          } else {
+            await deleteActivityWorkflow(activity.id, dept.workflowId)
+          }
         }
         onUpdate(updated)
       } catch {
@@ -116,9 +172,11 @@ export function TabFeedback({
         const updated = await updateActivity(activity.id, {
           [dept.reviewerIdField]: reviewerId,
         } as any)
-        await updateActivityWorkflowFields(activity.id, dept.workflowId, {
-          reviewer_id: reviewerId,
-        })
+        if (dept.workflowId) {
+          await updateActivityWorkflowFields(activity.id, dept.workflowId, {
+            reviewer_id: reviewerId,
+          })
+        }
         onUpdate(updated)
       } catch {
         toast({ title: 'Error updating reviewer', variant: 'destructive' })
@@ -151,7 +209,7 @@ export function TabFeedback({
               const reviewerId = activity[dept.reviewerIdField] || 'unassigned'
 
               return (
-                <TableRow key={dept.workflowId} className="h-14">
+                <TableRow key={dept.enabledField} className="h-14">
                   <TableCell className="font-medium text-sm">
                     <div className="flex items-center gap-3">
                       <Checkbox
