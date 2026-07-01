@@ -111,6 +111,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
       if (roleLower.includes('sg') || roleLower.includes('secretary'))
         return 'wf_sg_approver_required'
     }
+    if (roleLower.includes('governing bodies') || roleLower === 'gob') return 'wf_gob'
+    if (roleLower.includes('partnerships')) return 'wf_partnerships'
     return null
   }
 

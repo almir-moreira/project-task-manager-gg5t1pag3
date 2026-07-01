@@ -27,6 +27,24 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { DEPT_FIELD_MAPPINGS, type DeptFieldMapping } from './workflow-dept-config'
 
+const EXTRA_DEPT_MAPPINGS: Record<string, DeptFieldMapping> = {
+  'Governing Bodies': {
+    label: 'Governing Bodies',
+    enabledField: 'wf_gob',
+    reviewerIdField: 'wf_gob_reviewer_id',
+  },
+  Partnerships: {
+    label: 'Partnerships',
+    enabledField: 'wf_partnerships',
+    reviewerIdField: 'wf_partnerships_reviewer_id',
+  },
+}
+
+const ALL_DEPT_MAPPINGS: Record<string, DeptFieldMapping> = {
+  ...DEPT_FIELD_MAPPINGS,
+  ...EXTRA_DEPT_MAPPINGS,
+}
+
 interface DeptRow extends DeptFieldMapping {
   workflowId: string
   stage: number
@@ -57,7 +75,7 @@ export function TabFeedback({
       if (pRes.data) setProfiles(pRes.data)
       const rows: DeptRow[] = (wfs || [])
         .map((wf: any) => {
-          const mapping = DEPT_FIELD_MAPPINGS[wf.role]
+          const mapping = ALL_DEPT_MAPPINGS[wf.role]
           if (!mapping) return null
           return { ...mapping, workflowId: wf.id, stage: wf.stage, step: wf.step || 1 }
         })
