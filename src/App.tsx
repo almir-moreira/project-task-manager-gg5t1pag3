@@ -12,6 +12,7 @@ import TasksPage from './pages/tasks/TasksPage'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import AdminPage from './pages/admin/AdminPage'
 import MonitoringPage from './pages/monitoring/MonitoringPage'
+import KaiciidCalendarReport from './pages/reports/KaiciidCalendarReport'
 import LoginPage from './pages/auth/LoginPage'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
               <Route path="/monitoring" element={<MonitoringPage />} />
+              <Route path="/reports/kaiciid-calendar" element={<KaiciidCalendarReport />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
