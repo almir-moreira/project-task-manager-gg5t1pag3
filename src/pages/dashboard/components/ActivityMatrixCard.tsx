@@ -88,7 +88,7 @@ export function ActivityMatrixCard({
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">Current step:</span>
-                <span className="text-xs font-semibold text-blue-600">
+                <span className="text-xs font-semibold text-[#1E3A8A]">
                   {tracker.currentStepName}
                 </span>
               </div>
@@ -121,11 +121,11 @@ export function ActivityMatrixCard({
                               {stepIdx > 0 && <div className="w-2 h-px bg-border" />}
                               <div
                                 className={cn(
-                                  'flex items-center gap-1 px-2 py-1 rounded border min-w-[80px] max-w-[130px]',
+                                  'flex items-center gap-1 px-2 py-1 rounded border min-w-[55px] max-w-[90px]',
                                   styles.bg,
                                   styles.border,
                                 )}
-                                title={step.label}
+                                title={`${step.label} (${step.stage})`}
                               >
                                 <span
                                   className={cn('w-1.5 h-1.5 rounded-full shrink-0', styles.dot)}
