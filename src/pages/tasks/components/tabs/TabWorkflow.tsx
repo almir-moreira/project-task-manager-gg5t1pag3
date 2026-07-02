@@ -95,6 +95,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
         if (aw.completed_at) date = aw.completed_at
       }
       if (s.approvedField && activity[s.approvedField]) status = 'Completed'
+      if (!s.approvedField && aw && aw.comments && aw.completed_at) status = 'Completed'
       return {
         id: s.id,
         name: s.displayName,

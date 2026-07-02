@@ -3,6 +3,13 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Switch } from '@/components/ui/switch'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { updateActivity } from '@/services/activities'
 
 export function TabEventDetails({
@@ -25,9 +32,9 @@ export function TabEventDetails({
   if (!activity) return null
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl pb-10">
-      <h3 className="text-lg font-medium">Event Details</h3>
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-6 animate-fade-in max-w-4xl pb-10">
+      <h3 className="text-lg font-medium">Event Information</h3>
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="grid gap-2">
           <Label>Location</Label>
           <Input
@@ -43,45 +50,96 @@ export function TabEventDetails({
           <Label>Number of Participants</Label>
           <Input
             type="number"
-            defaultValue={activity.event_participants_count || ''}
-            onBlur={(e) =>
-              e.target.value !== String(activity.event_participants_count) &&
-              handleChange('event_participants_count', parseInt(e.target.value) || null)
-            }
+            defaultValue={activity.event_participants_count ?? ''}
+            onBlur={(e) => {
+              const val = e.target.value
+              const num = parseInt(val)
+              if (val === '' || isNaN(num)) {
+                if (activity.event_participants_count !== null) {
+                  handleChange('event_participants_count', null)
+                }
+              } else if (num !== activity.event_participants_count) {
+                handleChange('event_participants_count', num)
+              }
+            }}
             placeholder="0"
           />
         </div>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label>Event Category</Label>
+          <Select
+            value={activity.event_category || ''}
+            onValueChange={(v) => handleChange('event_category', v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="KAICIID Event">KAICIID Event</SelectItem>
+              <SelectItem value="KAICIID Co-organized Event">KAICIID Co-organized Event</SelectItem>
+              <SelectItem value="Participation">Participation</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label>Approval</Label>
+          <Select
+            value={activity.event_approval_status || ''}
+            onValueChange={(v) => handleChange('event_approval_status', v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select approval" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Approved">Approved</SelectItem>
+              <SelectItem value="In Process">In Process</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <div className="grid gap-2">
           <Label>Date Status</Label>
-          <Input
-            defaultValue={activity.event_date_status || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.event_date_status &&
-              handleChange('event_date_status', e.target.value)
-            }
-            placeholder="E.g. Confirmed, Tentative"
-          />
+          <Select
+            value={activity.event_date_status || ''}
+            onValueChange={(v) => handleChange('event_date_status', v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select date status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Confirmed">Confirmed</SelectItem>
+              <SelectItem value="Tentative">Tentative</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div className="grid gap-2">
           <Label>Location Status</Label>
-          <Input
-            defaultValue={activity.event_location_status || ''}
-            onBlur={(e) =>
-              e.target.value !== activity.event_location_status &&
-              handleChange('event_location_status', e.target.value)
-            }
-            placeholder="E.g. Booked, Pending"
+          <Select
+            value={activity.event_location_status || ''}
+            onValueChange={(v) => handleChange('event_location_status', v)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select location status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Confirmed">Confirmed</SelectItem>
+              <SelectItem value="Tentative">Tentative</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex items-center justify-between border border-border p-4 rounded-md">
+          <Label>Include in Calendar</Label>
+          <Switch
+            checked={!!activity.event_include_calendar}
+            onCheckedChange={(v) => handleChange('event_include_calendar', v)}
           />
         </div>
-      </div>
-      <div className="flex items-center justify-between border border-border p-4 rounded-md">
-        <Label>Include in Calendar</Label>
-        <Switch
-          checked={!!activity.event_include_calendar}
-          onCheckedChange={(v) => handleChange('event_include_calendar', v)}
-        />
+        <div className="flex items-center justify-between border border-border p-4 rounded-md">
+          <Label>Can the Event Change Time?</Label>
+          <Switch
+            checked={!!activity.event_can_change_time}
+            onCheckedChange={(v) => handleChange('event_can_change_time', v)}
+          />
+        </div>
       </div>
       <div className="grid gap-2">
         <Label>Links</Label>
@@ -94,15 +152,8 @@ export function TabEventDetails({
           placeholder="https://..."
         />
       </div>
-      <div className="flex items-center justify-between border border-border p-4 rounded-md">
-        <Label>Can the Event Change Time?</Label>
-        <Switch
-          checked={!!activity.event_can_change_time}
-          onCheckedChange={(v) => handleChange('event_can_change_time', v)}
-        />
-      </div>
       {activity.event_can_change_time && (
-        <div className="grid gap-2">
+        <div className="grid gap-2 animate-fade-in duration-200">
           <Label>If yes, describe</Label>
           <Textarea
             defaultValue={activity.event_change_time_desc || ''}

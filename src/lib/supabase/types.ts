@@ -1149,7 +1149,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       task_priority: 'Low' | 'Medium' | 'High' | 'Urgent'

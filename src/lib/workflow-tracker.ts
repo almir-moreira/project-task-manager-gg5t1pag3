@@ -102,6 +102,10 @@ export function computeTracker(
         status = 'Completed'
       }
 
+      if (!s.approvedField && aw && aw.comments && aw.completed_at) {
+        status = 'Completed'
+      }
+
       return {
         id: s.id,
         label: getShortLabel(s.displayName, s.category),

@@ -29,6 +29,10 @@ export function computeWorkflowSteps(
       status = 'Completed'
     }
 
+    if (!s.approvedField && aw && aw.comments && aw.completed_at) {
+      status = 'Completed'
+    }
+
     const category = s.category === 'Feedback' ? 'Planning' : (s.category as 'Review' | 'Approval')
 
     return {
