@@ -191,35 +191,69 @@ export const WORKFLOW_STEPS: WorkflowStepConfig[] = [
 
 export function getStatusColor(status: string): string {
   switch (status) {
+    case 'Completed':
+      return 'bg-[#166534] text-white border-[#166534]'
     case 'Approved':
       return 'bg-[#10b981] text-white border-[#10b981]'
     case 'In Progress':
       return 'bg-[#3b82f6] text-white border-[#3b82f6]'
     case 'Pending':
-      return 'bg-[#d1d5db] text-gray-700 border-[#d1d5db]'
+      return 'bg-[#991B1B] text-white border-[#991B1B]'
     case 'Rejected':
-      return 'bg-[#ef4444] text-white border-[#ef4444]'
+      return 'bg-[#991B1B] text-white border-[#991B1B]'
     case 'Skipped':
       return 'bg-[#c4b5fd] text-purple-900 border-[#c4b5fd]'
     default:
-      return 'bg-gray-200 text-gray-700'
+      return 'bg-[#991B1B] text-white border-[#991B1B]'
+  }
+}
+
+export interface WorkflowStepStatusStyle {
+  card: string
+  badge: string
+}
+
+export function getWorkflowStepStatusStyles(
+  status: string | null | undefined,
+): WorkflowStepStatusStyle {
+  const normalized = status?.toLowerCase().trim() ?? ''
+
+  if (['completed', 'complete', 'approved', 'done'].includes(normalized)) {
+    return {
+      card: 'bg-[#DCFCE7] border-[#86EFAC] text-[#166534]',
+      badge: 'bg-[#86EFAC]/60 text-[#166534] border-[#86EFAC]',
+    }
+  }
+
+  if (['in progress', 'in-progress', 'inprogress'].includes(normalized)) {
+    return {
+      card: 'bg-[#DBEAFE] border-[#93C5FD] text-[#1E3A8A]',
+      badge: 'bg-[#93C5FD]/60 text-[#1E3A8A] border-[#93C5FD]',
+    }
+  }
+
+  return {
+    card: 'bg-[#FEE2E2] border-[#FCA5A5] text-[#991B1B]',
+    badge: 'bg-[#FCA5A5]/60 text-[#991B1B] border-[#FCA5A5]',
   }
 }
 
 export function getStatusIcon(status: string): ReactNode {
   switch (status) {
+    case 'Completed':
+      return <CheckCircle2 className="w-4 h-4 text-[#166534]" />
     case 'Approved':
       return <CheckCircle2 className="w-4 h-4 text-[#10b981]" />
     case 'In Progress':
-      return <PlayCircle className="w-4 h-4 text-[#3b82f6]" />
+      return <PlayCircle className="w-4 h-4 text-[#1E3A8A]" />
     case 'Pending':
-      return <Clock className="w-4 h-4 text-gray-400" />
+      return <Clock className="w-4 h-4 text-[#991B1B]" />
     case 'Rejected':
-      return <XCircle className="w-4 h-4 text-[#ef4444]" />
+      return <XCircle className="w-4 h-4 text-[#991B1B]" />
     case 'Skipped':
       return <SkipForward className="w-4 h-4 text-[#c4b5fd]" />
     default:
-      return <Clock className="w-4 h-4" />
+      return <Clock className="w-4 h-4 text-[#991B1B]" />
   }
 }
 

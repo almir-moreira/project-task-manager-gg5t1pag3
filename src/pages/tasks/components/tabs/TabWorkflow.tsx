@@ -15,7 +15,13 @@ import {
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
-import { WORKFLOW_STEPS, getStatusColor, getStatusIcon, formatDate } from './workflow-steps-config'
+import {
+  WORKFLOW_STEPS,
+  getStatusColor,
+  getStatusIcon,
+  formatDate,
+  getWorkflowStepStatusStyles,
+} from './workflow-steps-config'
 
 interface WorkflowStep {
   id: string
@@ -81,7 +87,6 @@ export function TabWorkflow({ activity }: { activity: any }) {
       let status = 'Pending'
       let comments = ''
       let date: string | null = null
-      if (s.approvedField && activity[s.approvedField]) status = 'Approved'
       if (s.commentsField) comments = activity[s.commentsField] || ''
       if (s.dateField && activity[s.dateField]) date = activity[s.dateField]
       if (aw) {
@@ -89,6 +94,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
         if (aw.comments) comments = aw.comments
         if (aw.completed_at) date = aw.completed_at
       }
+      if (s.approvedField && activity[s.approvedField]) status = 'Completed'
       return {
         id: s.id,
         name: s.displayName,
@@ -125,7 +131,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
     )
   }
 
-  const completedCount = steps.filter((s) => s.status === 'Approved').length
+  const completedCount = steps.filter((s) => s.status === 'Completed').length
 
   return (
     <div className="flex flex-col h-full space-y-6 p-4 sm:p-6 animate-fade-in bg-muted/5">
@@ -175,12 +181,9 @@ export function TabWorkflow({ activity }: { activity: any }) {
               <div key={step.id} className="flex items-center shrink-0">
                 <div
                   className={cn(
-                    'relative flex flex-col p-2.5 rounded-lg border w-40 sm:w-48 bg-background shadow-sm transition-all duration-200 hover:shadow-md shrink-0',
-                    step.status === 'In Progress'
-                      ? 'border-[#3b82f6] shadow-blue-100 ring-1 ring-blue-50'
-                      : 'border-border',
-                    step.status === 'Approved' && 'border-[#10b981]/30 bg-[#10b981]/5',
-                    step.status === 'Rejected' && 'border-[#ef4444]/30 bg-[#ef4444]/5',
+                    'relative flex flex-col p-2.5 rounded-lg border w-40 sm:w-48 shadow-sm transition-all duration-200 hover:shadow-md shrink-0',
+                    getWorkflowStepStatusStyles(step.status).card,
+                    step.status === 'In Progress' && 'ring-1 ring-blue-200',
                   )}
                 >
                   <div className="flex justify-between items-start mb-1.5">
@@ -203,8 +206,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
                     <div className="mt-1 pt-0.5">
                       <Badge
                         className={cn(
-                          'pointer-events-none font-medium text-[9px] px-1 py-0 h-3.5 leading-none',
-                          getStatusColor(step.status),
+                          'pointer-events-none font-medium text-[9px] px-1 py-0 h-3.5 leading-none border',
+                          getWorkflowStepStatusStyles(step.status).badge,
                         )}
                       >
                         {step.status}
@@ -269,8 +272,8 @@ export function TabWorkflow({ activity }: { activity: any }) {
                       </div>
                       <Badge
                         className={cn(
-                          'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap',
-                          getStatusColor(step.status),
+                          'text-[10px] px-1.5 py-0 h-4 whitespace-nowrap border',
+                          getWorkflowStepStatusStyles(step.status).badge,
                         )}
                       >
                         {step.status}
