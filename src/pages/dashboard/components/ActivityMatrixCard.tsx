@@ -5,7 +5,22 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight, ChevronRight } from 'lucide-react'
 import { getStatusColor } from '@/lib/status-colors'
 import { cn } from '@/lib/utils'
-import { computeTracker, getStatusStyles } from '@/lib/workflow-tracker'
+import { computeTracker, getStatusStyles, TrackerStage } from '@/lib/workflow-tracker'
+
+const STAGE_STYLES: Record<string, { header: string; container: string }> = {
+  Feedback: {
+    header: 'bg-[#EAF2FF] border-[#B6CCFF] text-[#1E40AF]',
+    container: 'bg-[#F5F9FF]',
+  },
+  Review: {
+    header: 'bg-[#F3E8FF] border-[#D8B4FE] text-[#7C3AED]',
+    container: 'bg-[#FAF5FF]',
+  },
+  Approval: {
+    header: 'bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]',
+    container: 'bg-[#F0FDF7]',
+  },
+}
 
 interface ActivityMatrixCardProps {
   activity: any
@@ -101,16 +116,23 @@ export function ActivityMatrixCard({
             </div>
 
             <div className="overflow-x-auto pb-2">
-              <div className="flex items-start gap-2 min-w-max">
-                {tracker.stages.map((stage, stageIdx) => (
-                  <div key={stage.name} className="flex items-start gap-2">
-                    {stageIdx > 0 && (
-                      <div className="flex items-center h-[52px]">
-                        <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
-                      </div>
-                    )}
-                    <div className="flex flex-col gap-1">
-                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+              <div className="flex items-start gap-3 min-w-max">
+                {tracker.stages.map((stage: TrackerStage) => {
+                  const stageStyle = STAGE_STYLES[stage.name] ?? STAGE_STYLES['Review']
+                  return (
+                    <div
+                      key={stage.name}
+                      className={cn(
+                        'flex flex-col gap-2 rounded-lg border border-border/40 p-2.5',
+                        stageStyle.container,
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                          stageStyle.header,
+                        )}
+                      >
                         {stage.name}
                       </span>
                       <div className="flex items-center gap-1">
@@ -141,8 +163,8 @@ export function ActivityMatrixCard({
                         })}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           </div>
