@@ -2,15 +2,10 @@ import { useNavigate } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { ArrowRight, Calendar, User, Tag, Layers } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { ArrowRight, ChevronRight } from 'lucide-react'
 import { getStatusColor } from '@/lib/status-colors'
-import {
-  getWorkflowStepStatusStyles,
-  getStatusIcon,
-} from '@/pages/tasks/components/tabs/workflow-steps-config'
-import { computeWorkflowSteps, getProgressPercentage } from '@/lib/workflow-utils'
+import { cn } from '@/lib/utils'
+import { computeTracker, getStatusStyles } from '@/lib/workflow-tracker'
 
 interface ActivityMatrixCardProps {
   activity: any
@@ -18,129 +13,145 @@ interface ActivityMatrixCardProps {
   wfMap: Record<string, string>
 }
 
-const CATEGORY_GROUPS = ['Planning', 'Review', 'Approval'] as const
-
 export function ActivityMatrixCard({
   activity,
   activityWorkflows,
   wfMap,
 }: ActivityMatrixCardProps) {
   const navigate = useNavigate()
-  const steps = computeWorkflowSteps(activity, activityWorkflows, wfMap)
-  const progress = getProgressPercentage(steps)
-  const completedCount = steps.filter((s) => s.status === 'Completed').length
+  const tracker = computeTracker(activity, activityWorkflows, wfMap)
+  const activityId = activity.task_number || activity.id
+  const statusColor = getStatusColor(activity.status)
+
+  const metaItems = [
+    { label: 'Category', value: activity.category_obj?.name || activity.type?.name || '-' },
+    { label: 'Assignee', value: activity.assignee?.name || '-' },
+    { label: 'Owner', value: activity.project_owner?.name || '-' },
+    { label: 'Due Date', value: activity.end_date || '-' },
+    { label: 'Stage', value: activity.current_stage || 'Preparation' },
+  ]
 
   return (
-    <Card className="shadow-sm border-border overflow-hidden transition-shadow hover:shadow-md">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 p-4 border-b border-border bg-muted/20">
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="font-mono text-xs font-bold text-muted-foreground">
-            {activity.task_number || activity.id.slice(0, 8)}
-          </span>
-          <h3
-            className="text-sm font-semibold truncate max-w-[280px]"
-            title={activity.activity_name}
-          >
-            {activity.activity_name}
-          </h3>
-          <Badge
+    <Card className="shadow-sm border-border overflow-hidden">
+      <CardContent className="p-0">
+        <div className="flex items-start justify-between gap-3 p-4 border-b border-border">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <Badge
+              variant="outline"
+              className={cn('text-[10px] font-semibold border-0 shrink-0', statusColor)}
+            >
+              {activity.status || 'To Do'}
+            </Badge>
+            <div className="min-w-0">
+              <span className="text-xs font-mono text-muted-foreground">{activityId}</span>
+              <h3 className="text-sm font-semibold truncate" title={activity.activity_name}>
+                {activity.activity_name || 'Untitled Activity'}
+              </h3>
+            </div>
+          </div>
+          <Button
+            size="sm"
             variant="outline"
-            className={cn('text-[10px] font-semibold border-0', getStatusColor(activity.status))}
+            className="shrink-0 h-8 text-xs"
+            onClick={() => navigate(`/tasks/${activityId}`)}
           >
-            {activity.status || 'To Do'}
-          </Badge>
+            Open Activity
+            <ArrowRight className="w-3 h-3 ml-1" />
+          </Button>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-          {activity.type?.name && (
-            <span className="flex items-center gap-1">
-              <Tag className="w-3 h-3" />
-              {activity.type.name}
-            </span>
-          )}
-          {activity.project_owner?.name && (
-            <span className="flex items-center gap-1">
-              <User className="w-3 h-3" />
-              {activity.project_owner.name}
-            </span>
-          )}
-          {activity.end_date && (
-            <span className="flex items-center gap-1">
-              <Calendar className="w-3 h-3" />
-              {activity.end_date}
-            </span>
-          )}
-          {activity.current_stage && (
-            <span className="flex items-center gap-1">
-              <Layers className="w-3 h-3" />
-              {activity.current_stage}
-            </span>
-          )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4 border-b border-border">
+          {metaItems.map((item) => (
+            <div key={item.label} className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {item.label}
+              </p>
+              <p className="text-xs font-medium truncate" title={item.value}>
+                {item.value}
+              </p>
+            </div>
+          ))}
         </div>
-      </div>
 
-      <CardContent className="p-4">
-        {steps.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm py-4">
-            No workflow steps configured.
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {CATEGORY_GROUPS.map((cat, catIdx) => {
-                const catSteps = steps.filter((s) => s.category === cat)
-                if (catSteps.length === 0) return null
-                return (
-                  <div key={cat} className="flex items-center gap-2 shrink-0">
-                    {catIdx > 0 && <div className="h-8 w-px bg-border mx-1" />}
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground shrink-0">
-                      {cat}
-                    </span>
-                    {catSteps.map((step, i) => (
-                      <div key={step.id} className="flex items-center gap-2 shrink-0">
-                        {i > 0 && <div className="h-px w-3 bg-border" />}
-                        <div
-                          className={cn(
-                            'flex items-center gap-1.5 px-2 py-1 rounded-md border text-[10px] font-medium whitespace-nowrap transition-all',
-                            getWorkflowStepStatusStyles(step.status).card,
-                          )}
-                          title={step.name}
-                        >
-                          {getStatusIcon(step.status)}
-                          <span className="truncate max-w-[100px]">{step.name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )
-              })}
-            </div>
-
-            <div className="mt-3 mb-3">
-              <Progress value={progress} className="h-1.5" />
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-border">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-muted-foreground">
-                  Steps completed:{' '}
-                  <span className="text-foreground font-bold">
-                    {completedCount} / {steps.length}
-                  </span>
-                </span>
-                <span className="text-xs font-medium text-muted-foreground">
-                  Progress: <span className="text-foreground font-bold">{progress}%</span>
+        {tracker.hasWorkflow ? (
+          <div className="p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Steps completed:</span>
+                <span className="text-xs font-semibold">
+                  {tracker.completedCount} / {tracker.totalCount}
                 </span>
               </div>
-              <Button
-                size="sm"
-                variant="default"
-                className="h-8 text-xs"
-                onClick={() => navigate(`/tasks/${activity.task_number || activity.id}`)}
-              >
-                Open Activity <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Progress:</span>
+                <span className="text-xs font-semibold">{tracker.progressPercent}%</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Current step:</span>
+                <span className="text-xs font-semibold text-blue-600">
+                  {tracker.currentStepName}
+                </span>
+              </div>
             </div>
-          </>
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                style={{ width: `${tracker.progressPercent}%` }}
+              />
+            </div>
+
+            <div className="overflow-x-auto pb-2">
+              <div className="flex items-start gap-2 min-w-max">
+                {tracker.stages.map((stage, stageIdx) => (
+                  <div key={stage.name} className="flex items-start gap-2">
+                    {stageIdx > 0 && (
+                      <div className="flex items-center h-[52px]">
+                        <ChevronRight className="w-3 h-3 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        {stage.name}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {stage.steps.map((step, stepIdx) => {
+                          const styles = getStatusStyles(step.status)
+                          return (
+                            <div key={step.id} className="flex items-center gap-1">
+                              {stepIdx > 0 && <div className="w-2 h-px bg-border" />}
+                              <div
+                                className={cn(
+                                  'flex items-center gap-1 px-2 py-1 rounded border min-w-[80px] max-w-[130px]',
+                                  styles.bg,
+                                  styles.border,
+                                )}
+                                title={step.label}
+                              >
+                                <span
+                                  className={cn('w-1.5 h-1.5 rounded-full shrink-0', styles.dot)}
+                                />
+                                <span
+                                  className={cn('text-[9px] font-medium truncate', styles.text)}
+                                >
+                                  {step.label}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-4">
+            <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-lg">
+              Workflow not configured for this activity.
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
