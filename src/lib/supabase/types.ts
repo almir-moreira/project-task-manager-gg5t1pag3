@@ -55,7 +55,9 @@ export type Database = {
           created_at: string | null
           current_stage: string | null
           end_date: string | null
+          event_approval_status: string | null
           event_can_change_time: boolean | null
+          event_category: string | null
           event_change_time_desc: string | null
           event_comments: string | null
           event_date_status: string | null
@@ -175,7 +177,9 @@ export type Database = {
           created_at?: string | null
           current_stage?: string | null
           end_date?: string | null
+          event_approval_status?: string | null
           event_can_change_time?: boolean | null
+          event_category?: string | null
           event_change_time_desc?: string | null
           event_comments?: string | null
           event_date_status?: string | null
@@ -295,7 +299,9 @@ export type Database = {
           created_at?: string | null
           current_stage?: string | null
           end_date?: string | null
+          event_approval_status?: string | null
           event_can_change_time?: boolean | null
+          event_category?: string | null
           event_change_time_desc?: string | null
           event_comments?: string | null
           event_date_status?: string | null
@@ -498,6 +504,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'activities_sub_task_id_fkey'
+            columns: ['sub_task_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'activities_type_id_fkey'
             columns: ['type_id']
             isOneToOne: false
@@ -646,6 +659,13 @@ export type Database = {
             referencedRelation: 'activities'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'activity_attachments_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
         ]
       }
       activity_budget_lines: {
@@ -692,6 +712,13 @@ export type Database = {
             columns: ['activity_id']
             isOneToOne: false
             referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activity_budget_lines_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
             referencedColumns: ['id']
           },
           {
@@ -751,6 +778,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'activity_comments_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'activity_comments_author_id_fkey'
             columns: ['author_id']
             isOneToOne: false
@@ -803,6 +837,13 @@ export type Database = {
             columns: ['activity_id']
             isOneToOne: false
             referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activity_workflows_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
             referencedColumns: ['id']
           },
           {
@@ -864,6 +905,13 @@ export type Database = {
             columns: ['task_id']
             isOneToOne: false
             referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'attachments_task_id_fkey'
+            columns: ['task_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
             referencedColumns: ['id']
           },
           {
@@ -1121,6 +1169,13 @@ export type Database = {
             referencedRelation: 'activities'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'workflows_activity_id_fkey'
+            columns: ['activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
         ]
       }
       workorders: {
@@ -1146,7 +1201,58 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      calendar_report_view: {
+        Row: {
+          activity_name: string | null
+          category_id: string | null
+          category_name: string | null
+          cost_center_code: string | null
+          cost_center_id: string | null
+          cost_center_name: string | null
+          current_stage: string | null
+          end_date: string | null
+          event_approval_status: string | null
+          event_category: string | null
+          event_date_status: string | null
+          event_include_calendar: boolean | null
+          event_location: string | null
+          event_location_status: string | null
+          event_participants_count: number | null
+          id: string | null
+          inv_ems: boolean | null
+          inv_protocol: boolean | null
+          priority: Database['public']['Enums']['task_priority'] | null
+          project_owner_id: string | null
+          project_owner_name: string | null
+          short_description: string | null
+          start_date: string | null
+          status: Database['public']['Enums']['task_status'] | null
+          task_number: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'activities_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_cost_center_id_fkey'
+            columns: ['cost_center_id']
+            isOneToOne: false
+            referencedRelation: 'cost_centers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'activities_project_owner_id_fkey'
+            columns: ['project_owner_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
       is_admin: { Args: never; Returns: boolean }
