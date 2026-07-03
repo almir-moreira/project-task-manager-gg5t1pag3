@@ -1,14 +1,16 @@
-/* General utility functions (exposes cn) */
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { format } from 'date-fns'
 
-/**
- * Merges multiple class names into a single string
- * @param inputs - Array of class names
- * @returns Merged class names
- */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// Add any other utility functions here
+export function formatDate(dateStr: string | null, pattern = 'MMM d, yyyy HH:mm'): string {
+  if (!dateStr) return ''
+  try {
+    return format(new Date(dateStr), pattern)
+  } catch {
+    return dateStr
+  }
+}

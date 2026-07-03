@@ -1,6 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
-import { supabase } from '@/lib/supabase/client'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useEffect, useState } from 'react'
+import { CalendarDays, AlertCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -9,185 +13,210 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Skeleton } from '@/components/ui/skeleton'
+import {
+  getCalendarReport,
+  type MonthGroup,
+  type CalendarReportRow,
+} from '@/services/calendar-report'
+import { formatDate } from '@/lib/utils'
 
-type CalendarReportRow = {
-  start_date: string | null
-  end_date: string | null
-  event_name: string | null
-  event_category: string | null
-  location: string | null
-  pax: number | null
-  approval_status: string | null
-  date_location_status: string | null
-  project_owner_name: string | null
-  short_description: string | null
-  cost_center_code: string | null
-  ems_protocol_involvement: string | null
-  month_label: string | null
-  sort_date: string | null
-}
-
-const formatValue = (value: string | null): string => {
-  if (!value || value.trim() === '') return 'Not specified'
+function getDisplayValue(value: string | null | undefined, fallback = '—'): string {
+  if (value === null || value === undefined || value === '') return fallback
   return value
 }
 
-const formatDate = (dateStr: string | null): string => {
-  if (!dateStr) return '—'
-  const date = new Date(dateStr)
-  if (isNaN(date.getTime())) return dateStr
-  return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+function getEmsProtocolLabel(row: CalendarReportRow): string {
+  if (row.ems_protocol_involvement) return row.ems_protocol_involvement
+  if (row.inv_ems && row.inv_protocol) return 'EMS & Protocol'
+  if (row.inv_ems) return 'EMS'
+  if (row.inv_protocol) return 'Protocol'
+  return 'None'
+}
+
+function getApprovalBadge(row: CalendarReportRow) {
+  const status = row.approval_status || row.event_approval_status
+  if (!status || status === '') {
+    return <span className="text-sm text-muted-foreground">—</span>
+  }
+  const variant = status.toLowerCase().includes('approved') ? 'default' : 'secondary'
+  return <Badge variant={variant}>{status}</Badge>
+}
+
+function MonthSection({ group }: { group: MonthGroup }) {
+  return (
+    <Card className="mb-6 overflow-hidden">
+      <CardHeader className="bg-muted/40 pb-3">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <CalendarDays className="h-5 w-5 text-primary" />
+          {group.monthLabel}
+          <span className="ml-auto text-sm font-normal text-muted-foreground">
+            {group.rows.length} event{group.rows.length !== 1 ? 's' : ''}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table className="min-w-[1100px]">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
+                  Start Date
+                </TableHead>
+                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
+                  End Date
+                </TableHead>
+                <TableHead className="min-w-[200px] max-w-[320px]">Name of Event</TableHead>
+                <TableHead className="min-w-[180px] max-w-[300px]">Short Description</TableHead>
+                <TableHead className="w-[70px] min-w-[70px] text-center whitespace-nowrap">
+                  PAX
+                </TableHead>
+                <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
+                  Approval
+                </TableHead>
+                <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
+                  Cost Centre
+                </TableHead>
+                <TableHead className="min-w-[140px] max-w-[200px]">EMS / Protocol</TableHead>
+                <TableHead className="min-w-[120px] max-w-[180px]">Project Owner</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {group.rows.map((row) => {
+                const rowId = row.id ?? row.activity_id
+                const link = rowId ? `/tasks/${rowId}` : null
+                const cellContent = (
+                  <>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {row.start_date ? formatDate(row.start_date) : '—'}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {row.end_date ? formatDate(row.end_date) : '—'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <span className="font-medium leading-snug break-words">
+                        {getDisplayValue(row.event_name || row.activity_name, '—')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      <span className="leading-snug break-words">
+                        {getDisplayValue(row.short_description, '—')}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-center text-sm whitespace-nowrap">
+                      {row.pax !== null && row.pax !== undefined ? row.pax : '—'}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{getApprovalBadge(row)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-sm">
+                      {getDisplayValue(row.cost_center_code, '—')}
+                    </TableCell>
+                    <TableCell className="text-sm">{getEmsProtocolLabel(row)}</TableCell>
+                    <TableCell className="text-sm">
+                      {getDisplayValue(row.project_owner_name, 'Not specified')}
+                    </TableCell>
+                  </>
+                )
+                return (
+                  <TableRow
+                    key={rowId ?? `${row.start_date}-${row.event_name}`}
+                    className={link ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  >
+                    {cellContent}
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function KaiciidCalendarReport() {
-  const [data, setData] = useState<CalendarReportRow[]>([])
+  const [groups, setGroups] = useState<MonthGroup[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchReport()
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    getCalendarReport()
+      .then((data) => {
+        if (!cancelled) {
+          setGroups(data)
+          setLoading(false)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.error('Calendar report error:', err)
+          setError('Unable to load the KAICIID Events Calendar report.')
+          setLoading(false)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  const fetchReport = async () => {
-    setLoading(true)
-    setError(false)
-    const { data: result, error: err } = await supabase
-      .from('calendar_report_view')
-      .select(
-        'start_date, end_date, event_name, event_category, location, pax, approval_status, date_location_status, project_owner_name, short_description, cost_center_code, ems_protocol_involvement, month_label, sort_date',
-      )
-      .order('sort_date', { ascending: true })
-      .order('end_date', { ascending: true })
-      .order('event_name', { ascending: true })
-
-    if (err) {
-      setError(true)
-    } else {
-      setData((result as CalendarReportRow[]) ?? [])
-    }
-    setLoading(false)
-  }
-
-  const groupedData = useMemo(() => {
-    const groups: Record<string, CalendarReportRow[]> = {}
-    const sorted = [...data].sort((a, b) => {
-      const sortA = a.sort_date ?? ''
-      const sortB = b.sort_date ?? ''
-      if (sortA !== sortB) return sortA.localeCompare(sortB)
-      const endA = a.end_date ?? ''
-      const endB = b.end_date ?? ''
-      if (endA !== endB) return endA.localeCompare(endB)
-      const nameA = a.event_name ?? ''
-      const nameB = b.event_name ?? ''
-      return nameA.localeCompare(nameB)
-    })
-
-    for (const row of sorted) {
-      const key = row.month_label ?? 'Unscheduled'
-      if (!groups[key]) groups[key] = []
-      groups[key].push(row)
-    }
-
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b))
-  }, [data])
-
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">KAICIID Events Calendar</h1>
-        <p className="text-muted-foreground mt-1">
-          Automated report of activities marked for calendar inclusion.
-        </p>
+    <div className="container mx-auto px-4 py-6 animate-fade-in">
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">KAICIID Events Calendar</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Chronological monthly overview of organization events and activities.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/">Back to Dashboard</Link>
+        </Button>
       </div>
 
       {loading && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Loading KAICIID Events Calendar...</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-8 w-full" />
-            ))}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <span className="text-sm">Loading KAICIID Events Calendar...</span>
+          </div>
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-6 w-48" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-32 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {error && !loading && (
+        <Card className="border-destructive/50">
+          <CardContent className="flex items-center gap-3 pt-6">
+            <AlertCircle className="h-5 w-5 text-destructive" />
+            <p className="text-sm text-destructive">{error}</p>
           </CardContent>
         </Card>
       )}
 
-      {error && !loading && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">
-              Unable to load the KAICIID Events Calendar report.
-            </CardTitle>
-          </CardHeader>
-        </Card>
-      )}
-
-      {!loading && !error && data.length === 0 && (
+      {!loading && !error && groups.length === 0 && (
         <Card>
-          <CardHeader>
-            <CardTitle className="text-muted-foreground">No calendar activities found.</CardTitle>
-          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center gap-2 pt-12 pb-12">
+            <CalendarDays className="h-10 w-10 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">
+              No calendar events found. Events marked for calendar inclusion will appear here.
+            </p>
+          </CardContent>
         </Card>
       )}
 
-      {!loading && !error && data.length > 0 && (
-        <div className="space-y-8">
-          {groupedData.map(([monthLabel, rows]) => (
-            <Card key={monthLabel}>
-              <CardHeader className="border-b bg-muted/40">
-                <CardTitle className="text-lg">{monthLabel}</CardTitle>
-                <CardDescription>{rows.length} event(s)</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0 overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Start Date</TableHead>
-                      <TableHead>End Date</TableHead>
-                      <TableHead>Name of Event</TableHead>
-                      <TableHead>Event Category</TableHead>
-                      <TableHead>Location</TableHead>
-                      <TableHead className="text-right">PAX</TableHead>
-                      <TableHead>Approval</TableHead>
-                      <TableHead>Date & Location Status</TableHead>
-                      <TableHead>Project Owner</TableHead>
-                      <TableHead>Short Description</TableHead>
-                      <TableHead>Cost Centre</TableHead>
-                      <TableHead>Involvement of EMS/Protocol</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((row, idx) => (
-                      <TableRow key={`${monthLabel}-${idx}`}>
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(row.start_date)}
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {formatDate(row.end_date)}
-                        </TableCell>
-                        <TableCell className="font-medium">{formatValue(row.event_name)}</TableCell>
-                        <TableCell>{formatValue(row.event_category)}</TableCell>
-                        <TableCell>{formatValue(row.location)}</TableCell>
-                        <TableCell className="text-right">{row.pax ?? '—'}</TableCell>
-                        <TableCell>{formatValue(row.approval_status)}</TableCell>
-                        <TableCell>{formatValue(row.date_location_status)}</TableCell>
-                        <TableCell>{formatValue(row.project_owner_name)}</TableCell>
-                        <TableCell
-                          className="max-w-[250px] truncate"
-                          title={row.short_description ?? ''}
-                        >
-                          {formatValue(row.short_description)}
-                        </TableCell>
-                        <TableCell>{formatValue(row.cost_center_code)}</TableCell>
-                        <TableCell>{formatValue(row.ems_protocol_involvement)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+      {!loading && !error && groups.length > 0 && (
+        <div>
+          {groups.map((group) => (
+            <MonthSection key={group.monthStart || group.monthLabel} group={group} />
           ))}
         </div>
       )}
