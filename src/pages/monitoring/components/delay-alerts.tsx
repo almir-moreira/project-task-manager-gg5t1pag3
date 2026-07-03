@@ -1,84 +1,47 @@
-import { Link } from 'react-router-dom'
-import { Check, AlertTriangle } from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
+import { useNavigate } from 'react-router-dom'
+import { AlertTriangle, Clock } from 'lucide-react'
 import type { MonitoringActivity } from '@/services/monitoring'
-import { getAgingHours, isDelayedApproval } from '@/services/monitoring'
+import { isApprovalDelayed } from '@/services/monitoring'
 
 export function DelayAlerts({ activities }: { activities: MonitoringActivity[] }) {
-  const delayed = activities.filter(isDelayedApproval)
+  const navigate = useNavigate()
+  const delayed = activities.filter((a) => isApprovalDelayed(a))
+
+  if (delayed.length === 0) return null
+
+  const getDelayHours = (a: MonitoringActivity) => {
+    if (!a.stage_started_at) return 0
+    return Math.floor((Date.now() - new Date(a.stage_started_at).getTime()) / 3600000)
+  }
 
   return (
-    <Card className="border-red-200">
-      <CardHeader className="bg-red-50/50 dark:bg-red-950/20 border-b border-red-100 dark:border-red-900/30">
-        <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-          <AlertTriangle className="w-5 h-5" />
-          <CardTitle>Delay Alerts (Approval &gt; 48h)</CardTitle>
+    <Alert className="border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700">
+      <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+      <AlertTitle className="text-amber-800 dark:text-amber-300 text-sm font-semibold">
+        Delayed Approvals ({delayed.length})
+      </AlertTitle>
+      <AlertDescription className="text-amber-700 dark:text-amber-400">
+        <p className="text-xs mb-2">
+          The following activities have been in an approval stage for more than 48 hours:
+        </p>
+        <div className="space-y-1 max-h-[200px] overflow-y-auto">
+          {delayed.map((a) => (
+            <div
+              key={a.id}
+              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/30 rounded px-2 py-1 transition-colors"
+              onClick={() => navigate(`/tasks/${a.task_number || a.id}`)}
+            >
+              <Clock className="w-3 h-3 shrink-0" />
+              <span className="font-mono text-[10px]">{a.task_number || a.id.slice(0, 8)}</span>
+              <span className="flex-1 truncate">{a.activity_name}</span>
+              <span className="font-semibold whitespace-nowrap">
+                {getDelayHours(a)}h in {a.status}
+              </span>
+            </div>
+          ))}
         </div>
-        <CardDescription>Activities in an approval state for more than 48 hours</CardDescription>
-      </CardHeader>
-      <CardContent className="p-0 overflow-y-auto max-h-[350px]">
-        {delayed.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground flex flex-col items-center">
-            <Check className="w-8 h-8 text-emerald-500 mb-2 opacity-50" />
-            No delayed approvals. Excellent!
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Time in Stage</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {delayed.map((a) => (
-                <TableRow key={a.id} className="bg-red-50/20 dark:bg-red-950/10">
-                  <TableCell className="font-medium">
-                    <Link
-                      to={`/tasks/${a.task_number || a.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      {a.task_number || a.id.slice(0, 8)}
-                    </Link>
-                    <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                      {a.activity_name}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px]">
-                      {a.status || 'N/A'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="destructive" className="font-mono">
-                      {Math.floor(getAgingHours(a.stage_started_at, a.updated_at))} hours
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Link to={`/tasks/${a.task_number || a.id}`}>
-                      <Button size="sm" variant="outline">
-                        View
-                      </Button>
-                    </Link>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+      </AlertDescription>
+    </Alert>
   )
 }

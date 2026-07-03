@@ -1,97 +1,124 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  LabelList,
-  Cell,
-  FunnelChart,
-  Funnel,
-} from 'recharts'
-import type { MonitoringActivity } from '@/services/monitoring'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
+import type { MonitoringActivity, MonitoringFilterState } from '@/services/monitoring'
 
-const STAGES = ['Preparation', 'Feedback', 'Review', 'Approval', 'Done']
+type FilterUpdater = (prev: MonitoringFilterState) => MonitoringFilterState
 
-const STAGE_COLORS: Record<string, string> = {
-  Preparation: 'hsl(var(--chart-1))',
-  Feedback: 'hsl(var(--chart-2))',
-  Review: 'hsl(var(--chart-3))',
-  Approval: 'hsl(var(--chart-4))',
-  Done: 'hsl(var(--chart-5))',
+interface Props {
+  activities: MonitoringActivity[]
+  filters: MonitoringFilterState
+  onFilterChange: (updater: FilterUpdater) => void
 }
 
-export function StageBottleneckChart({ activities }: { activities: MonitoringActivity[] }) {
-  const data = STAGES.map((stage) => ({
-    name: stage,
-    value: activities.filter((a) => (a.current_stage || 'Preparation') === stage).length,
-    fill: STAGE_COLORS[stage],
-  }))
-  const config = Object.fromEntries(
-    STAGES.map((s) => [s.toLowerCase(), { label: s, color: STAGE_COLORS[s] }]),
+export function StageBottleneckChart({ activities, filters, onFilterChange }: Props) {
+  const counts = activities.reduce(
+    (acc, a) => {
+      const s = a.current_stage || 'Unknown'
+      acc[s] = (acc[s] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
   )
+
+  const data = Object.entries(counts)
+    .map(([stage, count]) => ({ stage, count }))
+    .sort((a, b) => b.count - a.count)
+  const maxCount = Math.max(...data.map((d) => d.count), 1)
+
+  const handleClick = (stage: string) => {
+    onFilterChange((prev) => ({ ...prev, stage: prev.stage === stage ? null : stage }))
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Activities by Current Stage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activities by Current Stage</CardTitle>
-        <CardDescription>Distribution across workflow stages</CardDescription>
+        <CardTitle className="text-sm font-semibold">Activities by Current Stage</CardTitle>
       </CardHeader>
-      <CardContent className="h-[300px]">
-        <ChartContainer config={config} className="w-full h-full">
-          <BarChart data={data} margin={{ left: 5, right: 5, top: 10, bottom: 5 }}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
-            <YAxis
-              tickLine={false}
-              axisLine={false}
-              tick={{ fontSize: 11 }}
-              allowDecimals={false}
+      <CardContent>
+        <ChartContainer config={{}} className="h-[220px] w-full">
+          <BarChart data={data} margin={{ top: 10, bottom: 40 }}>
+            <XAxis
+              dataKey="stage"
+              tick={{ fontSize: 10 }}
+              angle={-30}
+              textAnchor="end"
+              height={50}
             />
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="value" radius={4}>
-              {data.map((entry, i) => (
-                <Cell key={i} fill={entry.fill} />
+            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              {data.map((entry) => (
+                <Cell
+                  key={entry.stage}
+                  cursor="pointer"
+                  fill={filters.stage === entry.stage ? 'hsl(262, 83%, 58%)' : 'hsl(262, 83%, 70%)'}
+                  onClick={() => handleClick(entry.stage)}
+                />
               ))}
-              <LabelList position="top" className="text-xs" />
             </Bar>
+            <ChartTooltip content={<ChartTooltipContent />} />
           </BarChart>
         </ChartContainer>
+        <p className="text-[10px] text-muted-foreground mt-2">Click a bar to filter by stage</p>
       </CardContent>
     </Card>
   )
 }
 
 export function PipelineFunnel({ activities }: { activities: MonitoringActivity[] }) {
-  const funnelData = STAGES.map((stage) => ({
-    name: stage,
-    value: activities.filter((a) => (a.current_stage || 'Preparation') === stage).length,
-    fill: `var(--color-${stage.toLowerCase()})`,
-  }))
-  const chartConfig = Object.fromEntries(
-    STAGES.map((s, i) => [s.toLowerCase(), { label: s, color: `hsl(var(--chart-${i + 1}))` }]),
+  const counts = activities.reduce(
+    (acc, a) => {
+      const s = a.current_stage || 'Unknown'
+      acc[s] = (acc[s] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
   )
+
+  const data = Object.entries(counts)
+    .map(([stage, count]) => ({ stage, count }))
+    .sort((a, b) => b.count - a.count)
+  const maxCount = Math.max(...data.map((d) => d.count), 1)
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Pipeline Funnel</CardTitle>
-        <CardDescription>Activities distributed by their current workflow stage</CardDescription>
+        <CardTitle className="text-sm font-semibold">Pipeline Funnel</CardTitle>
       </CardHeader>
-      <CardContent className="h-[300px] pt-4 flex justify-center">
-        <ChartContainer config={chartConfig} className="w-full h-full max-w-[400px]">
-          <FunnelChart>
-            <ChartTooltip content={<ChartTooltipContent />} />
-            <Funnel dataKey="value" data={funnelData} isAnimationActive>
-              <LabelList position="right" fill="#888" stroke="none" dataKey="name" />
-              {funnelData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Funnel>
-          </FunnelChart>
-        </ChartContainer>
+      <CardContent className="space-y-2">
+        {data.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+        ) : (
+          data.map(({ stage, count }) => (
+            <div key={stage} className="flex items-center gap-3">
+              <span className="text-xs w-28 text-right truncate shrink-0" title={stage}>
+                {stage}
+              </span>
+              <div className="flex-1 bg-muted rounded h-7 relative overflow-hidden">
+                <div
+                  className="h-full bg-primary/25 flex items-center justify-end pr-2 transition-all duration-300"
+                  style={{ width: `${(count / maxCount) * 100}%` }}
+                >
+                  <span className="text-xs font-semibold">{count}</span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </CardContent>
     </Card>
   )

@@ -1,59 +1,86 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { BarChart, Bar, XAxis, YAxis, Cell } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList } from 'recharts'
-import type { MonitoringActivity } from '@/services/monitoring'
-import { getAssigneeName } from '@/services/monitoring'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import type { MonitoringActivity, MonitoringFilterState } from '@/services/monitoring'
 
-export function AssigneeWorkloadChart({ activities }: { activities: MonitoringActivity[] }) {
+type FilterUpdater = (prev: MonitoringFilterState) => MonitoringFilterState
+
+interface Props {
+  activities: MonitoringActivity[]
+  filters: MonitoringFilterState
+  onFilterChange: (updater: FilterUpdater) => void
+}
+
+export function AssigneeWorkloadChart({ activities, filters, onFilterChange }: Props) {
   const counts = activities.reduce(
     (acc, a) => {
-      const name = getAssigneeName(a)
-      acc[name] = (acc[name] || 0) + 1
+      const id = a.assignee_id || 'unassigned'
+      const name = a.assignee_name || 'Unassigned'
+      if (!acc[id]) acc[id] = { id, name, count: 0 }
+      acc[id].count++
       return acc
     },
-    {} as Record<string, number>,
+    {} as Record<string, { id: string; name: string; count: number }>,
   )
 
-  const data = Object.entries(counts)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 15)
+  const data = Object.values(counts)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12)
 
-  const config = { count: { label: 'Activities', color: 'hsl(var(--chart-2))' } }
+  const handleClick = (id: string) => {
+    if (id === 'unassigned') {
+      onFilterChange((prev) => ({ ...prev, unassigned: !prev.unassigned, assigneeId: null }))
+      return
+    }
+    onFilterChange((prev) => ({
+      ...prev,
+      assigneeId: prev.assigneeId === id ? null : id,
+      unassigned: false,
+    }))
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Workload by Assignee</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Workload by Assignee</CardTitle>
-        <CardDescription>Activity count per assignee (top 15)</CardDescription>
+        <CardTitle className="text-sm font-semibold">Workload by Assignee</CardTitle>
       </CardHeader>
-      <CardContent className="h-[300px]">
-        {data.length === 0 ? (
-          <p className="text-muted-foreground text-sm text-center pt-12">No data available</p>
-        ) : (
-          <ChartContainer config={config} className="w-full h-full">
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ left: 10, right: 20, top: 5, bottom: 5 }}
-            >
-              <CartesianGrid horizontal={false} />
-              <XAxis type="number" hide />
-              <YAxis
-                type="category"
-                dataKey="name"
-                width={110}
-                tickLine={false}
-                axisLine={false}
-                tick={{ fontSize: 11 }}
-              />
-              <ChartTooltip content={<ChartTooltipContent />} />
-              <Bar dataKey="value" fill="hsl(var(--chart-2))" radius={4}>
-                <LabelList position="right" className="text-xs" />
-              </Bar>
-            </BarChart>
-          </ChartContainer>
-        )}
+      <CardContent>
+        <ChartContainer config={{}} className="h-[280px] w-full">
+          <BarChart layout="vertical" data={data} margin={{ left: 10, right: 20 }}>
+            <XAxis type="number" tick={{ fontSize: 11 }} />
+            <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
+            <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+              {data.map((entry) => (
+                <Cell
+                  key={entry.id}
+                  cursor="pointer"
+                  fill={
+                    filters.assigneeId === entry.id ||
+                    (filters.unassigned && entry.id === 'unassigned')
+                      ? 'hsl(221, 83%, 53%)'
+                      : 'hsl(221, 83%, 70%)'
+                  }
+                  onClick={() => handleClick(entry.id)}
+                />
+              ))}
+            </Bar>
+            <ChartTooltip content={<ChartTooltipContent />} />
+          </BarChart>
+        </ChartContainer>
+        <p className="text-[10px] text-muted-foreground mt-2">Click a bar to filter by assignee</p>
       </CardContent>
     </Card>
   )

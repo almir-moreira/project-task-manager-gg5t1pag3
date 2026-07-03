@@ -1,3 +1,5 @@
+import { useMemo } from 'react'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -6,112 +8,162 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Filter, RotateCcw } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 import type { MonitoringActivity, MonitoringFilterState } from '@/services/monitoring'
-import { getAssigneeName, getOwnerName } from '@/services/monitoring'
+
+type FilterUpdater = (prev: MonitoringFilterState) => MonitoringFilterState
 
 interface FilterBarProps {
   activities: MonitoringActivity[]
   filters: MonitoringFilterState
-  onFilterChange: (filters: MonitoringFilterState) => void
+  onFilterChange: (updater: FilterUpdater) => void
   onReset: () => void
 }
 
-const STATUSES = [
-  'To Do',
-  'In Progress',
-  'On Hold',
-  'SPM Clearance',
-  'Head Clearance',
-  'Head Approval',
-  'CPO Approval',
-  'SG Approval',
-  'Rejected',
-  'Done',
-  'Not specified',
-]
-const STAGES = ['Preparation', 'Feedback', 'Review', 'Approval', 'Done']
-const DUE_DATE_RISKS = [
-  'Overdue',
-  'Due in next 7 days',
-  'Due in next 30 days',
-  'Future',
-  'No due date',
-]
-
 export function FilterBar({ activities, filters, onFilterChange, onReset }: FilterBarProps) {
-  const assignees = Array.from(new Set(activities.map(getAssigneeName))).sort()
-  const owners = Array.from(new Set(activities.map(getOwnerName))).sort()
-
-  return (
-    <div className="flex flex-wrap items-end gap-3 p-4 bg-muted/30 rounded-lg border">
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground mr-2">
-        <Filter className="w-4 h-4" /> Filters
-      </div>
-      <FilterSelect
-        label="Status"
-        value={filters.status}
-        options={STATUSES}
-        onChange={(v) => onFilterChange({ ...filters, status: v })}
-      />
-      <FilterSelect
-        label="Current Stage"
-        value={filters.stage}
-        options={STAGES}
-        onChange={(v) => onFilterChange({ ...filters, stage: v })}
-      />
-      <FilterSelect
-        label="Assignee"
-        value={filters.assignee}
-        options={assignees}
-        onChange={(v) => onFilterChange({ ...filters, assignee: v })}
-      />
-      <FilterSelect
-        label="Project Owner"
-        value={filters.owner}
-        options={owners}
-        onChange={(v) => onFilterChange({ ...filters, owner: v })}
-      />
-      <FilterSelect
-        label="Due Date Risk"
-        value={filters.dueDateRisk}
-        options={DUE_DATE_RISKS}
-        onChange={(v) => onFilterChange({ ...filters, dueDateRisk: v })}
-      />
-      <Button variant="outline" size="sm" onClick={onReset} className="gap-1.5">
-        <RotateCcw className="w-3.5 h-3.5" /> Reset Filters
-      </Button>
-    </div>
+  const statuses = useMemo(
+    () => Array.from(new Set(activities.map((a) => a.status || 'To Do'))).sort(),
+    [activities],
   )
-}
+  const assignees = useMemo(() => {
+    const map = new Map<string, string>()
+    activities.forEach((a) => {
+      if (a.assignee_id && a.assignee_name) map.set(a.assignee_id, a.assignee_name)
+    })
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+  }, [activities])
+  const stages = useMemo(
+    () => Array.from(new Set(activities.map((a) => a.current_stage).filter(Boolean))) as string[],
+    [activities],
+  )
+  const priorities = useMemo(
+    () => Array.from(new Set(activities.map((a) => a.priority).filter(Boolean))) as string[],
+    [activities],
+  )
+  const projects = useMemo(
+    () => Array.from(new Set(activities.map((a) => a.project).filter(Boolean))) as string[],
+    [activities],
+  )
 
-function FilterSelect({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: string
-  options: string[]
-  onChange: (v: string) => void
-}) {
+  const hasActiveFilters =
+    JSON.stringify(filters) !==
+    JSON.stringify({
+      statuses: [],
+      assigneeId: null,
+      stage: null,
+      priority: null,
+      project: null,
+      dueDateRisk: null,
+      approvalDelay: false,
+      unassigned: false,
+    })
+
   return (
-    <div className="flex flex-col gap-1">
-      <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Select value={value || 'all'} onValueChange={onChange}>
-        <SelectTrigger className="w-[160px] h-8 text-xs">
-          <SelectValue placeholder={`All ${label}`} />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All</SelectItem>
-          {options.map((opt) => (
-            <SelectItem key={opt} value={opt}>
-              {opt}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Card className="shadow-sm">
+      <CardContent className="p-3 flex flex-wrap items-center gap-2">
+        <Filter className="w-4 h-4 text-muted-foreground shrink-0" />
+        <Select
+          value={filters.statuses.length > 0 ? filters.statuses[0] : 'all'}
+          onValueChange={(v) =>
+            onFilterChange((prev) => ({ ...prev, statuses: v === 'all' ? [] : [v] }))
+          }
+        >
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.unassigned ? 'unassigned' : filters.assigneeId || 'all'}
+          onValueChange={(v) =>
+            onFilterChange((prev) => ({
+              ...prev,
+              assigneeId: v === 'all' || v === 'unassigned' ? null : v,
+              unassigned: v === 'unassigned',
+            }))
+          }
+        >
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Assignee" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Assignees</SelectItem>
+            <SelectItem value="unassigned">Unassigned</SelectItem>
+            {assignees.map((a) => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.stage || 'all'}
+          onValueChange={(v) =>
+            onFilterChange((prev) => ({ ...prev, stage: v === 'all' ? null : v }))
+          }
+        >
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Stages</SelectItem>
+            {stages.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.priority || 'all'}
+          onValueChange={(v) =>
+            onFilterChange((prev) => ({ ...prev, priority: v === 'all' ? null : v }))
+          }
+        >
+          <SelectTrigger className="w-[130px] h-8 text-xs">
+            <SelectValue placeholder="Priority" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Priorities</SelectItem>
+            {priorities.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select
+          value={filters.project || 'all'}
+          onValueChange={(v) =>
+            onFilterChange((prev) => ({ ...prev, project: v === 'all' ? null : v }))
+          }
+        >
+          <SelectTrigger className="w-[150px] h-8 text-xs">
+            <SelectValue placeholder="Project" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Projects</SelectItem>
+            {projects.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" className="h-8 text-xs ml-auto" onClick={onReset}>
+            <X className="w-3 h-3 mr-1" />
+            Reset
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   )
 }

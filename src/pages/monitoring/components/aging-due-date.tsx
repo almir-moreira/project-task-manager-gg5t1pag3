@@ -1,98 +1,160 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { BarChart, Bar, XAxis, YAxis, Cell, PieChart, Pie } from 'recharts'
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import type { MonitoringActivity } from '@/services/monitoring'
-import { getAgingDays, getAgingBucket, getDueDateRisk } from '@/services/monitoring'
+import type { MonitoringActivity, MonitoringFilterState } from '@/services/monitoring'
+import { computeAging, getDueDateRisk } from '@/services/monitoring'
 
-const AGING_BUCKETS = ['0–2 days', '3–7 days', '8–14 days', '15–30 days', '30+ days']
-const DUE_DATE_RISKS = [
-  'Overdue',
-  'Due in next 7 days',
-  'Due in next 30 days',
-  'Future',
-  'No due date',
+type FilterUpdater = (prev: MonitoringFilterState) => MonitoringFilterState
+
+const AGING_BUCKETS = [
+  { key: '0-7 days', min: 0, max: 7, color: 'hsl(160, 84%, 39%)' },
+  { key: '8-30 days', min: 8, max: 30, color: 'hsl(221, 83%, 53%)' },
+  { key: '31-60 days', min: 31, max: 60, color: 'hsl(38, 92%, 50%)' },
+  { key: '60+ days', min: 61, max: Infinity, color: 'hsl(0, 84%, 60%)' },
 ]
 
-const AGING_COLORS: Record<string, string> = {
-  '0–2 days': 'bg-emerald-500',
-  '3–7 days': 'bg-lime-500',
-  '8–14 days': 'bg-amber-500',
-  '15–30 days': 'bg-orange-500',
-  '30+ days': 'bg-red-500',
-}
-
 const RISK_COLORS: Record<string, string> = {
-  Overdue: 'bg-red-500',
-  'Due in next 7 days': 'bg-orange-500',
-  'Due in next 30 days': 'bg-amber-500',
-  Future: 'bg-emerald-500',
-  'No due date': 'bg-slate-400',
+  Overdue: 'hsl(0, 84%, 60%)',
+  'Due Soon': 'hsl(38, 92%, 50%)',
+  'On Time': 'hsl(160, 84%, 39%)',
+  'No Due Date': 'hsl(215, 20%, 65%)',
 }
 
 export function AgingBuckets({ activities }: { activities: MonitoringActivity[] }) {
-  const active = activities.filter((a) => (a.current_stage || 'Preparation') !== 'Done')
-  const counts = AGING_BUCKETS.map((bucket) => ({
-    bucket,
-    count: active.filter(
-      (a) => getAgingBucket(getAgingDays(a.stage_started_at, a.updated_at)) === bucket,
-    ).length,
+  const data = AGING_BUCKETS.map((bucket) => ({
+    name: bucket.key,
+    count: activities.filter((a) => {
+      const days = computeAging(a).days
+      return days >= bucket.min && days <= bucket.max
+    }).length,
+    color: bucket.color,
   }))
-  const maxCount = Math.max(...counts.map((c) => c.count), 1)
+
+  const agingLabel = activities.some((a) => a.stage_started_at)
+    ? 'Days in current stage'
+    : activities.some((a) => a.updated_at)
+      ? 'Days since last update'
+      : 'Age since creation'
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Aging by Current Stage</CardTitle>
-        <CardDescription>
-          How long active activities have been in their current stage
-        </CardDescription>
+        <CardTitle className="text-sm font-semibold">Aging Distribution</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-2">
-        {counts.map(({ bucket, count }) => (
-          <div key={bucket} className="flex items-center gap-3">
-            <span className="text-xs font-medium w-24 text-right">{bucket}</span>
-            <div className="flex-1 h-7 bg-muted rounded-md overflow-hidden">
-              <div
-                className={cn(
-                  'h-full rounded-md transition-all duration-500',
-                  AGING_COLORS[bucket],
-                )}
-                style={{ width: `${(count / maxCount) * 100}%` }}
-              />
-            </div>
-            <span className="text-xs font-mono w-8 text-right">{count}</span>
-          </div>
-        ))}
+      <CardContent>
+        <ChartContainer config={{}} className="h-[200px] w-full">
+          <BarChart data={data} margin={{ top: 10, bottom: 30 }}>
+            <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+              {data.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Bar>
+            <ChartTooltip content={<ChartTooltipContent />} />
+          </BarChart>
+        </ChartContainer>
+        <p className="text-[10px] text-muted-foreground mt-2">Metric: {agingLabel}</p>
       </CardContent>
     </Card>
   )
 }
 
-export function DueDateRiskCard({ activities }: { activities: MonitoringActivity[] }) {
-  const counts = DUE_DATE_RISKS.map((risk) => ({
+interface DueDateRiskProps {
+  activities: MonitoringActivity[]
+  filters: MonitoringFilterState
+  onFilterChange: (updater: FilterUpdater) => void
+}
+
+export function DueDateRiskCard({ activities, filters, onFilterChange }: DueDateRiskProps) {
+  const counts = activities.reduce(
+    (acc, a) => {
+      const r = getDueDateRisk(a)
+      acc[r] = (acc[r] || 0) + 1
+      return acc
+    },
+    {} as Record<string, number>,
+  )
+
+  const total = activities.length
+  const data = Object.entries(counts).map(([risk, count]) => ({
     risk,
-    count: activities.filter((a) => getDueDateRisk(a) === risk).length,
+    count,
+    pct: total > 0 ? Math.round((count / total) * 100) : 0,
   }))
-  const maxCount = Math.max(...counts.map((c) => c.count), 1)
+
+  const handleClick = (risk: string) => {
+    onFilterChange((prev) => ({ ...prev, dueDateRisk: prev.dueDateRisk === risk ? null : risk }))
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold">Due Date Risk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-8">No data available</p>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Due Date Risk Assessment</CardTitle>
-        <CardDescription>Activities categorized by proximity to end date</CardDescription>
+        <CardTitle className="text-sm font-semibold">Due Date Risk</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3 pt-2">
-        {counts.map(({ risk, count }) => (
-          <div key={risk} className="flex items-center gap-3">
-            <span className="text-xs font-medium w-36 text-right">{risk}</span>
-            <div className="flex-1 h-7 bg-muted rounded-md overflow-hidden">
-              <div
-                className={cn('h-full rounded-md transition-all duration-500', RISK_COLORS[risk])}
-                style={{ width: `${(count / maxCount) * 100}%` }}
-              />
+      <CardContent>
+        <ChartContainer config={{}} className="h-[160px] mx-auto">
+          <PieChart>
+            <Pie
+              data={data}
+              dataKey="count"
+              nameKey="risk"
+              cx="50%"
+              cy="50%"
+              innerRadius={40}
+              outerRadius={65}
+              paddingAngle={2}
+            >
+              {data.map((entry) => (
+                <Cell
+                  key={entry.risk}
+                  fill={RISK_COLORS[entry.risk] || 'hsl(0, 0%, 50%)'}
+                  cursor="pointer"
+                  opacity={!filters.dueDateRisk || filters.dueDateRisk === entry.risk ? 1 : 0.3}
+                  onClick={() => handleClick(entry.risk)}
+                />
+              ))}
+            </Pie>
+            <ChartTooltip content={<ChartTooltipContent nameKey="risk" />} />
+          </PieChart>
+        </ChartContainer>
+        <div className="mt-2 space-y-1">
+          {data.map((entry) => (
+            <div
+              key={entry.risk}
+              className={cn(
+                'flex items-center justify-between text-xs cursor-pointer rounded px-2 py-1 hover:bg-muted/50',
+                filters.dueDateRisk === entry.risk && 'bg-muted',
+              )}
+              onClick={() => handleClick(entry.risk)}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: RISK_COLORS[entry.risk] }}
+                />
+                <span className="font-medium">{entry.risk}</span>
+              </div>
+              <span className="text-muted-foreground">
+                {entry.count} — {entry.pct}%
+              </span>
             </div>
-            <span className="text-xs font-mono w-8 text-right">{count}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </CardContent>
     </Card>
   )
