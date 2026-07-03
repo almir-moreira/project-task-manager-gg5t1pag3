@@ -170,7 +170,8 @@ function MonthSection({ group }: { group: MonthGroup }) {
             <TableBody>
               {group.rows.map((row) => {
                 const rowId = row.id ?? row.activity_id
-                const link = rowId ? `/tasks/${rowId}` : null
+                const linkId = row.task_number || rowId
+                const link = linkId ? `/tasks/${linkId}` : null
                 const eventName = getDisplayValue(row.event_name || row.activity_name, '—')
                 const approvalStatus = row.approval_status || row.event_approval_status
                 const categoryStyle = getCategoryCellStyle(row.event_category)
@@ -179,7 +180,7 @@ function MonthSection({ group }: { group: MonthGroup }) {
                 return (
                   <TableRow
                     key={rowId ?? `${row.start_date}-${row.event_name}`}
-                    className={link ? 'cursor-pointer hover:bg-muted/50' : ''}
+                    className="hover:bg-muted/50"
                   >
                     <TableCell className="whitespace-nowrap text-sm">
                       {row.start_date ? formatDate(row.start_date, DATE_FORMAT) : '—'}
@@ -188,7 +189,17 @@ function MonthSection({ group }: { group: MonthGroup }) {
                       {row.end_date ? formatDate(row.end_date, DATE_FORMAT) : '—'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <span className="font-medium leading-snug break-words">{eventName}</span>
+                      {link ? (
+                        <Link
+                          to={link}
+                          title="Open activity"
+                          className="font-medium leading-snug break-words no-underline hover:underline text-inherit"
+                        >
+                          {eventName}
+                        </Link>
+                      ) : (
+                        <span className="font-medium leading-snug break-words">{eventName}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm" style={categoryStyle}>
                       {getDisplayValue(row.event_category, 'Not specified')}
