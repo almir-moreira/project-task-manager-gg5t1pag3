@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import { CalendarDays, AlertCircle, FilterX, RotateCcw } from 'lucide-react'
+import { CalendarDays, AlertCircle, FilterX, RotateCcw, Printer } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -26,8 +26,10 @@ import {
   type CalendarReportRow,
 } from '@/services/calendar-report'
 import { formatDate } from '@/lib/utils'
+import { DataQualityWarnings } from './components/DataQualityWarnings'
 
 const DATE_FORMAT = 'd MMM yyyy'
+const TIMESTAMP_FORMAT = "d MMM yyyy 'at' HH:mm"
 
 const MONTH_HEADER_STYLE: CSSProperties = {
   backgroundColor: '#00576B',
@@ -52,6 +54,82 @@ const MONTH_NAMES = [
   'November',
   'December',
 ]
+
+const PRINT_STYLES = `
+.kaiciid-print-only { display: none; }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 1cm;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  * {
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .kaiciid-print-root,
+  .kaiciid-print-root * {
+    visibility: visible;
+  }
+
+  .kaiciid-print-root {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .kaiciid-no-print {
+    display: none !important;
+  }
+
+  .kaiciid-print-only {
+    display: block !important;
+  }
+
+  .kaiciid-month-header {
+    break-after: avoid;
+    break-inside: avoid;
+  }
+
+  .kaiciid-month-section {
+    break-inside: auto;
+  }
+
+  .kaiciid-table-wrapper {
+    overflow: visible !important;
+  }
+
+  .kaiciid-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    font-size: 8px !important;
+  }
+
+  .kaiciid-table th,
+  .kaiciid-table td {
+    padding: 2px 4px !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    border: 1px solid #d1d5db !important;
+  }
+}
+`
 
 function getDisplayValue(value: string | null | undefined, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback
@@ -104,6 +182,18 @@ function getYearFromDate(row: CalendarReportRow): number | null {
   return isNaN(year) ? null : year
 }
 
+function buildFilterSummary(filters: FilterState): string {
+  const parts: string[] = []
+  parts.push(`Year ${filters.year || 'All'}`)
+  parts.push(filters.month === 'all' ? 'All months' : filters.month)
+  parts.push(filters.category === 'all' ? 'All categories' : filters.category)
+  parts.push(filters.approval === 'all' ? 'All approval statuses' : filters.approval)
+  parts.push(filters.projectOwner === 'all' ? 'All owners' : filters.projectOwner)
+  parts.push(filters.location === 'all' ? 'All locations' : filters.location)
+  parts.push(filters.costCenter === 'all' ? 'All cost centres' : filters.costCenter)
+  return parts.join(' | ')
+}
+
 interface FilterState {
   year: string
   month: string
@@ -126,8 +216,11 @@ const DEFAULT_FILTERS: FilterState = {
 
 function MonthSection({ group }: { group: MonthGroup }) {
   return (
-    <Card className="mb-6 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3" style={MONTH_HEADER_STYLE}>
+    <Card className="kaiciid-month-section mb-6 overflow-hidden">
+      <div
+        className="kaiciid-month-header flex items-center justify-between px-4 py-3"
+        style={MONTH_HEADER_STYLE}
+      >
         <div className="flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-white" />
           <span className="text-base font-semibold text-white">{group.monthLabel}</span>
@@ -137,8 +230,8 @@ function MonthSection({ group }: { group: MonthGroup }) {
         </span>
       </div>
       <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table className="min-w-[1400px]">
+        <div className="kaiciid-table-wrapper overflow-x-auto">
+          <Table className="kaiciid-table min-w-[1400px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent border-b-2">
                 <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
@@ -362,6 +455,10 @@ export default function KaiciidCalendarReport() {
     setFilters({ ...DEFAULT_FILTERS, year: defaultYear })
   }, [defaultYear])
 
+  const handlePrint = useCallback(() => {
+    window.print()
+  }, [])
+
   const filteredGroups = useMemo(() => {
     const selectedYear = filters.year ? parseInt(filters.year, 10) : null
     const selectedMonthIndex = filters.month !== 'all' ? MONTH_NAMES.indexOf(filters.month) : null
@@ -469,22 +566,42 @@ export default function KaiciidCalendarReport() {
     return `Showing ${totalFilteredEvents} event${totalFilteredEvents !== 1 ? 's' : ''}`
   }, [totalFilteredEvents, filters.year])
 
+  const printFilterSummary = useMemo(() => buildFilterSummary(filters), [filters])
+
+  const printTimestamp = useMemo(() => {
+    return formatDate(new Date().toISOString(), TIMESTAMP_FORMAT)
+  }, [])
+
   return (
-    <div className="container mx-auto px-4 py-6 animate-fade-in">
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="kaiciid-print-root container mx-auto px-4 py-6 animate-fade-in">
+      <style>{PRINT_STYLES}</style>
+
+      <div className="kaiciid-print-only mb-4">
+        <h1 className="text-xl font-bold text-gray-900">KAICIID Events Calendar {filters.year}</h1>
+        <p className="text-sm text-gray-600">Generated on: {printTimestamp}</p>
+        <p className="text-sm text-gray-600">Filters: {printFilterSummary}</p>
+      </div>
+
+      <div className="kaiciid-no-print mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">KAICIID Events Calendar</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Chronological monthly overview of organization events and activities.
           </p>
         </div>
-        <Button variant="outline" size="sm" asChild>
-          <Link to="/">Back to Dashboard</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/">Back to Dashboard</Link>
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Printer className="mr-1 h-3.5 w-3.5" />
+            Print / Save as PDF
+          </Button>
+        </div>
       </div>
 
       {!loading && !error && (
-        <Card className="mb-6">
+        <Card className="kaiciid-no-print mb-6">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -641,8 +758,14 @@ export default function KaiciidCalendarReport() {
         </Card>
       )}
 
+      {!loading && !error && (
+        <div className="kaiciid-no-print">
+          <DataQualityWarnings rows={filteredGroups.flatMap((g) => g.rows)} />
+        </div>
+      )}
+
       {loading && (
-        <div className="space-y-4">
+        <div className="kaiciid-no-print space-y-4">
           <div className="flex items-center gap-3 text-muted-foreground">
             <Skeleton className="h-4 w-4 rounded-full" />
             <span className="text-sm">Loading KAICIID Events Calendar...</span>
@@ -659,7 +782,7 @@ export default function KaiciidCalendarReport() {
       )}
 
       {error && !loading && (
-        <Card className="border-destructive/50">
+        <Card className="kaiciid-no-print border-destructive/50">
           <CardContent className="flex items-center gap-3 pt-6">
             <AlertCircle className="h-5 w-5 text-destructive" />
             <p className="text-sm text-destructive">{error}</p>
@@ -668,7 +791,7 @@ export default function KaiciidCalendarReport() {
       )}
 
       {!loading && !error && filteredGroups.length === 0 && (
-        <Card>
+        <Card className="kaiciid-no-print">
           <CardContent className="flex flex-col items-center justify-center gap-2 pt-12 pb-12">
             <CalendarDays className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
@@ -685,6 +808,13 @@ export default function KaiciidCalendarReport() {
           ))}
         </div>
       )}
+
+      <div className="kaiciid-print-only mt-6 pt-3" style={{ borderTop: '1px solid #ccc' }}>
+        <p className="text-xs italic" style={{ color: '#666' }}>
+          Disclaimer: Events and dates are subject to change. This calendar represents the best
+          information available at the time of issuance.
+        </p>
+      </div>
     </div>
   )
 }
