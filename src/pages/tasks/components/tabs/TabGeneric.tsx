@@ -141,17 +141,6 @@ export function TabEventDetails({
           />
         </div>
       </div>
-      <div className="grid gap-2">
-        <Label>Links</Label>
-        <Input
-          type="url"
-          defaultValue={activity.event_links || ''}
-          onBlur={(e) =>
-            e.target.value !== activity.event_links && handleChange('event_links', e.target.value)
-          }
-          placeholder="https://..."
-        />
-      </div>
       {activity.event_can_change_time && (
         <div className="grid gap-2 animate-fade-in duration-200">
           <Label>If yes, describe</Label>
@@ -165,6 +154,17 @@ export function TabEventDetails({
           />
         </div>
       )}
+      <div className="grid gap-2">
+        <Label>Links</Label>
+        <Input
+          type="url"
+          defaultValue={activity.event_links || ''}
+          onBlur={(e) =>
+            e.target.value !== activity.event_links && handleChange('event_links', e.target.value)
+          }
+          placeholder="https://..."
+        />
+      </div>
       <div className="grid gap-2">
         <Label>Comments</Label>
         <Textarea
