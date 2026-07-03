@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, AlertCircle } from 'lucide-react'
+import { CalendarDays, AlertCircle, MapPin, Tag, CalendarClock } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,6 +19,8 @@ import {
   type CalendarReportRow,
 } from '@/services/calendar-report'
 import { formatDate } from '@/lib/utils'
+
+const DATE_FORMAT = 'd MMM yyyy'
 
 function getDisplayValue(value: string | null | undefined, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback
@@ -42,6 +44,17 @@ function getApprovalBadge(row: CalendarReportRow) {
   return <Badge variant={variant}>{status}</Badge>
 }
 
+function buildMetadataLine(row: CalendarReportRow): { label: string; value: string }[] {
+  return [
+    { label: 'Category', value: getDisplayValue(row.event_category, 'Not specified') },
+    {
+      label: 'Location',
+      value: getDisplayValue(row.location || row.event_location, 'Not specified'),
+    },
+    { label: 'Date/Location', value: getDisplayValue(row.date_location_status, 'Not specified') },
+  ]
+}
+
 function MonthSection({ group }: { group: MonthGroup }) {
   return (
     <Card className="mb-6 overflow-hidden">
@@ -59,15 +72,15 @@ function MonthSection({ group }: { group: MonthGroup }) {
           <Table className="min-w-[1100px]">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
+                <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   Start Date
                 </TableHead>
-                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
+                <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   End Date
                 </TableHead>
-                <TableHead className="min-w-[200px] max-w-[320px]">Name of Event</TableHead>
+                <TableHead className="min-w-[220px] max-w-[340px]">Name of Event</TableHead>
                 <TableHead className="min-w-[180px] max-w-[300px]">Short Description</TableHead>
-                <TableHead className="w-[70px] min-w-[70px] text-center whitespace-nowrap">
+                <TableHead className="w-[60px] min-w-[60px] text-center whitespace-nowrap">
                   PAX
                 </TableHead>
                 <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
@@ -76,7 +89,7 @@ function MonthSection({ group }: { group: MonthGroup }) {
                 <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   Cost Centre
                 </TableHead>
-                <TableHead className="min-w-[140px] max-w-[200px]">EMS / Protocol</TableHead>
+                <TableHead className="min-w-[120px] max-w-[180px]">EMS / Protocol</TableHead>
                 <TableHead className="min-w-[120px] max-w-[180px]">Project Owner</TableHead>
               </TableRow>
             </TableHeader>
@@ -84,18 +97,35 @@ function MonthSection({ group }: { group: MonthGroup }) {
               {group.rows.map((row) => {
                 const rowId = row.id ?? row.activity_id
                 const link = rowId ? `/tasks/${rowId}` : null
-                const cellContent = (
-                  <>
+                const metadata = buildMetadataLine(row)
+                const eventName = getDisplayValue(row.event_name || row.activity_name, '—')
+
+                return (
+                  <TableRow
+                    key={rowId ?? `${row.start_date}-${row.event_name}`}
+                    className={link ? 'cursor-pointer hover:bg-muted/50' : ''}
+                  >
                     <TableCell className="whitespace-nowrap text-sm">
-                      {row.start_date ? formatDate(row.start_date) : '—'}
+                      {row.start_date ? formatDate(row.start_date, DATE_FORMAT) : '—'}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
-                      {row.end_date ? formatDate(row.end_date) : '—'}
+                      {row.end_date ? formatDate(row.end_date, DATE_FORMAT) : '—'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <span className="font-medium leading-snug break-words">
-                        {getDisplayValue(row.event_name || row.activity_name, '—')}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="font-medium leading-snug break-words">{eventName}</span>
+                        <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-muted-foreground">
+                          {metadata.map((item, idx) => (
+                            <span key={item.label} className="inline-flex items-center gap-0.5">
+                              {idx > 0 && <span className="mx-1 text-border">|</span>}
+                              <span className="font-medium text-muted-foreground/70">
+                                {item.label}:
+                              </span>
+                              <span>{item.value}</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       <span className="leading-snug break-words">
@@ -113,14 +143,6 @@ function MonthSection({ group }: { group: MonthGroup }) {
                     <TableCell className="text-sm">
                       {getDisplayValue(row.project_owner_name, 'Not specified')}
                     </TableCell>
-                  </>
-                )
-                return (
-                  <TableRow
-                    key={rowId ?? `${row.start_date}-${row.event_name}`}
-                    className={link ? 'cursor-pointer hover:bg-muted/50' : ''}
-                  >
-                    {cellContent}
                   </TableRow>
                 )
               })}

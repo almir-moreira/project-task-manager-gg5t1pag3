@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase/client'
 
 export interface CalendarReportRow {
-  activity_id: string | null
   id: string | null
+  activity_id: string | null
   task_number: string | null
   start_date: string | null
   end_date: string | null
@@ -26,8 +26,8 @@ export interface CalendarReportRow {
   cost_center_id: string | null
   cost_center_code: string | null
   cost_center_name: string | null
-  category_id: string | null
   category_name: string | null
+  category_id: string | null
   status: string | null
   priority: string | null
   current_stage: string | null
@@ -48,35 +48,22 @@ export interface MonthGroup {
   rows: CalendarReportRow[]
 }
 
-export async function getCalendarReport(): Promise<MonthGroup[]> {
-  const { data, error } = await supabase
-    .from('calendar_report_view')
-    .select('*')
-    .order('month_start', { ascending: true })
-    .order('sort_date', { ascending: true })
-    .order('end_date', { ascending: true })
-    .order('event_name', { ascending: true })
-
-  if (error) throw error
-
-  const rows = (data ?? []) as CalendarReportRow[]
-
-  const groupsMap = new Map<string, MonthGroup>()
+function groupByMonth(rows: CalendarReportRow[]): MonthGroup[] {
+  const map = new Map<string, MonthGroup>()
 
   for (const row of rows) {
-    const key = row.month_start ?? '0000-01-01'
-    if (!groupsMap.has(key)) {
-      groupsMap.set(key, {
+    const key = row.month_start ?? 'unknown'
+    if (!map.has(key)) {
+      map.set(key, {
         monthStart: row.month_start ?? '',
         monthLabel: row.month_label ?? 'Unknown',
         rows: [],
       })
     }
-    groupsMap.get(key)!.rows.push(row)
+    map.get(key)!.rows.push(row)
   }
 
-  const groups = Array.from(groupsMap.values())
-
+  const groups = Array.from(map.values())
   groups.sort((a, b) => {
     if (!a.monthStart) return 1
     if (!b.monthStart) return -1
@@ -85,13 +72,30 @@ export async function getCalendarReport(): Promise<MonthGroup[]> {
 
   for (const group of groups) {
     group.rows.sort((a, b) => {
-      const sd = (a.sort_date ?? '').localeCompare(b.sort_date ?? '')
-      if (sd !== 0) return sd
-      const ed = (a.end_date ?? '').localeCompare(b.end_date ?? '')
-      if (ed !== 0) return ed
-      return (a.event_name ?? '').localeCompare(b.event_name ?? '')
+      const aSort = a.sort_date ?? a.start_date ?? ''
+      const bSort = b.sort_date ?? b.start_date ?? ''
+      if (aSort !== bSort) return aSort.localeCompare(bSort)
+      const aEnd = a.end_date ?? ''
+      const bEnd = b.end_date ?? ''
+      if (aEnd !== bEnd) return aEnd.localeCompare(bEnd)
+      const aName = a.event_name ?? a.activity_name ?? ''
+      const bName = b.event_name ?? b.activity_name ?? ''
+      return aName.localeCompare(bName)
     })
   }
 
   return groups
+}
+
+export async function getCalendarReport(): Promise<MonthGroup[]> {
+  const { data, error } = await supabase
+    .from('calendar_report_view')
+    .select('*')
+    .order('sort_date', { ascending: true })
+    .order('end_date', { ascending: true })
+    .order('event_name', { ascending: true })
+
+  if (error) throw error
+
+  return groupByMonth((data ?? []) as CalendarReportRow[])
 }
