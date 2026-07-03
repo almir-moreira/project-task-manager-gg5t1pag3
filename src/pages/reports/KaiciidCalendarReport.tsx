@@ -1,6 +1,14 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import type { CSSProperties } from 'react'
-import { CalendarDays, AlertCircle, FilterX, RotateCcw, Download } from 'lucide-react'
+import {
+  CalendarDays,
+  AlertCircle,
+  FilterX,
+  RotateCcw,
+  Download,
+  FileSpreadsheet,
+  FileText,
+} from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -28,6 +36,7 @@ import {
 import { formatDate } from '@/lib/utils'
 import { DataQualityWarnings } from './components/DataQualityWarnings'
 import { exportCalendarPdf } from '@/lib/pdf-export'
+import { exportCalendarExcel, exportCalendarCsv } from '@/lib/excel-csv-export'
 
 const DATE_FORMAT = 'd MMM yyyy'
 
@@ -247,6 +256,8 @@ export default function KaiciidCalendarReport() {
   const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [exporting, setExporting] = useState(false)
+  const [exportingExcel, setExportingExcel] = useState(false)
+  const [exportingCsv, setExportingCsv] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -461,6 +472,28 @@ export default function KaiciidCalendarReport() {
     }
   }, [filteredGroups, filters])
 
+  const handleExportExcel = useCallback(() => {
+    setExportingExcel(true)
+    try {
+      exportCalendarExcel(filteredGroups, filters)
+    } catch (err) {
+      console.error('Excel export error:', err)
+    } finally {
+      setExportingExcel(false)
+    }
+  }, [filteredGroups, filters])
+
+  const handleExportCsv = useCallback(() => {
+    setExportingCsv(true)
+    try {
+      exportCalendarCsv(filteredGroups, filters)
+    } catch (err) {
+      console.error('CSV export error:', err)
+    } finally {
+      setExportingCsv(false)
+    }
+  }, [filteredGroups, filters])
+
   const totalFilteredEvents = useMemo(() => {
     return filteredGroups.reduce((sum, g) => sum + g.rows.length, 0)
   }, [filteredGroups])
@@ -499,6 +532,14 @@ export default function KaiciidCalendarReport() {
           <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={exporting}>
             <Download className="mr-1 h-3.5 w-3.5" />
             {exporting ? 'Generating...' : 'Download PDF'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportExcel} disabled={exportingExcel}>
+            <FileSpreadsheet className="mr-1 h-3.5 w-3.5" />
+            {exportingExcel ? 'Generating...' : 'Export Excel'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportCsv} disabled={exportingCsv}>
+            <FileText className="mr-1 h-3.5 w-3.5" />
+            {exportingCsv ? 'Generating...' : 'Export CSV'}
           </Button>
         </div>
       </div>

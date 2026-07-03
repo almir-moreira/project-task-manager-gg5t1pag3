@@ -7,6 +7,7 @@ import {
   Settings,
   LogOut,
   LineChart,
+  FileText,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -87,6 +88,18 @@ export function AppSidebar() {
                   <Link to="/tasks">
                     <CheckSquare />
                     <span>Activities</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith('/reports')}
+                  tooltip="Reports"
+                >
+                  <Link to="/reports/kaiciid-calendar">
+                    <FileText />
+                    <span>Reports</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
