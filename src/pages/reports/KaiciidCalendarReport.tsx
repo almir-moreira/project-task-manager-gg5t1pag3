@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { CalendarDays, AlertCircle, MapPin, Tag, CalendarClock } from 'lucide-react'
+import type { CSSProperties } from 'react'
+import { CalendarDays, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import {
@@ -22,9 +22,40 @@ import { formatDate } from '@/lib/utils'
 
 const DATE_FORMAT = 'd MMM yyyy'
 
+const MONTH_HEADER_STYLE: CSSProperties = {
+  backgroundColor: '#00576B',
+}
+
+const PROJECT_OWNER_STYLE: CSSProperties = {
+  backgroundColor: '#DCFCE7',
+  color: '#166534',
+}
+
 function getDisplayValue(value: string | null | undefined, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback
   return value
+}
+
+function getCategoryCellStyle(category: string | null | undefined): CSSProperties {
+  const normalized = (category ?? '').toLowerCase().trim()
+  if (normalized === 'participation') {
+    return { backgroundColor: '#E5E7EB', color: '#374151' }
+  }
+  if (normalized === 'kaiciid event' || normalized === 'kaiciid co-organized event') {
+    return { backgroundColor: '#DBEAFE', color: '#1E3A8A' }
+  }
+  return {}
+}
+
+function getApprovalCellStyle(status: string | null | undefined): CSSProperties {
+  const normalized = (status ?? '').toLowerCase().trim()
+  if (normalized === 'in process') {
+    return { backgroundColor: '#FCA5A5', color: '#7F1D1D' }
+  }
+  if (normalized === 'approved') {
+    return { backgroundColor: '#FFFFFF', color: '#111827' }
+  }
+  return {}
 }
 
 function getEmsProtocolLabel(row: CalendarReportRow): string {
@@ -35,70 +66,57 @@ function getEmsProtocolLabel(row: CalendarReportRow): string {
   return 'None'
 }
 
-function getApprovalBadge(row: CalendarReportRow) {
-  const status = row.approval_status || row.event_approval_status
-  if (!status || status === '') {
-    return <span className="text-sm text-muted-foreground">—</span>
-  }
-  const variant = status.toLowerCase().includes('approved') ? 'default' : 'secondary'
-  return <Badge variant={variant}>{status}</Badge>
-}
-
-function buildMetadataLine(row: CalendarReportRow): { label: string; value: string }[] {
-  return [
-    { label: 'Category', value: getDisplayValue(row.event_category, 'Not specified') },
-    {
-      label: 'Location',
-      value: getDisplayValue(row.location || row.event_location, 'Not specified'),
-    },
-    { label: 'Date/Location', value: getDisplayValue(row.date_location_status, 'Not specified') },
-  ]
-}
-
 function MonthSection({ group }: { group: MonthGroup }) {
   return (
     <Card className="mb-6 overflow-hidden">
-      <CardHeader className="bg-muted/40 pb-3">
-        <CardTitle className="flex items-center gap-2 text-lg">
-          <CalendarDays className="h-5 w-5 text-primary" />
-          {group.monthLabel}
-          <span className="ml-auto text-sm font-normal text-muted-foreground">
-            {group.rows.length} event{group.rows.length !== 1 ? 's' : ''}
-          </span>
-        </CardTitle>
-      </CardHeader>
+      <div className="flex items-center justify-between px-4 py-3" style={MONTH_HEADER_STYLE}>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-5 w-5 text-white" />
+          <span className="text-base font-semibold text-white">{group.monthLabel}</span>
+        </div>
+        <span className="text-sm font-normal text-white/80">
+          {group.rows.length} event{group.rows.length !== 1 ? 's' : ''}
+        </span>
+      </div>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <Table className="min-w-[1100px]">
+          <Table className="min-w-[1400px]">
             <TableHeader>
-              <TableRow className="hover:bg-transparent">
+              <TableRow className="hover:bg-transparent border-b-2">
                 <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   Start Date
                 </TableHead>
                 <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   End Date
                 </TableHead>
-                <TableHead className="min-w-[220px] max-w-[340px]">Name of Event</TableHead>
-                <TableHead className="min-w-[180px] max-w-[300px]">Short Description</TableHead>
+                <TableHead className="min-w-[200px] max-w-[320px]">Name of Event</TableHead>
+                <TableHead className="w-[140px] min-w-[120px]">Category</TableHead>
+                <TableHead className="w-[130px] min-w-[120px]">Location</TableHead>
                 <TableHead className="w-[60px] min-w-[60px] text-center whitespace-nowrap">
                   PAX
                 </TableHead>
-                <TableHead className="w-[120px] min-w-[120px] whitespace-nowrap">
+                <TableHead className="w-[110px] min-w-[110px] whitespace-nowrap">
                   Approval
                 </TableHead>
+                <TableHead className="w-[130px] min-w-[120px]">
+                  Date &amp; Location Status
+                </TableHead>
+                <TableHead className="w-[130px] min-w-[120px]">Project Owner</TableHead>
+                <TableHead className="min-w-[200px] max-w-[360px]">Short Description</TableHead>
                 <TableHead className="w-[100px] min-w-[100px] whitespace-nowrap">
                   Cost Centre
                 </TableHead>
-                <TableHead className="min-w-[120px] max-w-[180px]">EMS / Protocol</TableHead>
-                <TableHead className="min-w-[120px] max-w-[180px]">Project Owner</TableHead>
+                <TableHead className="w-[110px] min-w-[110px]">EMS / Protocol</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {group.rows.map((row) => {
                 const rowId = row.id ?? row.activity_id
                 const link = rowId ? `/tasks/${rowId}` : null
-                const metadata = buildMetadataLine(row)
                 const eventName = getDisplayValue(row.event_name || row.activity_name, '—')
+                const approvalStatus = row.approval_status || row.event_approval_status
+                const categoryStyle = getCategoryCellStyle(row.event_category)
+                const approvalStyle = getApprovalCellStyle(approvalStatus)
 
                 return (
                   <TableRow
@@ -112,37 +130,35 @@ function MonthSection({ group }: { group: MonthGroup }) {
                       {row.end_date ? formatDate(row.end_date, DATE_FORMAT) : '—'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-medium leading-snug break-words">{eventName}</span>
-                        <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-muted-foreground">
-                          {metadata.map((item, idx) => (
-                            <span key={item.label} className="inline-flex items-center gap-0.5">
-                              {idx > 0 && <span className="mx-1 text-border">|</span>}
-                              <span className="font-medium text-muted-foreground/70">
-                                {item.label}:
-                              </span>
-                              <span>{item.value}</span>
-                            </span>
-                          ))}
-                        </div>
-                      </div>
+                      <span className="font-medium leading-snug break-words">{eventName}</span>
+                    </TableCell>
+                    <TableCell className="text-sm" style={categoryStyle}>
+                      {getDisplayValue(row.event_category, 'Not specified')}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {getDisplayValue(row.location || row.event_location, 'Not specified')}
+                    </TableCell>
+                    <TableCell className="text-center text-sm whitespace-nowrap">
+                      {row.pax !== null && row.pax !== undefined ? row.pax : '—'}
+                    </TableCell>
+                    <TableCell className="text-sm whitespace-nowrap" style={approvalStyle}>
+                      {getDisplayValue(approvalStatus, '—')}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {getDisplayValue(row.date_location_status, 'Not specified')}
+                    </TableCell>
+                    <TableCell className="text-sm" style={PROJECT_OWNER_STYLE}>
+                      {getDisplayValue(row.project_owner_name, 'Not specified')}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       <span className="leading-snug break-words">
                         {getDisplayValue(row.short_description, '—')}
                       </span>
                     </TableCell>
-                    <TableCell className="text-center text-sm whitespace-nowrap">
-                      {row.pax !== null && row.pax !== undefined ? row.pax : '—'}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">{getApprovalBadge(row)}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm">
                       {getDisplayValue(row.cost_center_code, '—')}
                     </TableCell>
                     <TableCell className="text-sm">{getEmsProtocolLabel(row)}</TableCell>
-                    <TableCell className="text-sm">
-                      {getDisplayValue(row.project_owner_name, 'Not specified')}
-                    </TableCell>
                   </TableRow>
                 )
               })}
@@ -204,9 +220,7 @@ export default function KaiciidCalendarReport() {
           </div>
           {[1, 2, 3].map((i) => (
             <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-6 w-48" />
-              </CardHeader>
+              <Skeleton className="h-12 w-full rounded-none" />
               <CardContent>
                 <Skeleton className="h-32 w-full" />
               </CardContent>
