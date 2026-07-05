@@ -28,7 +28,7 @@ import {
 } from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
 import { REVIEWER_ROLES, APPROVER_ROLES, RoleConfig } from './review-roles'
-import { canEditActivity } from '@/lib/permissions'
+import { canEditActivity, isAdmin } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { ApprovalActions } from './ApprovalActions'
 import { canActOnApprovalStep, ROLE_TO_STEP_NAME } from '@/lib/approval-guards'
@@ -66,6 +66,7 @@ export function TabReviewApproval({
   const handleRequiredToggle = useCallback(
     async (role: RoleConfig, checked: boolean) => {
       if (!activity || !onUpdate) return
+      if (!canEditActivity(permUser, activity)) return
       try {
         const updated = await updateActivity(activity.id, { [role.requiredField]: checked } as any)
         const wfId = workflowMap.get(role.workflowRole)
@@ -87,6 +88,7 @@ export function TabReviewApproval({
   const handleUserChange = useCallback(
     async (role: RoleConfig, val: string) => {
       if (!activity || !onUpdate) return
+      if (!canEditActivity(permUser, activity)) return
       const userId = val === 'unassigned' ? null : val
       try {
         const updated = await updateActivity(activity.id, { [role.idField]: userId } as any)
@@ -103,6 +105,7 @@ export function TabReviewApproval({
   const handleFieldChange = useCallback(
     async (field: string, val: any) => {
       if (!activity || !onUpdate) return
+      if (!canEditActivity(permUser, activity)) return
       try {
         const updated = await updateActivity(activity.id, { [field]: val } as any)
         onUpdate(updated)
@@ -159,6 +162,7 @@ export function TabReviewApproval({
   const handleClear = useCallback(
     async (role: RoleConfig) => {
       if (!activity || !onUpdate) return
+      if (!isAdmin(permUser)) return
       try {
         const updated = await updateActivity(activity.id, {
           [role.approvedField]: false,

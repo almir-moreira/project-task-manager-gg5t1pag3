@@ -1,6 +1,7 @@
 import {
   canApproveCurrentStep,
   isAdmin,
+  isActivityFinalized,
   type PermissionActivity,
   type PermissionUser,
 } from '@/lib/permissions'
@@ -61,11 +62,6 @@ export const ROLE_TO_STEP_NAME: Record<string, string> = {
 }
 
 export type StepState = 'completed' | 'active' | 'future' | 'not-required'
-
-export function isActivityFinalized(activity: PermissionActivity | null | undefined): boolean {
-  if (!activity || !activity.status) return false
-  return activity.status === 'Done' || activity.status === 'Rejected'
-}
 
 export function getApprovalStepState(
   activity: PermissionActivity | null | undefined,

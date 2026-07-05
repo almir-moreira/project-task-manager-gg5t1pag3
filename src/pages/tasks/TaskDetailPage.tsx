@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getActivity, updateActivity } from '@/services/activities'
 import { getMasterData } from '@/services/master-data'
-import { canEditActivity } from '@/lib/permissions'
+import { canEditActivity, isActivityFinalized } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { ActivityTabs } from './components/TaskActivityTabs'
 import { ArrowLeft, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
@@ -99,6 +99,8 @@ export default function ActivityDetailPage() {
 
   const handleAdvanceStage = async () => {
     if (!canAdvance || !nextStage) return
+    if (!canEditActivity(permUser, activity)) return
+    if (isActivityFinalized(activity)) return
     try {
       const updated = await updateActivity(activity.id, {
         current_stage: nextStage,

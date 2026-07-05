@@ -271,6 +271,15 @@ export function isReadOnly(user: PermissionUser | null | undefined): boolean {
 }
 
 /**
+ * Returns true if the activity is finalized (Done or Rejected).
+ * Finalized activities cannot be modified by non-admin users.
+ */
+export function isActivityFinalized(activity: PermissionActivity | null | undefined): boolean {
+  if (!activity || !activity.status) return false
+  return activity.status === 'Done' || activity.status === 'Rejected'
+}
+
+/**
  * Checks if the user has a specific role.
  * Role normalization is applied so `hasRole(user, 'Admin')` returns true
  * for both `Admin` and `Administrator`.
