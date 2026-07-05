@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react'
-import { StatCards } from './dashboard/components/StatCards'
 import { DashboardTaskTable } from './dashboard/components/DashboardTaskTable'
 import { ActivityMatrixCard } from './dashboard/components/ActivityMatrixCard'
 import { getActivities } from '@/services/activities'
@@ -82,8 +81,6 @@ const Index = () => {
           Monitor system-wide activity progress and your assigned activities.
         </p>
       </div>
-
-      <StatCards tasks={tasks} />
 
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
