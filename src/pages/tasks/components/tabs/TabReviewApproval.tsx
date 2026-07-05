@@ -28,6 +28,8 @@ import {
 } from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
 import { REVIEWER_ROLES, APPROVER_ROLES, RoleConfig } from './review-roles'
+import { canApproveCurrentStep } from '@/lib/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 
 export function TabReviewApproval({
   activity,
@@ -40,6 +42,7 @@ export function TabReviewApproval({
   const [workflowMap, setWorkflowMap] = useState<Map<string, string>>(new Map())
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const { permUser } = usePermissions()
 
   useEffect(() => {
     Promise.all([
@@ -116,6 +119,16 @@ export function TabReviewApproval({
   )
 
   const renderRow = (role: RoleConfig) => {
+    const STEP_MAP: Record<string, string> = {
+      'Team Leader Review': 'SPM Clearance',
+      'Head Review': 'Head Clearance',
+      'Head Approval': 'Head Approval',
+      'CPO Approval': 'CPO Approval',
+      'SG Approval': 'SG Approval',
+      'CPO Review': 'CPO Approval',
+    }
+    const step = STEP_MAP[role.workflowRole] || ''
+    const canApprove = canApproveCurrentStep(permUser, activity, step)
     const idVal = activity[role.idField] || 'unassigned'
     const commentsVal = activity[role.commentsField] || ''
     const dateVal = activity[role.dateField] ? String(activity[role.dateField]).split('T')[0] : ''
@@ -177,6 +190,7 @@ export function TabReviewApproval({
             <Checkbox
               checked={approvedVal}
               onCheckedChange={(v) => handleFieldChange(role.approvedField, !!v)}
+              disabled={!canApprove}
             />
           </div>
         </TableCell>

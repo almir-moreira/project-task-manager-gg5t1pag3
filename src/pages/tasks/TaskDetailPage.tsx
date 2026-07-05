@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getActivity, updateActivity } from '@/services/activities'
 import { getMasterData } from '@/services/master-data'
+import { canEditActivity } from '@/lib/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 import { ActivityTabs } from './components/TaskActivityTabs'
 import { ArrowLeft, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -23,6 +25,7 @@ export default function ActivityDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { permUser } = usePermissions()
 
   const [activity, setActivity] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -171,7 +174,7 @@ export default function ActivityDetailPage() {
           </Badge>
         </div>
 
-        {currentStage !== 'Done' && (
+        {currentStage !== 'Done' && canEditActivity(permUser, activity) && (
           <Button
             onClick={handleAdvanceStage}
             disabled={!canAdvance}

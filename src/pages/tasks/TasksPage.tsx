@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { getActivities } from '@/services/activities'
 import { getStatusColor } from '@/lib/status-colors'
+import { canCreateActivity } from '@/lib/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<any[]>([])
@@ -23,6 +25,7 @@ export default function ActivitiesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const { toast } = useToast()
   const navigate = useNavigate()
+  const { permUser } = usePermissions()
 
   useEffect(() => {
     fetchActivities()
@@ -87,10 +90,12 @@ export default function ActivitiesPage() {
             Manage and track your activities across all programmes.
           </p>
         </div>
-        <Button onClick={handleCreateActivity}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Activity
-        </Button>
+        {canCreateActivity(permUser) && (
+          <Button onClick={handleCreateActivity}>
+            <Plus className="w-4 h-4 mr-2" />
+            New Activity
+          </Button>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card p-4 rounded-lg border shadow-sm">

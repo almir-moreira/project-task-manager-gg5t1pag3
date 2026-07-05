@@ -27,20 +27,24 @@ import { useAuth } from '@/hooks/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
+import { canViewReport, type PermissionUser } from '@/lib/permissions'
 
 export function AppSidebar() {
   const location = useLocation()
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState<any>(null)
+  const [permUser, setPermUser] = useState<PermissionUser | null>(null)
 
   useEffect(() => {
     if (user) {
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => setProfile(data))
+      Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).single(),
+        supabase.from('user_units').select('unit:units(name)').eq('user_id', user.id),
+      ]).then(([pRes, uRes]) => {
+        setProfile(pRes.data)
+        const unitNames = (uRes.data || []).map((u: any) => u.unit?.name).filter(Boolean)
+        setPermUser({ id: user.id, role: pRes.data?.role || null, units: unitNames })
+      })
     }
   }, [user])
 
@@ -65,7 +69,7 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {profile?.role === 'Administrator' && (
+              {canViewReport(permUser, 'monitoring') && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -91,18 +95,20 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname.startsWith('/reports')}
-                  tooltip="Reports"
-                >
-                  <Link to="/reports/kaiciid-calendar">
-                    <FileText />
-                    <span>Reports</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {canViewReport(permUser, 'calendar') && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={location.pathname.startsWith('/reports')}
+                    tooltip="Reports"
+                  >
+                    <Link to="/reports/kaiciid-calendar">
+                      <FileText />
+                      <span>Reports</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {profile?.role === 'Administrator' && (
                 <SidebarMenuItem>
                   <SidebarMenuButton

@@ -28,6 +28,8 @@ import {
 } from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
 import type { DeptFieldMapping } from './workflow-dept-config'
+import { canProvideFeedback } from '@/lib/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 
 const FEEDBACK_DEPTS: (DeptFieldMapping & { order: number })[] = [
   {
@@ -148,6 +150,7 @@ export function TabFeedback({
   const [awMap, setAwMap] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
+  const { permUser } = usePermissions()
 
   useEffect(() => {
     if (!activity?.id) {
@@ -314,6 +317,7 @@ export function TabFeedback({
           <TableBody>
             {deptRows.map((dept) => {
               const isEnabled = !!activity[dept.enabledField]
+              const canFeedback = canProvideFeedback(permUser, activity, dept.label)
               const reviewerId = activity[dept.reviewerIdField] || 'unassigned'
               const aw = dept.workflowId ? awMap[dept.workflowId] : null
               const feedbackText = aw?.comments || ''
@@ -334,6 +338,7 @@ export function TabFeedback({
                       <Checkbox
                         checked={isEnabled}
                         onCheckedChange={(v) => handleToggle(dept, !!v)}
+                        disabled={!canFeedback}
                       />
                       {dept.label}
                     </div>
@@ -342,7 +347,7 @@ export function TabFeedback({
                     <Select
                       value={reviewerId}
                       onValueChange={(v) => handleReviewer(dept, v)}
-                      disabled={!isEnabled}
+                      disabled={!isEnabled || !canFeedback}
                     >
                       <SelectTrigger className="h-9 w-full">
                         <SelectValue placeholder="Select reviewer" />
@@ -373,8 +378,9 @@ export function TabFeedback({
                         type="date"
                         className="h-9"
                         defaultValue={feedbackDate}
+                        disabled={!canFeedback}
                         onBlur={(e) => {
-                          if (e.target.value !== feedbackDate) {
+                          if (canFeedback && e.target.value !== feedbackDate) {
                             handleDate(dept, e.target.value)
                           }
                         }}
@@ -388,8 +394,9 @@ export function TabFeedback({
                       <Textarea
                         className="min-h-[40px] resize-y text-sm"
                         defaultValue={feedbackText}
+                        disabled={!canFeedback}
                         onBlur={(e) => {
-                          if (e.target.value !== feedbackText) {
+                          if (canFeedback && e.target.value !== feedbackText) {
                             handleText(dept, e.target.value)
                           }
                         }}
