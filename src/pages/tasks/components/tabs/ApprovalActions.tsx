@@ -1,8 +1,8 @@
 import { Check, X, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { canActOnApprovalStep, isAdmin, ROLE_TO_STEP_NAME } from '@/lib/approval-guards'
-import type { PermissionActivity, PermissionUser } from '@/lib/permissions'
+import { canActOnApprovalStep, ROLE_TO_STEP_NAME } from '@/lib/approval-guards'
+import { isAdmin, type PermissionActivity, type PermissionUser } from '@/lib/permissions'
 import type { RoleConfig } from './review-roles'
 
 interface ApprovalActionsProps {
