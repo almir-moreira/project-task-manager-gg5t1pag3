@@ -159,7 +159,6 @@ export const REPORT_VIEWER_ROLES: UserRole[] = [
   'PROD Head',
   'Head',
   'PROD Team Assistant',
-  'Programme Manager',
 ]
 
 /** Mapping from unit display names to the corresponding `wf_*` field on Activity. */

@@ -4,6 +4,9 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AppProvider } from '@/stores/main'
 import { AuthProvider, useAuth } from '@/hooks/use-auth'
+import { RouteGuard } from '@/components/RouteGuard'
+import { canViewMonitoringDashboard, canViewKaiciidCalendar, isAdmin } from '@/lib/permissions'
+import { usePermissions } from '@/hooks/use-permissions'
 
 import Index from './pages/Index'
 import NotFound from './pages/NotFound'
@@ -15,11 +18,19 @@ import UserAccessPage from './pages/admin/UserAccessPage'
 import MonitoringPage from './pages/monitoring/MonitoringPage'
 import KaiciidCalendarReport from './pages/reports/KaiciidCalendarReport'
 import LoginPage from './pages/auth/LoginPage'
+import AccessDenied from './pages/AccessDenied'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { permUser, loading } = usePermissions()
+  if (loading) return null
+  if (!isAdmin(permUser)) return <AccessDenied />
   return <>{children}</>
 }
 
@@ -56,10 +67,38 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/admin/access-control" element={<UserAccessPage />} />
-              <Route path="/monitoring" element={<MonitoringPage />} />
-              <Route path="/reports/kaiciid-calendar" element={<KaiciidCalendarReport />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/access-control"
+                element={
+                  <AdminRoute>
+                    <UserAccessPage />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/monitoring"
+                element={
+                  <RouteGuard check={canViewMonitoringDashboard}>
+                    <MonitoringPage />
+                  </RouteGuard>
+                }
+              />
+              <Route
+                path="/reports/kaiciid-calendar"
+                element={
+                  <RouteGuard check={canViewKaiciidCalendar}>
+                    <KaiciidCalendarReport />
+                  </RouteGuard>
+                }
+              />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

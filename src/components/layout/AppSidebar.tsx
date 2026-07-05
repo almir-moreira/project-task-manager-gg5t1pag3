@@ -27,7 +27,12 @@ import { useAuth } from '@/hooks/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { canViewReport, isAdmin, type PermissionUser } from '@/lib/permissions'
+import {
+  canViewMonitoringDashboard,
+  canViewKaiciidCalendar,
+  isAdmin,
+  type PermissionUser,
+} from '@/lib/permissions'
 
 export function AppSidebar() {
   const location = useLocation()
@@ -69,7 +74,7 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {canViewReport(permUser, 'monitoring') && (
+              {canViewMonitoringDashboard(permUser) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
@@ -95,7 +100,7 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {canViewReport(permUser, 'calendar') && (
+              {canViewKaiciidCalendar(permUser) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
