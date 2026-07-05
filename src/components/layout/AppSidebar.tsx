@@ -27,7 +27,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { canViewReport, type PermissionUser } from '@/lib/permissions'
+import { canViewReport, isAdmin, type PermissionUser } from '@/lib/permissions'
 
 export function AppSidebar() {
   const location = useLocation()
@@ -109,7 +109,7 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
-              {profile?.role === 'Administrator' && (
+              {isAdmin(permUser) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild
