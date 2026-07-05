@@ -11,6 +11,7 @@ import Layout from './components/Layout'
 import TasksPage from './pages/tasks/TasksPage'
 import TaskDetailPage from './pages/tasks/TaskDetailPage'
 import AdminPage from './pages/admin/AdminPage'
+import UserAccessPage from './pages/admin/UserAccessPage'
 import MonitoringPage from './pages/monitoring/MonitoringPage'
 import KaiciidCalendarReport from './pages/reports/KaiciidCalendarReport'
 import LoginPage from './pages/auth/LoginPage'
@@ -56,6 +57,7 @@ const App = () => (
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
               <Route path="/admin" element={<AdminPage />} />
+              <Route path="/admin/access-control" element={<UserAccessPage />} />
               <Route path="/monitoring" element={<MonitoringPage />} />
               <Route path="/reports/kaiciid-calendar" element={<KaiciidCalendarReport />} />
             </Route>

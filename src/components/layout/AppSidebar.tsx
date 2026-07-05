@@ -121,6 +121,18 @@ export function AppSidebar() {
                       <span>Administration</span>
                     </Link>
                   </SidebarMenuButton>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        asChild
+                        isActive={location.pathname === '/admin/access-control'}
+                      >
+                        <Link to="/admin/access-control">
+                          <span>User Access</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
                 </SidebarMenuItem>
               )}
             </SidebarMenu>

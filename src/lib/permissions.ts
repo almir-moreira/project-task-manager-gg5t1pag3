@@ -368,6 +368,14 @@ export function canViewReport(
   return REPORT_VIEWER_ROLES.includes(user.role)
 }
 
+export function canViewMonitoringDashboard(user: PermissionUser | null | undefined): boolean {
+  return canViewReport(user, 'monitoring')
+}
+
+export function canViewKaiciidCalendar(user: PermissionUser | null | undefined): boolean {
+  return canViewReport(user, 'kaiciid-calendar')
+}
+
 /**
  * Returns true if the user can delete the given activity.
  * Only admins can delete activities.
