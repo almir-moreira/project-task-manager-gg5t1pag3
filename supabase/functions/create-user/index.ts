@@ -22,10 +22,7 @@ Deno.serve(async (req: Request) => {
     })
 
     // Validate calling user session
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser()
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
     if (userError || !user) throw new Error('Unauthorized')
 
     // Ensure the caller is an Administrator
