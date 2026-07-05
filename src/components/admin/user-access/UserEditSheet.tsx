@@ -29,9 +29,10 @@ interface UserEditSheetProps {
   user: UserProfileWithUnits | null
   open: boolean
   onOpenChange: (open: boolean) => void
+  onUserUpdated?: (user: UserProfileWithUnits) => void
 }
 
-export function UserEditSheet({ user, open, onOpenChange }: UserEditSheetProps) {
+export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserEditSheetProps) {
   const { toast } = useToast()
   const [role, setRole] = useState('')
   const [units, setUnits] = useState<UnitOption[]>([])
@@ -74,7 +75,7 @@ export function UserEditSheet({ user, open, onOpenChange }: UserEditSheetProps) 
 
     const { error: roleError } = await supabase.from('profiles').update({ role }).eq('id', user.id)
     if (roleError) {
-      toast({ title: 'Error updating role', variant: 'destructive' })
+      toast({ title: 'Failed to update role. Please try again.', variant: 'destructive' })
       setSaving(false)
       return
     }
@@ -88,15 +89,38 @@ export function UserEditSheet({ user, open, onOpenChange }: UserEditSheetProps) 
       .map((uu) => uu.id)
 
     if (toRemove.length > 0) {
-      await supabase.from('user_units').delete().in('id', toRemove)
+      const { error: removeError } = await supabase.from('user_units').delete().in('id', toRemove)
+      if (removeError) {
+        toast({ title: 'Failed to update unit memberships.', variant: 'destructive' })
+        setSaving(false)
+        return
+      }
     }
     if (toAdd.length > 0) {
-      await supabase
+      const { error: addError } = await supabase
         .from('user_units')
         .insert(toAdd.map((unit_id) => ({ user_id: user.id, unit_id })))
+      if (addError) {
+        toast({ title: 'Failed to update unit memberships.', variant: 'destructive' })
+        setSaving(false)
+        return
+      }
     }
 
-    toast({ title: 'User access updated successfully' })
+    const updatedUser: UserProfileWithUnits = {
+      ...user,
+      role,
+      user_units: units
+        .filter((u) => selectedUnits.has(u.id))
+        .map((u) => ({
+          id: u.id,
+          unit_id: u.id,
+          unit: { id: u.id, name: u.name },
+        })),
+    }
+    onUserUpdated?.(updatedUser)
+
+    toast({ title: 'Role updated successfully' })
     setSaving(false)
     onOpenChange(false)
   }

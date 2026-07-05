@@ -59,6 +59,11 @@ export default function UserAccessPage() {
     fetchUsers()
   }
 
+  const handleUserUpdated = (updatedUser: UserProfileWithUnits) => {
+    setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)))
+    setSelectedUser(updatedUser)
+  }
+
   if (loading) return null
 
   if (!isAdmin(permUser)) {
@@ -117,6 +122,7 @@ export default function UserAccessPage() {
         onOpenChange={(open) => {
           if (!open) handleSheetClose()
         }}
+        onUserUpdated={handleUserUpdated}
       />
     </div>
   )
