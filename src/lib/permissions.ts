@@ -186,14 +186,37 @@ export const UNIT_ALIASES: Record<string, string> = {
   COMMD: 'Communications',
   COMMS: 'Communications',
   GoB: 'Governing Bodies',
+  Relex: 'RELEX',
+  relex: 'RELEX',
+  Ems: 'EMS',
+  ems: 'EMS',
+  'Governing bodies': 'Governing Bodies',
+  gob: 'Governing Bodies',
+  CommD: 'Communications',
+  Comms: 'Communications',
+  'Social media': 'Social Media',
+  'social media': 'Social Media',
+  'M&e': 'M&E',
+  'm&e': 'M&E',
 }
+
+/** Case-insensitive lookup for unit aliases. */
+const UNIT_ALIASES_CI: Record<string, string> = Object.fromEntries(
+  Object.entries(UNIT_ALIASES).map(([k, v]) => [k.toLowerCase(), v]),
+)
+
+/** Case-insensitive lookup for unit → wf field mapping. */
+const UNIT_WF_FIELD_MAP_CI: Record<string, keyof PermissionActivity> = Object.fromEntries(
+  Object.entries(UNIT_WF_FIELD_MAP).map(([k, v]) => [k.toLowerCase(), v]),
+)
 
 /**
  * Normalizes a unit name to its canonical form.
- * Handles legacy aliases like "COMMD" → "Communications".
+ * Handles legacy aliases and case-insensitive matching (idempotent).
  */
 export function normalizeUnitName(name: string): string {
-  return UNIT_ALIASES[name] ?? name
+  if (!name) return name
+  return UNIT_ALIASES_CI[name.toLowerCase()] ?? name
 }
 
 /** Mapping from workflow step label to the activity fields that store reviewer IDs. */
@@ -268,8 +291,8 @@ export function hasRole(user: PermissionUser | null | undefined, role: UserRole)
  */
 export function belongsToUnit(user: PermissionUser | null | undefined, unitName: string): boolean {
   if (!user || !user.units || user.units.length === 0) return false
-  const normalized = normalizeUnitName(unitName)
-  return user.units.some((u) => normalizeUnitName(u) === normalized)
+  const normalized = normalizeUnitName(unitName).toLowerCase()
+  return user.units.some((u) => normalizeUnitName(u).toLowerCase() === normalized)
 }
 
 /**
@@ -335,7 +358,9 @@ export function canProvideFeedback(
   if (!user || !activity) return false
   if (isAdmin(user)) return true
 
-  const wfField = UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)] || UNIT_WF_FIELD_MAP[unitName]
+  const wfField =
+    UNIT_WF_FIELD_MAP_CI[normalizeUnitName(unitName).toLowerCase()] ||
+    UNIT_WF_FIELD_MAP_CI[unitName.toLowerCase()]
   if (!wfField) return false
 
   const isFlagEnabled = activity[wfField] === true
@@ -344,9 +369,18 @@ export function canProvideFeedback(
   return belongsToUnit(user, unitName)
 }
 
+/**
+ * Returns true if the user is restricted to read-only access.
+ * Read Only users cannot perform any write operations including feedback.
+ */
+export function isFeedbackRestricted(user: PermissionUser | null | undefined): boolean {
+  if (!user || !user.role) return true
+  return isReadOnly(user)
+}
+
 export function getWfFieldForUnit(unitName: string): keyof PermissionActivity | null {
-  const normalized = normalizeUnitName(unitName)
-  return UNIT_WF_FIELD_MAP[normalized] || UNIT_WF_FIELD_MAP[unitName] || null
+  const normalized = normalizeUnitName(unitName).toLowerCase()
+  return UNIT_WF_FIELD_MAP_CI[normalized] || UNIT_WF_FIELD_MAP_CI[unitName.toLowerCase()] || null
 }
 
 /**
@@ -426,7 +460,9 @@ export function canProvideFeedbackReason(
     return { result: true, reason: 'Yes — admin users can always provide feedback.' }
   }
 
-  const wfField = UNIT_WF_FIELD_MAP[unitName] || UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)]
+  const wfField =
+    UNIT_WF_FIELD_MAP_CI[unitName.toLowerCase()] ||
+    UNIT_WF_FIELD_MAP_CI[normalizeUnitName(unitName).toLowerCase()]
   if (!wfField) {
     return { result: false, reason: `No — unit "${unitName}" is not recognized.` }
   }
@@ -586,7 +622,9 @@ export function explainCanProvideFeedback(
   if (!user || !activity) return { allowed: false, reason: 'No — user or activity is missing.' }
   if (isAdmin(user))
     return { allowed: true, reason: 'Yes — admin can provide feedback on any activity.' }
-  const wfField = UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)] || UNIT_WF_FIELD_MAP[unitName]
+  const wfField =
+    UNIT_WF_FIELD_MAP_CI[normalizeUnitName(unitName).toLowerCase()] ||
+    UNIT_WF_FIELD_MAP_CI[unitName.toLowerCase()]
   if (!wfField) return { allowed: false, reason: `No — unit "${unitName}" is not recognized.` }
   if (activity[wfField] !== true) {
     return {

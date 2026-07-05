@@ -28,7 +28,7 @@ import {
 } from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
 import type { DeptFieldMapping } from './workflow-dept-config'
-import { canProvideFeedback } from '@/lib/permissions'
+import { canProvideFeedback, isReadOnly } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 
 const FEEDBACK_DEPTS: (DeptFieldMapping & { order: number })[] = [
@@ -151,6 +151,7 @@ export function TabFeedback({
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
   const { permUser } = usePermissions()
+  const isRO = isReadOnly(permUser)
 
   useEffect(() => {
     if (!activity?.id) {
@@ -182,6 +183,7 @@ export function TabFeedback({
   const handleToggle = useCallback(
     async (dept: DeptRow, checked: boolean) => {
       if (!activity || !onUpdate) return
+      if (!canProvideFeedback(permUser, activity, dept.label)) return
       try {
         const updates: any = { [dept.enabledField]: checked }
         if (!checked) updates[dept.reviewerIdField] = null
@@ -205,12 +207,13 @@ export function TabFeedback({
         toast({ title: 'Error updating department', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, toast],
+    [activity, onUpdate, toast, permUser],
   )
 
   const handleReviewer = useCallback(
     async (dept: DeptRow, val: string) => {
       if (!activity || !onUpdate) return
+      if (!canProvideFeedback(permUser, activity, dept.label)) return
       const reviewerId = val === 'unassigned' ? null : val
       try {
         const updated = await updateActivity(activity.id, {
@@ -240,12 +243,13 @@ export function TabFeedback({
         toast({ title: 'Error updating reviewer', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, awMap, toast],
+    [activity, onUpdate, awMap, toast, permUser],
   )
 
   const handleText = useCallback(
     async (dept: DeptRow, text: string) => {
       if (!activity || !dept.workflowId) return
+      if (!canProvideFeedback(permUser, activity, dept.label)) return
       const aw = awMap[dept.workflowId]
       const rev = activity[dept.reviewerIdField] || null
       const date = aw?.completed_at || ''
@@ -264,12 +268,13 @@ export function TabFeedback({
         toast({ title: 'Error saving feedback', variant: 'destructive' })
       }
     },
-    [activity, awMap, toast],
+    [activity, awMap, toast, permUser],
   )
 
   const handleDate = useCallback(
     async (dept: DeptRow, dateVal: string) => {
       if (!activity || !dept.workflowId) return
+      if (!canProvideFeedback(permUser, activity, dept.label)) return
       const aw = awMap[dept.workflowId]
       const rev = activity[dept.reviewerIdField] || null
       const text = aw?.comments || ''
@@ -293,7 +298,7 @@ export function TabFeedback({
         toast({ title: 'Error saving date', variant: 'destructive' })
       }
     },
-    [activity, awMap, toast],
+    [activity, awMap, toast, permUser],
   )
 
   if (!activity) return null
@@ -317,7 +322,7 @@ export function TabFeedback({
           <TableBody>
             {deptRows.map((dept) => {
               const isEnabled = !!activity[dept.enabledField]
-              const canFeedback = canProvideFeedback(permUser, activity, dept.label)
+              const canFeedback = canProvideFeedback(permUser, activity, dept.label) && !isRO
               const reviewerId = activity[dept.reviewerIdField] || 'unassigned'
               const aw = dept.workflowId ? awMap[dept.workflowId] : null
               const feedbackText = aw?.comments || ''
@@ -391,17 +396,24 @@ export function TabFeedback({
                   </TableCell>
                   <TableCell className="py-3">
                     {isEnabled ? (
-                      <Textarea
-                        className="min-h-[40px] resize-y text-sm"
-                        defaultValue={feedbackText}
-                        disabled={!canFeedback}
-                        onBlur={(e) => {
-                          if (canFeedback && e.target.value !== feedbackText) {
-                            handleText(dept, e.target.value)
-                          }
-                        }}
-                        placeholder="Enter feedback..."
-                      />
+                      <div className="space-y-1">
+                        <Textarea
+                          className="min-h-[40px] resize-y text-sm"
+                          defaultValue={feedbackText}
+                          disabled={!canFeedback}
+                          onBlur={(e) => {
+                            if (canFeedback && e.target.value !== feedbackText) {
+                              handleText(dept, e.target.value)
+                            }
+                          }}
+                          placeholder="Enter feedback..."
+                        />
+                        {!canFeedback && (
+                          <p className="text-xs text-muted-foreground italic">
+                            You can view this feedback, but you do not have permission to edit it.
+                          </p>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-muted-foreground italic text-sm">Not included</span>
                     )}
