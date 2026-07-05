@@ -15,12 +15,14 @@ import { updateActivity } from '@/services/activities'
 export function TabEventDetails({
   activity,
   onUpdate,
+  canEdit = true,
 }: {
   activity?: any
   onUpdate?: (a: any) => void
+  canEdit?: boolean
 }) {
   const handleChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
+    if (!canEdit || !activity || !onUpdate) return
     try {
       const updated = await updateActivity(activity.id, { [field]: val })
       onUpdate(updated)
@@ -39,6 +41,7 @@ export function TabEventDetails({
           <Label>Location</Label>
           <Input
             defaultValue={activity.event_location || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.event_location &&
               handleChange('event_location', e.target.value)
@@ -51,6 +54,7 @@ export function TabEventDetails({
           <Input
             type="number"
             defaultValue={activity.event_participants_count ?? ''}
+            disabled={!canEdit}
             onBlur={(e) => {
               const val = e.target.value
               const num = parseInt(val)
@@ -70,6 +74,7 @@ export function TabEventDetails({
           <Select
             value={activity.event_category || ''}
             onValueChange={(v) => handleChange('event_category', v)}
+            disabled={!canEdit}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
@@ -86,6 +91,7 @@ export function TabEventDetails({
           <Select
             value={activity.event_approval_status || ''}
             onValueChange={(v) => handleChange('event_approval_status', v)}
+            disabled={!canEdit}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select approval" />
@@ -101,6 +107,7 @@ export function TabEventDetails({
           <Select
             value={activity.event_date_status || ''}
             onValueChange={(v) => handleChange('event_date_status', v)}
+            disabled={!canEdit}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select date status" />
@@ -116,6 +123,7 @@ export function TabEventDetails({
           <Select
             value={activity.event_location_status || ''}
             onValueChange={(v) => handleChange('event_location_status', v)}
+            disabled={!canEdit}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select location status" />
@@ -130,6 +138,7 @@ export function TabEventDetails({
           <Label>Include in Calendar</Label>
           <Switch
             checked={!!activity.event_include_calendar}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('event_include_calendar', v)}
           />
         </div>
@@ -137,6 +146,7 @@ export function TabEventDetails({
           <Label>Can the Event Change Time?</Label>
           <Switch
             checked={!!activity.event_can_change_time}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('event_can_change_time', v)}
           />
         </div>
@@ -146,6 +156,7 @@ export function TabEventDetails({
           <Label>If yes, describe</Label>
           <Textarea
             defaultValue={activity.event_change_time_desc || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.event_change_time_desc &&
               handleChange('event_change_time_desc', e.target.value)
@@ -159,6 +170,7 @@ export function TabEventDetails({
         <Input
           type="url"
           defaultValue={activity.event_links || ''}
+          disabled={!canEdit}
           onBlur={(e) =>
             e.target.value !== activity.event_links && handleChange('event_links', e.target.value)
           }
@@ -169,6 +181,7 @@ export function TabEventDetails({
         <Label>Comments</Label>
         <Textarea
           defaultValue={activity.event_comments || ''}
+          disabled={!canEdit}
           onBlur={(e) =>
             e.target.value !== activity.event_comments &&
             handleChange('event_comments', e.target.value)
@@ -184,12 +197,14 @@ export function TabEventDetails({
 export function TabInvolvedParties({
   activity,
   onUpdate,
+  canEdit = true,
 }: {
   activity?: any
   onUpdate?: (a: any) => void
+  canEdit?: boolean
 }) {
   const handleChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
+    if (!canEdit || !activity || !onUpdate) return
     try {
       const updated = await updateActivity(activity.id, { [field]: val })
       onUpdate(updated)
@@ -209,6 +224,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="ems"
             checked={!!activity.inv_ems}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_ems', v)}
           />
           <Label htmlFor="ems" className="font-semibold">
@@ -221,6 +237,7 @@ export function TabInvolvedParties({
               <Label>Comments to EMS</Label>
               <Textarea
                 defaultValue={activity.inv_comments_to_ems || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.inv_comments_to_ems &&
                   handleChange('inv_comments_to_ems', e.target.value)
@@ -231,6 +248,7 @@ export function TabInvolvedParties({
               <Label>EMS Comments</Label>
               <Textarea
                 defaultValue={activity.inv_ems_comments || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.inv_ems_comments &&
                   handleChange('inv_ems_comments', e.target.value)
@@ -246,6 +264,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="protocol"
             checked={!!activity.inv_protocol}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_protocol', v)}
           />
           <Label htmlFor="protocol" className="font-semibold">
@@ -259,6 +278,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="sg"
             checked={!!activity.inv_sg}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_sg', v)}
           />
           <Label htmlFor="sg" className="font-semibold">
@@ -271,6 +291,7 @@ export function TabInvolvedParties({
               <Label>SG Role</Label>
               <Input
                 defaultValue={activity?.sg_role || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity?.sg_role && handleChange('sg_role', e.target.value)
                 }
@@ -281,6 +302,7 @@ export function TabInvolvedParties({
               <Label>Speaking Notes / Welcome Remarks</Label>
               <Textarea
                 defaultValue={activity?.sg_speaking_notes || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity?.sg_speaking_notes &&
                   handleChange('sg_speaking_notes', e.target.value)
@@ -298,6 +320,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="cop_bod"
             checked={!!activity.inv_cop_bod}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_cop_bod', v)}
           />
           <Label htmlFor="cop_bod" className="font-semibold">
@@ -309,6 +332,7 @@ export function TabInvolvedParties({
             <Label>CoP/BoD Role</Label>
             <Textarea
               defaultValue={activity.inv_cop_bod_role || ''}
+              disabled={!canEdit}
               onBlur={(e) =>
                 e.target.value !== activity.inv_cop_bod_role &&
                 handleChange('inv_cop_bod_role', e.target.value)
@@ -323,6 +347,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="heads"
             checked={!!activity.inv_heads}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_heads', v)}
           />
           <Label htmlFor="heads" className="font-semibold">
@@ -334,6 +359,7 @@ export function TabInvolvedParties({
             <Label>Heads Role</Label>
             <Textarea
               defaultValue={activity.inv_heads_role || ''}
+              disabled={!canEdit}
               onBlur={(e) =>
                 e.target.value !== activity.inv_heads_role &&
                 handleChange('inv_heads_role', e.target.value)
@@ -348,6 +374,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="commd"
             checked={!!activity.inv_commd}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_commd', v)}
           />
           <Label htmlFor="commd" className="font-semibold">
@@ -359,6 +386,7 @@ export function TabInvolvedParties({
             <Label>COMMD Role</Label>
             <Textarea
               defaultValue={activity.inv_commd_role || ''}
+              disabled={!canEdit}
               onBlur={(e) =>
                 e.target.value !== activity.inv_commd_role &&
                 handleChange('inv_commd_role', e.target.value)
@@ -373,6 +401,7 @@ export function TabInvolvedParties({
           <Checkbox
             id="staff"
             checked={!!activity.inv_staff}
+            disabled={!canEdit}
             onCheckedChange={(v) => handleChange('inv_staff', v)}
           />
           <Label htmlFor="staff" className="font-semibold">
@@ -384,6 +413,7 @@ export function TabInvolvedParties({
             <Label>Staff Involvement</Label>
             <Textarea
               defaultValue={activity.inv_staff_involvement || ''}
+              disabled={!canEdit}
               onBlur={(e) =>
                 e.target.value !== activity.inv_staff_involvement &&
                 handleChange('inv_staff_involvement', e.target.value)
@@ -398,6 +428,7 @@ export function TabInvolvedParties({
           <Label>KAICIID Delegation</Label>
           <Textarea
             defaultValue={activity.inv_kaiciid_delegation || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_kaiciid_delegation &&
               handleChange('inv_kaiciid_delegation', e.target.value)
@@ -408,6 +439,7 @@ export function TabInvolvedParties({
           <Label>Travel Days</Label>
           <Input
             defaultValue={activity.inv_travel_days || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_travel_days &&
               handleChange('inv_travel_days', e.target.value)
@@ -421,6 +453,7 @@ export function TabInvolvedParties({
           <Label>Organizations Involved</Label>
           <Textarea
             defaultValue={activity.inv_orgs_involved || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_orgs_involved &&
               handleChange('inv_orgs_involved', e.target.value)
@@ -431,6 +464,7 @@ export function TabInvolvedParties({
           <Label>Description of Organizations Involved</Label>
           <Textarea
             defaultValue={activity.inv_orgs_desc || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_orgs_desc &&
               handleChange('inv_orgs_desc', e.target.value)
@@ -444,6 +478,7 @@ export function TabInvolvedParties({
           <Label>Type of Participants</Label>
           <Textarea
             defaultValue={activity.inv_participants_type || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_participants_type &&
               handleChange('inv_participants_type', e.target.value)
@@ -454,6 +489,7 @@ export function TabInvolvedParties({
           <Label>Individuals to Meet</Label>
           <Textarea
             defaultValue={activity.inv_individuals_meet || ''}
+            disabled={!canEdit}
             onBlur={(e) =>
               e.target.value !== activity.inv_individuals_meet &&
               handleChange('inv_individuals_meet', e.target.value)
@@ -465,9 +501,17 @@ export function TabInvolvedParties({
   )
 }
 
-export function TabRBM({ activity, onUpdate }: { activity?: any; onUpdate?: (a: any) => void }) {
+export function TabRBM({
+  activity,
+  onUpdate,
+  canEdit = true,
+}: {
+  activity?: any
+  onUpdate?: (a: any) => void
+  canEdit?: boolean
+}) {
   const handleChange = async (field: string, val: any) => {
-    if (!activity || !onUpdate) return
+    if (!canEdit || !activity || !onUpdate) return
     try {
       const updated = await updateActivity(activity.id, { [field]: val })
       onUpdate(updated)
@@ -482,6 +526,7 @@ export function TabRBM({ activity, onUpdate }: { activity?: any; onUpdate?: (a: 
         <Label>Expected Outcomes</Label>
         <Textarea
           defaultValue={activity?.rbm_outcomes || ''}
+          disabled={!canEdit}
           onBlur={(e) =>
             e.target.value !== activity?.rbm_outcomes &&
             handleChange('rbm_outcomes', e.target.value)
@@ -494,6 +539,7 @@ export function TabRBM({ activity, onUpdate }: { activity?: any; onUpdate?: (a: 
         <Label>Key Outputs</Label>
         <Textarea
           defaultValue={activity?.rbm_outputs || ''}
+          disabled={!canEdit}
           onBlur={(e) =>
             e.target.value !== activity?.rbm_outputs && handleChange('rbm_outputs', e.target.value)
           }

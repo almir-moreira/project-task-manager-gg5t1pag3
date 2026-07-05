@@ -48,6 +48,14 @@ export default function ActivitiesPage() {
   }
 
   const handleCreateActivity = async () => {
+    if (!canCreateActivity(permUser)) {
+      toast({
+        title: 'Access Denied',
+        description: 'You do not have permission to create activities.',
+        variant: 'destructive',
+      })
+      return
+    }
     try {
       const { data, error } = await supabase
         .from('activities')

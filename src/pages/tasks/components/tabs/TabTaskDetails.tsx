@@ -40,10 +40,12 @@ function CurrencyMaskInput({
   value,
   onChange,
   placeholder,
+  disabled,
 }: {
   value: number | null | undefined
   onChange: (val: number | null) => void
   placeholder?: string
+  disabled?: boolean
 }) {
   const format = (v: number | null | undefined) => {
     if (v === null || v === undefined || isNaN(v)) return ''
@@ -96,6 +98,7 @@ function CurrencyMaskInput({
         onFocus={handleFocus}
         className="pl-7"
         placeholder={placeholder || '0.00'}
+        disabled={disabled}
       />
     </div>
   )
@@ -104,9 +107,11 @@ function CurrencyMaskInput({
 export function TabActivityDetails({
   activity,
   onUpdate,
+  canEdit = true,
 }: {
   activity: any
   onUpdate: (a: any) => void
+  canEdit?: boolean
 }) {
   const [masterData, setMasterData] = useState<any>(null)
   const [activitiesList, setActivitiesList] = useState<any[]>([])
@@ -124,6 +129,7 @@ export function TabActivityDetails({
   }, [activity])
 
   const handleChange = async (field: string, val: any) => {
+    if (!canEdit) return
     try {
       const updated = await updateActivity(activity.id, { [field]: val })
       onUpdate({ ...activity, ...updated })
@@ -133,6 +139,7 @@ export function TabActivityDetails({
   }
 
   const handleAddBudgetLine = async () => {
+    if (!canEdit) return
     try {
       const newLine = await addActivityBudgetLine(activity.id)
       const newLines = [...budgetLines, newLine]
@@ -144,6 +151,7 @@ export function TabActivityDetails({
   }
 
   const handleUpdateBudgetLine = async (lineId: string, field: string, value: any) => {
+    if (!canEdit) return
     try {
       const updatedLine = await updateActivityBudgetLine(lineId, { [field]: value })
       const newLines = budgetLines.map((l) => (l.id === lineId ? updatedLine : l))
@@ -155,6 +163,7 @@ export function TabActivityDetails({
   }
 
   const handleRemoveBudgetLine = async (lineId: string) => {
+    if (!canEdit) return
     try {
       await removeActivityBudgetLine(lineId)
       const newLines = budgetLines.filter((l) => l.id !== lineId)
@@ -170,7 +179,6 @@ export function TabActivityDetails({
 
   return (
     <div className="space-y-6 max-w-6xl animate-fade-in pb-10">
-      {/* Project Information */}
       <Card>
         <CardHeader>
           <CardTitle>Project Information</CardTitle>
@@ -182,6 +190,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.programme_id || ''}
                 onValueChange={(v) => handleChange('programme_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select programme" />
@@ -201,6 +210,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.project_id || ''}
                 onValueChange={(v) => handleChange('project_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select project" />
@@ -220,6 +230,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.project_owner_id || ''}
                 onValueChange={(v) => handleChange('project_owner_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select owner" />
@@ -237,7 +248,6 @@ export function TabActivityDetails({
         </CardContent>
       </Card>
 
-      {/* Activity Info */}
       <Card>
         <CardHeader>
           <CardTitle>Activity Info</CardTitle>
@@ -248,6 +258,7 @@ export function TabActivityDetails({
               <Label className="text-sm font-semibold">Activity Name</Label>
               <Input
                 defaultValue={activity.activity_name || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.activity_name &&
                   handleChange('activity_name', e.target.value)
@@ -269,6 +280,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.assignee_id || ''}
                 onValueChange={(v) => handleChange('assignee_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select assignee" />
@@ -295,6 +307,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.status || 'To Do'}
                 onValueChange={(v) => handleChange('status', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
@@ -314,6 +327,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.priority || 'Medium'}
                 onValueChange={(v) => handleChange('priority', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select priority" />
@@ -332,6 +346,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.type_id || ''}
                 onValueChange={(v) => handleChange('type_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select type" />
@@ -351,6 +366,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.category_id || ''}
                 onValueChange={(v) => handleChange('category_id', v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select category" />
@@ -370,6 +386,7 @@ export function TabActivityDetails({
               <Select
                 value={activity.sub_task_id || 'none'}
                 onValueChange={(v) => handleChange('sub_task_id', v === 'none' ? null : v)}
+                disabled={!canEdit}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select activity" />
@@ -393,6 +410,7 @@ export function TabActivityDetails({
               <Label className="text-sm font-semibold">Purpose</Label>
               <Input
                 defaultValue={activity.purpose || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.purpose && handleChange('purpose', e.target.value)
                 }
@@ -404,6 +422,7 @@ export function TabActivityDetails({
               <Label className="text-sm font-semibold">Description</Label>
               <Textarea
                 defaultValue={activity.short_description || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.short_description &&
                   handleChange('short_description', e.target.value)
@@ -416,7 +435,6 @@ export function TabActivityDetails({
         </CardContent>
       </Card>
 
-      {/* Timeline & Cost */}
       <Card>
         <CardHeader>
           <CardTitle>Timeline & Cost</CardTitle>
@@ -428,6 +446,7 @@ export function TabActivityDetails({
               <Input
                 type="date"
                 defaultValue={activity.start_date || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.start_date &&
                   handleChange('start_date', e.target.value)
@@ -439,6 +458,7 @@ export function TabActivityDetails({
               <Input
                 type="date"
                 defaultValue={activity.end_date || ''}
+                disabled={!canEdit}
                 onBlur={(e) =>
                   e.target.value !== activity.end_date && handleChange('end_date', e.target.value)
                 }
@@ -450,12 +470,14 @@ export function TabActivityDetails({
                 value={activity.cost_estimated}
                 onChange={(val) => handleChange('cost_estimated', val)}
                 placeholder="0.00"
+                disabled={!canEdit}
               />
             </div>
             <div className="flex items-center justify-between bg-muted/30 px-3 py-2 rounded-md border border-input h-10">
               <Label className="text-sm font-medium">In Budget</Label>
               <Switch
                 checked={!!activity.in_budget}
+                disabled={!canEdit}
                 onCheckedChange={(v) => handleChange('in_budget', v)}
               />
             </div>
@@ -463,6 +485,7 @@ export function TabActivityDetails({
               <Label className="text-sm font-medium">In Workplan</Label>
               <Switch
                 checked={!!activity.in_workplan}
+                disabled={!canEdit}
                 onCheckedChange={(v) => handleChange('in_workplan', v)}
               />
             </div>
@@ -470,7 +493,6 @@ export function TabActivityDetails({
         </CardContent>
       </Card>
 
-      {/* Additional Details */}
       <Card>
         <CardHeader>
           <CardTitle>Additional Details</CardTitle>
@@ -480,6 +502,7 @@ export function TabActivityDetails({
             <Label className="text-sm font-semibold">Comments</Label>
             <Textarea
               defaultValue={activity.comments || ''}
+              disabled={!canEdit}
               onBlur={(e) =>
                 e.target.value !== activity.comments && handleChange('comments', e.target.value)
               }
@@ -490,7 +513,6 @@ export function TabActivityDetails({
         </CardContent>
       </Card>
 
-      {/* Budget Lines */}
       <Card>
         <CardHeader>
           <CardTitle>Budget Lines</CardTitle>
@@ -502,6 +524,7 @@ export function TabActivityDetails({
             onAdd={handleAddBudgetLine}
             onUpdate={handleUpdateBudgetLine}
             onRemove={handleRemoveBudgetLine}
+            canEdit={canEdit}
           />
         </CardContent>
       </Card>

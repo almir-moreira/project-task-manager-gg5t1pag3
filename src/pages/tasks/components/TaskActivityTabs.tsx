@@ -54,9 +54,11 @@ const tabsConfig = [
 export function ActivityTabs({
   activity,
   onUpdate,
+  canEdit = true,
 }: {
   activity: any
   onUpdate: (a: any) => void
+  canEdit?: boolean
 }) {
   return (
     <div className="flex flex-col gap-6 w-full flex-1 h-full min-h-0">
@@ -94,7 +96,12 @@ export function ActivityTabs({
                   value={tab.id}
                   className="m-0 h-full flex-1 overflow-y-auto focus-visible:outline-none data-[state=inactive]:hidden p-4 sm:p-6"
                 >
-                  <tab.component activity={activity} onUpdate={onUpdate} task={activity} />
+                  <tab.component
+                    activity={activity}
+                    onUpdate={onUpdate}
+                    task={activity}
+                    canEdit={canEdit}
+                  />
                 </TabsContent>
               ))}
             </CardContent>

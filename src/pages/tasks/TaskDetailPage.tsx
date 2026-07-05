@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -93,6 +94,8 @@ export default function ActivityDetailPage() {
 
     return true
   }, [currentStage, activity])
+
+  const canEdit = useMemo(() => canEditActivity(permUser, activity), [permUser, activity])
 
   const handleAdvanceStage = async () => {
     if (!canAdvance || !nextStage) return
@@ -188,8 +191,17 @@ export default function ActivityDetailPage() {
         )}
       </div>
 
+      {!canEdit && (
+        <Alert className="mb-4 border-amber-200 bg-amber-50 text-amber-800">
+          <Lock className="h-4 w-4" />
+          <AlertTitle>Read-only mode</AlertTitle>
+          <AlertDescription>
+            You can view this activity, but you do not have permission to edit it.
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex-1 w-full mb-6 flex flex-col">
-        <ActivityTabs activity={activity} onUpdate={setActivity} />
+        <ActivityTabs activity={activity} onUpdate={setActivity} canEdit={canEdit} />
       </div>
     </div>
   )
