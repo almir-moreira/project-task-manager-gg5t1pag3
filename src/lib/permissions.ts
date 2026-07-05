@@ -70,6 +70,8 @@ export interface PermissionUser {
  */
 export interface PermissionActivity {
   id: string
+  activity_name?: string | null
+  task_number?: string | null
   status: TaskStatus | null
   project_owner_id: string | null
   assignee_id: string | null
@@ -109,6 +111,12 @@ export interface PermissionActivity {
 export interface PermissionWorkflowStep {
   role: string
   reviewer_id: string | null
+}
+
+/** Result of a permission check with a human-readable explanation. */
+export interface PermissionResult {
+  result: boolean
+  reason: string
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +178,23 @@ export const UNIT_WF_FIELD_MAP: Record<string, keyof PermissionActivity> = {
   'M&E': 'wf_mne',
   Technology: 'wf_technology',
   'Social Media': 'wf_social_media',
+  EOSG: 'wf_eosg',
+  Operations: 'wf_ops',
+}
+
+/** Aliases that map legacy or variant unit names to their canonical form. */
+export const UNIT_ALIASES: Record<string, string> = {
+  COMMD: 'Communications',
+  COMMS: 'Communications',
+  GoB: 'Governing Bodies',
+}
+
+/**
+ * Normalizes a unit name to its canonical form.
+ * Handles legacy aliases like "COMMD" → "Communications".
+ */
+export function normalizeUnitName(name: string): string {
+  return UNIT_ALIASES[name] ?? name
 }
 
 /** Mapping from workflow step label to the activity fields that store reviewer IDs. */
@@ -244,7 +269,8 @@ export function hasRole(user: PermissionUser | null | undefined, role: UserRole)
  */
 export function belongsToUnit(user: PermissionUser | null | undefined, unitName: string): boolean {
   if (!user || !user.units || user.units.length === 0) return false
-  return user.units.includes(unitName)
+  const normalized = normalizeUnitName(unitName)
+  return user.units.some((u) => normalizeUnitName(u) === normalized)
 }
 
 /**
@@ -310,13 +336,18 @@ export function canProvideFeedback(
   if (!user || !activity) return false
   if (isAdmin(user)) return true
 
-  const wfField = UNIT_WF_FIELD_MAP[unitName]
+  const wfField = UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)] || UNIT_WF_FIELD_MAP[unitName]
   if (!wfField) return false
 
   const isFlagEnabled = activity[wfField] === true
   if (!isFlagEnabled) return false
 
   return belongsToUnit(user, unitName)
+}
+
+export function getWfFieldForUnit(unitName: string): keyof PermissionActivity | null {
+  const normalized = normalizeUnitName(unitName)
+  return UNIT_WF_FIELD_MAP[normalized] || UNIT_WF_FIELD_MAP[unitName] || null
 }
 
 /**
@@ -344,6 +375,120 @@ export function canApproveCurrentStep(
   // Check explicit assignment as reviewer/approver
   const fields = STEP_ASSIGNEE_MAP[workflowStep] || []
   return fields.some((field) => activity[field] === user.id)
+}
+
+/**
+ * Reasoning version of canEditActivity — returns a result with explanation.
+ */
+export function canEditActivityReason(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+): PermissionResult {
+  if (!user) return { result: false, reason: 'No — no user provided.' }
+  if (!activity) return { result: false, reason: 'No — no activity provided.' }
+  if (isAdmin(user)) return { result: true, reason: 'Yes — admin users can always edit.' }
+
+  const status = activity.status
+  if (status === 'Done') {
+    return { result: false, reason: 'No — activity is Done; only admins can edit.' }
+  }
+  if (status === 'Rejected') {
+    return { result: false, reason: 'No — activity is Rejected; only admins can edit.' }
+  }
+
+  const isOwner = activity.project_owner_id === user.id
+  if (isOwner) return { result: true, reason: 'Yes — user is the project owner.' }
+
+  const isAssignee = activity.assignee_id === user.id
+  if (isAssignee) return { result: true, reason: 'Yes — user is the assignee.' }
+
+  const role = normalizeRole(user.role)
+  if (role && EDIT_ELIGIBLE_ROLES.some((r) => normalizeRole(r) === role)) {
+    return { result: true, reason: `Yes — user role "${user.role}" is eligible to edit.` }
+  }
+
+  return {
+    result: false,
+    reason: 'No — user is not owner, not assignee, and role is not eligible to edit.',
+  }
+}
+
+/**
+ * Reasoning version of canProvideFeedback — returns a result with explanation.
+ */
+export function canProvideFeedbackReason(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+  unitName: string,
+): PermissionResult {
+  if (!user) return { result: false, reason: 'No — no user provided.' }
+  if (!activity) return { result: false, reason: 'No — no activity provided.' }
+  if (isAdmin(user)) {
+    return { result: true, reason: 'Yes — admin users can always provide feedback.' }
+  }
+
+  const wfField = UNIT_WF_FIELD_MAP[unitName] || UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)]
+  if (!wfField) {
+    return { result: false, reason: `No — unit "${unitName}" is not recognized.` }
+  }
+
+  const isFlagEnabled = activity[wfField] === true
+  if (!isFlagEnabled) {
+    return {
+      result: false,
+      reason: `No — this unit (${unitName}) is not selected for this activity.`,
+    }
+  }
+
+  if (!belongsToUnit(user, unitName)) {
+    return { result: false, reason: 'No — user does not belong to this unit.' }
+  }
+
+  return {
+    result: true,
+    reason: 'Yes — user belongs to the unit and the unit is selected for this activity.',
+  }
+}
+
+/**
+ * Reasoning version of canApproveCurrentStep — returns a result with explanation.
+ */
+export function canApproveCurrentStepReason(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+  workflowStep: string,
+): PermissionResult {
+  if (!user) return { result: false, reason: 'No — no user provided.' }
+  if (!activity) return { result: false, reason: 'No — no activity provided.' }
+  if (isAdmin(user)) {
+    return { result: true, reason: 'Yes — admin users can always approve.' }
+  }
+
+  if (user.role === 'Feedback Unit User') {
+    return {
+      result: false,
+      reason: 'No — user role is Feedback Unit User and cannot approve.',
+    }
+  }
+
+  const allowedRoles = STEP_ROLE_MAP[workflowStep]
+  if (allowedRoles && allowedRoles.includes(user.role)) {
+    return {
+      result: true,
+      reason: `Yes — user role "${user.role}" is authorized for "${workflowStep}".`,
+    }
+  }
+
+  const fields = STEP_ASSIGNEE_MAP[workflowStep] || []
+  const isAssigned = fields.some((field) => activity[field] === user.id)
+  if (isAssigned) {
+    return { result: true, reason: 'Yes — user is assigned to the current approval step.' }
+  }
+
+  return {
+    result: false,
+    reason: `No — user role is not authorized and user is not assigned to "${workflowStep}".`,
+  }
 }
 
 /**
@@ -406,4 +551,79 @@ export function canAccessAdmin(user: PermissionUser | null | undefined): boolean
   if (!user || !user.role) return false
   if (isAdmin(user)) return true
   return user.role === 'Programme Manager'
+}
+
+export function explainCanEditActivity(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+): { allowed: boolean; reason: string } {
+  if (!user || !activity) return { allowed: false, reason: 'No — user or activity is missing.' }
+  if (isAdmin(user)) return { allowed: true, reason: 'Yes — admin can edit any activity.' }
+  const status = activity.status
+  if (status === 'Done' || status === 'Rejected') {
+    return { allowed: false, reason: `No — activity is finalized (${status}).` }
+  }
+  if (activity.project_owner_id === user.id) {
+    return { allowed: true, reason: 'Yes — user is the project owner.' }
+  }
+  if (activity.assignee_id === user.id) {
+    return { allowed: true, reason: 'Yes — user is the assignee.' }
+  }
+  const role = normalizeRole(user.role)
+  if (role && EDIT_ELIGIBLE_ROLES.some((r) => normalizeRole(r) === role)) {
+    return {
+      allowed: true,
+      reason: `Yes — user role (${user.role}) allows editing non-finalized activities.`,
+    }
+  }
+  return { allowed: false, reason: 'No — user does not have edit permission for this activity.' }
+}
+
+export function explainCanProvideFeedback(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+  unitName: string,
+): { allowed: boolean; reason: string } {
+  if (!user || !activity) return { allowed: false, reason: 'No — user or activity is missing.' }
+  if (isAdmin(user))
+    return { allowed: true, reason: 'Yes — admin can provide feedback on any activity.' }
+  const wfField = UNIT_WF_FIELD_MAP[normalizeUnitName(unitName)] || UNIT_WF_FIELD_MAP[unitName]
+  if (!wfField) return { allowed: false, reason: `No — unit "${unitName}" is not recognized.` }
+  if (activity[wfField] !== true) {
+    return {
+      allowed: false,
+      reason: `No — this unit (${unitName}) is not selected for this activity.`,
+    }
+  }
+  if (!belongsToUnit(user, unitName)) {
+    return { allowed: false, reason: 'No — user does not belong to this unit.' }
+  }
+  return {
+    allowed: true,
+    reason: 'Yes — user belongs to the unit and the unit is selected for this activity.',
+  }
+}
+
+export function explainCanApproveCurrentStep(
+  user: PermissionUser | null | undefined,
+  activity: PermissionActivity | null | undefined,
+  workflowStep: string,
+): { allowed: boolean; reason: string } {
+  if (!user || !activity) return { allowed: false, reason: 'No — user or activity is missing.' }
+  if (isAdmin(user)) return { allowed: true, reason: 'Yes — admin can approve any step.' }
+  const allowedRoles = STEP_ROLE_MAP[workflowStep]
+  if (allowedRoles && allowedRoles.includes(user.role)) {
+    return {
+      allowed: true,
+      reason: `Yes — user role (${user.role}) is authorized for "${workflowStep}".`,
+    }
+  }
+  const fields = STEP_ASSIGNEE_MAP[workflowStep] || []
+  if (fields.some((field) => activity[field] === user.id)) {
+    return { allowed: true, reason: 'Yes — user is assigned to the current approval step.' }
+  }
+  if (user.role === 'Feedback Unit User') {
+    return { allowed: false, reason: 'No — user role is Feedback Unit User and cannot approve.' }
+  }
+  return { allowed: false, reason: `No — user is not authorized for "${workflowStep}".` }
 }

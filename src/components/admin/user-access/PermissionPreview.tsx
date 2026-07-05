@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle2, XCircle } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { CheckCircle2, XCircle, Info } from 'lucide-react'
 import {
   isAdmin,
   isReadOnly,
@@ -10,15 +17,15 @@ import {
   canViewReport,
   canViewMonitoringDashboard,
   canViewKaiciidCalendar,
-  canEditActivity,
-  canProvideFeedback,
-  canApproveCurrentStep,
+  explainCanEditActivity,
+  explainCanProvideFeedback,
+  explainCanApproveCurrentStep,
+  getWfFieldForUnit,
   type PermissionUser,
   type PermissionActivity,
 } from '@/lib/permissions'
 
 const SAMPLE_STEPS = ['SPM Clearance', 'Head Clearance', 'CPO Approval', 'SG Approval']
-const SAMPLE_UNITS = ['Legal', 'EMS', 'Communications', 'Protocol']
 
 interface PermissionPreviewProps {
   permUser: PermissionUser
@@ -36,29 +43,43 @@ function BoolBadge({ value }: { value: boolean }) {
   )
 }
 
-function PermissionRow({ label, value }: { label: string; value: boolean }) {
+function ReasonRow({
+  label,
+  reason,
+  allowed,
+}: {
+  label: string
+  reason: string
+  allowed: boolean
+}) {
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-xs font-mono text-muted-foreground">{label}</span>
-      <BoolBadge value={value} />
+    <div className="rounded-md border px-3 py-2 space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-mono text-muted-foreground">{label}</span>
+        <BoolBadge value={allowed} />
+      </div>
+      <p className="text-xs text-muted-foreground">{reason}</p>
     </div>
   )
 }
 
 export function PermissionPreview({ permUser }: PermissionPreviewProps) {
   const [activities, setActivities] = useState<PermissionActivity[]>([])
+  const [selectedActivityId, setSelectedActivityId] = useState('')
 
   useEffect(() => {
-    const fetchActivities = async () => {
-      const { data } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(2)
-      if (data) setActivities(data as unknown as PermissionActivity[])
-    }
-    fetchActivities()
+    supabase
+      .from('activities')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+      .then(({ data }) => {
+        if (data) setActivities(data as unknown as PermissionActivity[])
+      })
   }, [])
+
+  const selectedActivity = activities.find((a) => a.id === selectedActivityId) || null
+  const userUnits = permUser.units || []
 
   const basicChecks = [
     { label: 'isAdmin', value: isAdmin(permUser) },
@@ -68,6 +89,14 @@ export function PermissionPreview({ permUser }: PermissionPreviewProps) {
     { label: 'canViewKaiciidCalendar', value: canViewKaiciidCalendar(permUser) },
     { label: 'canViewReport("Sample Report")', value: canViewReport(permUser, 'Sample Report') },
   ]
+
+  const editResult = selectedActivity ? explainCanEditActivity(permUser, selectedActivity) : null
+  const approvalResults = selectedActivity
+    ? SAMPLE_STEPS.map((step) => ({
+        step,
+        ...explainCanApproveCurrentStep(permUser, selectedActivity, step),
+      }))
+    : []
 
   return (
     <Card className="border-dashed">
@@ -88,43 +117,79 @@ export function PermissionPreview({ permUser }: PermissionPreviewProps) {
             </div>
           ))}
         </div>
-        {activities.length > 0 && (
+
+        <div className="space-y-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Select Activity for Diagnostic Preview
+          </label>
+          <Select value={selectedActivityId} onValueChange={setSelectedActivityId}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Choose an activity..." />
+            </SelectTrigger>
+            <SelectContent>
+              {activities.map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.activity_name || a.id.slice(0, 8)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedActivity && editResult && (
           <div className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Activity-Specific Scenarios
+              Diagnostic Preview for Selected Activity
             </p>
-            {activities.map((activity, i) => (
-              <div key={activity.id} className="rounded-lg border p-3 space-y-2">
-                <p className="text-xs font-medium truncate">
-                  Activity #{i + 1}: {activity.activity_name || activity.id.slice(0, 8)}
-                </p>
-                <div className="grid grid-cols-1 gap-1.5">
-                  <PermissionRow
-                    label="canEditActivity"
-                    value={canEditActivity(permUser, activity)}
-                  />
-                  {SAMPLE_UNITS.map((unit) => (
-                    <PermissionRow
+            <div className="flex items-start gap-2 rounded-md bg-blue-50 border border-blue-200 p-2">
+              <Info className="w-3.5 h-3.5 text-blue-600 mt-0.5 shrink-0" />
+              <p className="text-xs text-blue-700">
+                This section is read-only. It shows how the permission helper functions evaluate the
+                selected user against a sample activity. It does not configure permissions for that
+                activity.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <ReasonRow
+                label="canEditActivity"
+                allowed={editResult.allowed}
+                reason={editResult.reason}
+              />
+              {userUnits.length > 0 ? (
+                userUnits.map((unit) => {
+                  const r = explainCanProvideFeedback(permUser, selectedActivity, unit)
+                  const wf = getWfFieldForUnit(unit)
+                  return (
+                    <ReasonRow
                       key={unit}
-                      label={`canProvideFeedback("${unit}")`}
-                      value={canProvideFeedback(permUser, activity, unit)}
+                      label={`canProvideFeedback("${unit}"${wf ? ` → ${wf}` : ''})`}
+                      allowed={r.allowed}
+                      reason={r.reason}
                     />
-                  ))}
-                  {SAMPLE_STEPS.map((step) => (
-                    <PermissionRow
-                      key={step}
-                      label={`canApproveCurrentStep("${step}")`}
-                      value={canApproveCurrentStep(permUser, activity, step)}
-                    />
-                  ))}
+                  )
+                })
+              ) : (
+                <div className="rounded-md border px-3 py-2">
+                  <p className="text-xs text-muted-foreground italic">
+                    User has no unit memberships — feedback checks not applicable.
+                  </p>
                 </div>
-              </div>
-            ))}
+              )}
+              {approvalResults.map(({ step, allowed, reason }) => (
+                <ReasonRow
+                  key={step}
+                  label={`canApproveCurrentStep("${step}")`}
+                  allowed={allowed}
+                  reason={reason}
+                />
+              ))}
+            </div>
           </div>
         )}
-        {activities.length === 0 && (
+
+        {!selectedActivity && (
           <p className="text-xs text-muted-foreground italic">
-            No activities found for scenario preview.
+            Select an activity above to see the diagnostic permission preview.
           </p>
         )}
       </CardContent>
