@@ -29,6 +29,7 @@ import {
   fetchFeedbackWorkflowDefs,
   fetchActivityWorkflows,
   ensureActivityWorkflow,
+  ensureWorkflowDefinition,
   saveFeedbackFields,
   removeActivityWorkflow,
   type FeedbackUnitConfig,
@@ -83,6 +84,21 @@ export function TabFeedback({
     })
   }, [activity?.id])
 
+  const resolveWorkflowId = useCallback(async (dept: DeptRow): Promise<string | null> => {
+    if (dept.workflowId) return dept.workflowId
+    try {
+      const wfId = await ensureWorkflowDefinition(dept.workflowRole)
+      if (wfId) {
+        setDeptRows((prev) =>
+          prev.map((d) => (d.key === dept.key ? { ...d, workflowId: wfId } : d)),
+        )
+      }
+      return wfId
+    } catch {
+      return null
+    }
+  }, [])
+
   const handleToggle = useCallback(
     async (dept: DeptRow, checked: boolean) => {
       if (!activity || !onUpdate) return
@@ -91,16 +107,17 @@ export function TabFeedback({
         const updates: any = { [dept.enabledField]: checked }
         if (!checked) updates[dept.reviewerIdField] = null
         const updated = await updateActivity(activity.id, updates)
-        if (dept.workflowId) {
+        const wfId = checked ? await resolveWorkflowId(dept) : dept.workflowId
+        if (wfId) {
           if (checked) {
             const rev = activity[dept.reviewerIdField] || null
-            const result = await ensureActivityWorkflow(activity.id, dept.workflowId, rev)
-            setAwMap((prev) => ({ ...prev, [dept.workflowId!]: result }))
+            const result = await ensureActivityWorkflow(activity.id, wfId, rev)
+            setAwMap((prev) => ({ ...prev, [wfId]: result }))
           } else {
-            await removeActivityWorkflow(activity.id, dept.workflowId)
+            await removeActivityWorkflow(activity.id, wfId)
             setAwMap((prev) => {
               const n = { ...prev }
-              delete n[dept.workflowId!]
+              delete n[wfId]
               return n
             })
           }
@@ -110,7 +127,7 @@ export function TabFeedback({
         toast({ title: 'Error updating department', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, toast, permUser],
+    [activity, onUpdate, toast, permUser, resolveWorkflowId],
   )
 
   const handleReviewer = useCallback(
@@ -122,19 +139,20 @@ export function TabFeedback({
         const updated = await updateActivity(activity.id, {
           [dept.reviewerIdField]: reviewerId,
         } as any)
-        if (dept.workflowId) {
-          const aw = awMap[dept.workflowId]
+        const wfId = await resolveWorkflowId(dept)
+        if (wfId) {
+          const aw = awMap[wfId]
           const text = aw?.comments || ''
           const date = aw?.completed_at || ''
           const status = computeFeedbackStatus(true, reviewerId, text, date)
           const awStatus = status === 'Not Included' ? 'Pending' : status
-          const result = await saveFeedbackFields(activity.id, dept.workflowId, {
+          const result = await saveFeedbackFields(activity.id, wfId, {
             reviewer_id: reviewerId,
             status: awStatus,
           })
           setAwMap((prev) => ({
             ...prev,
-            [dept.workflowId!]: result,
+            [wfId]: result,
           }))
         }
         onUpdate(updated)
@@ -142,58 +160,68 @@ export function TabFeedback({
         toast({ title: 'Error updating reviewer', variant: 'destructive' })
       }
     },
-    [activity, onUpdate, awMap, toast, permUser],
+    [activity, onUpdate, awMap, toast, permUser, resolveWorkflowId],
   )
 
   const handleText = useCallback(
     async (dept: DeptRow, text: string) => {
-      if (!activity || !dept.workflowId) return
+      if (!activity) return
       if (!canProvideFeedback(permUser, activity, dept.label)) return
-      const aw = awMap[dept.workflowId]
+      const wfId = await resolveWorkflowId(dept)
+      if (!wfId) {
+        toast({ title: 'Unable to resolve workflow for this unit', variant: 'destructive' })
+        return
+      }
+      const aw = awMap[wfId]
       const rev = activity[dept.reviewerIdField] || null
       const date = aw?.completed_at || ''
       const status = computeFeedbackStatus(true, rev, text, date)
       const awStatus = status === 'Not Included' ? 'Pending' : status
       try {
-        const result = await saveFeedbackFields(activity.id, dept.workflowId, {
+        const result = await saveFeedbackFields(activity.id, wfId, {
           comments: text,
           status: awStatus,
         })
         setAwMap((prev) => ({
           ...prev,
-          [dept.workflowId!]: result,
+          [wfId]: result,
         }))
       } catch {
         toast({ title: 'Error saving feedback', variant: 'destructive' })
       }
     },
-    [activity, awMap, toast, permUser],
+    [activity, awMap, toast, permUser, resolveWorkflowId],
   )
 
   const handleDate = useCallback(
     async (dept: DeptRow, dateVal: string) => {
-      if (!activity || !dept.workflowId) return
+      if (!activity) return
       if (!canProvideFeedback(permUser, activity, dept.label)) return
-      const aw = awMap[dept.workflowId]
+      const wfId = await resolveWorkflowId(dept)
+      if (!wfId) {
+        toast({ title: 'Unable to resolve workflow for this unit', variant: 'destructive' })
+        return
+      }
+      const aw = awMap[wfId]
       const rev = activity[dept.reviewerIdField] || null
       const text = aw?.comments || ''
       const status = computeFeedbackStatus(true, rev, text, dateVal)
       const awStatus = status === 'Not Included' ? 'Pending' : status
       const completedAt = dateVal ? new Date(dateVal + 'T00:00:00').toISOString() : null
       try {
-        const result = await saveFeedbackFields(activity.id, dept.workflowId, {
+        const result = await saveFeedbackFields(activity.id, wfId, {
           completed_at: completedAt,
           status: awStatus,
         })
         setAwMap((prev) => ({
           ...prev,
-          [dept.workflowId!]: result,
+          [wfId]: result,
         }))
       } catch {
         toast({ title: 'Error saving date', variant: 'destructive' })
       }
     },
-    [activity, awMap, toast, permUser],
+    [activity, awMap, toast, permUser, resolveWorkflowId],
   )
 
   if (!activity) return null

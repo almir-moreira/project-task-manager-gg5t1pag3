@@ -52,7 +52,7 @@ export const FEEDBACK_UNITS_CONFIG: FeedbackUnitConfig[] = [
   {
     key: 'governing_bodies',
     label: 'Governing Bodies',
-    workflowRole: 'GoB',
+    workflowRole: 'Governing Bodies',
     enabledField: 'wf_gob',
     reviewerIdField: 'wf_gob_reviewer_id',
     order: 4,
@@ -247,4 +247,30 @@ export async function removeActivityWorkflow(
     .eq('activity_id', activityId)
     .eq('workflow_id', workflowId)
   if (error) throw error
+}
+
+export async function ensureWorkflowDefinition(role: string): Promise<string | null> {
+  const { data: existing } = await supabase
+    .from('workflows')
+    .select('id')
+    .eq('role', role)
+    .is('activity_id', null)
+    .maybeSingle()
+  if (existing) return existing.id
+
+  const { data, error } = await supabase
+    .from('workflows')
+    .insert({ role, stage: 1, step: 1, category: 'Feedback', activity_id: null })
+    .select('id')
+    .single()
+  if (error) {
+    const { data: retry } = await supabase
+      .from('workflows')
+      .select('id')
+      .eq('role', role)
+      .is('activity_id', null)
+      .maybeSingle()
+    return retry?.id ?? null
+  }
+  return data.id
 }
