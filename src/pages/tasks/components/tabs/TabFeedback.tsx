@@ -20,98 +20,20 @@ import {
 } from '@/components/ui/select'
 import { supabase } from '@/lib/supabase/client'
 import { updateActivity } from '@/services/activities'
-import {
-  getDepartmentalWorkflowConfigs,
-  upsertActivityWorkflow,
-  deleteActivityWorkflow,
-  updateActivityWorkflowFields,
-} from '@/services/activity-workflows'
 import { useToast } from '@/hooks/use-toast'
-import type { DeptFieldMapping } from './workflow-dept-config'
 import { canProvideFeedback, isReadOnly } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
-
-const FEEDBACK_DEPTS: (DeptFieldMapping & { order: number })[] = [
-  {
-    order: 1,
-    workflowRole: 'Partnerships',
-    label: 'Partnerships',
-    enabledField: 'wf_partnerships',
-    reviewerIdField: 'wf_partnerships_reviewer_id',
-  },
-  {
-    order: 2,
-    workflowRole: 'Relex',
-    label: 'RELEX',
-    enabledField: 'wf_relex',
-    reviewerIdField: 'wf_relex_reviewer_id',
-  },
-  {
-    order: 3,
-    workflowRole: 'Legal',
-    label: 'Legal',
-    enabledField: 'wf_legal',
-    reviewerIdField: 'wf_legal_reviewer_id',
-  },
-  {
-    order: 4,
-    workflowRole: 'GoB',
-    label: 'Governing Bodies',
-    enabledField: 'wf_gob',
-    reviewerIdField: 'wf_gob_reviewer_id',
-  },
-  {
-    order: 5,
-    workflowRole: 'Protocol',
-    label: 'Protocol',
-    enabledField: 'wf_protocol',
-    reviewerIdField: 'wf_protocol_reviewer_id',
-  },
-  {
-    order: 6,
-    workflowRole: 'EMS',
-    label: 'EMS',
-    enabledField: 'wf_ems',
-    reviewerIdField: 'wf_ems_reviewer_id',
-  },
-  {
-    order: 7,
-    workflowRole: 'Procurement',
-    label: 'Procurement',
-    enabledField: 'wf_procurement',
-    reviewerIdField: 'wf_procurement_reviewer_id',
-  },
-  {
-    order: 8,
-    workflowRole: 'Technology',
-    label: 'Technology',
-    enabledField: 'wf_technology',
-    reviewerIdField: 'wf_technology_reviewer_id',
-  },
-  {
-    order: 9,
-    workflowRole: 'M&E',
-    label: 'M&E',
-    enabledField: 'wf_mne',
-    reviewerIdField: 'wf_mne_reviewer_id',
-  },
-  {
-    order: 10,
-    workflowRole: 'COMMS',
-    label: 'Communications',
-    enabledField: 'wf_comms',
-    reviewerIdField: 'wf_comms_reviewer_id',
-  },
-  {
-    order: 11,
-    workflowRole: 'Social Media',
-    label: 'Social Media',
-    enabledField: 'wf_social_media',
-    reviewerIdField: 'wf_social_media_reviewer_id',
-  },
-]
-
-type FeedbackStatus = 'Not Included' | 'Pending' | 'In Progress' | 'Completed'
+import {
+  FEEDBACK_UNITS_CONFIG,
+  computeFeedbackStatus,
+  fetchFeedbackWorkflowDefs,
+  fetchActivityWorkflows,
+  ensureActivityWorkflow,
+  saveFeedbackFields,
+  removeActivityWorkflow,
+  type FeedbackUnitConfig,
+  type FeedbackStatus,
+} from '@/services/feedbackService'
 
 const STATUS_STYLES: Record<FeedbackStatus, string> = {
   'Not Included': 'bg-gray-100 text-gray-500 border-gray-200',
@@ -120,21 +42,7 @@ const STATUS_STYLES: Record<FeedbackStatus, string> = {
   Completed: 'bg-[#DCFCE7] text-[#166534] border-[#86EFAC]',
 }
 
-function computeStatus(
-  enabled: boolean,
-  reviewerId: string | null,
-  text: string,
-  date: string,
-): FeedbackStatus {
-  if (!enabled) return 'Not Included'
-  const hasText = !!text?.trim()
-  const hasDate = !!date
-  if (hasText && hasDate) return 'Completed'
-  if (reviewerId || hasText || hasDate) return 'In Progress'
-  return 'Pending'
-}
-
-interface DeptRow extends DeptFieldMapping {
+interface DeptRow extends FeedbackUnitConfig {
   workflowId: string | null
 }
 
@@ -160,22 +68,17 @@ export function TabFeedback({
     }
     Promise.all([
       supabase.from('profiles').select('id, name, email').order('name'),
-      getDepartmentalWorkflowConfigs(),
-      supabase.from('activity_workflows').select('*').eq('activity_id', activity.id),
-    ]).then(([pRes, wfs, awRes]) => {
+      fetchFeedbackWorkflowDefs(),
+      fetchActivityWorkflows(activity.id),
+    ]).then(([pRes, wfMap, awData]) => {
       if (pRes.data) setProfiles(pRes.data)
-      const wfMap = new Map<string, string>()
-      ;(wfs || []).forEach((wf: any) => {
-        if (wf.role) wfMap.set(wf.role, wf.id)
-      })
       setDeptRows(
-        FEEDBACK_DEPTS.map((d) => ({ ...d, workflowId: wfMap.get(d.workflowRole) ?? null })),
+        FEEDBACK_UNITS_CONFIG.map((u) => ({
+          ...u,
+          workflowId: wfMap.get(u.workflowRole) ?? null,
+        })),
       )
-      const map: Record<string, any> = {}
-      ;(awRes.data || []).forEach((aw: any) => {
-        map[aw.workflow_id] = aw
-      })
-      setAwMap(map)
+      setAwMap(awData)
       setLoading(false)
     })
   }, [activity?.id])
@@ -191,10 +94,10 @@ export function TabFeedback({
         if (dept.workflowId) {
           if (checked) {
             const rev = activity[dept.reviewerIdField] || null
-            const result = await upsertActivityWorkflow(activity.id, dept.workflowId, rev)
+            const result = await ensureActivityWorkflow(activity.id, dept.workflowId, rev)
             setAwMap((prev) => ({ ...prev, [dept.workflowId!]: result }))
           } else {
-            await deleteActivityWorkflow(activity.id, dept.workflowId)
+            await removeActivityWorkflow(activity.id, dept.workflowId)
             setAwMap((prev) => {
               const n = { ...prev }
               delete n[dept.workflowId!]
@@ -223,19 +126,15 @@ export function TabFeedback({
           const aw = awMap[dept.workflowId]
           const text = aw?.comments || ''
           const date = aw?.completed_at || ''
-          const status = computeStatus(true, reviewerId, text, date)
+          const status = computeFeedbackStatus(true, reviewerId, text, date)
           const awStatus = status === 'Not Included' ? 'Pending' : status
-          await updateActivityWorkflowFields(activity.id, dept.workflowId, {
+          const result = await saveFeedbackFields(activity.id, dept.workflowId, {
             reviewer_id: reviewerId,
             status: awStatus,
           })
           setAwMap((prev) => ({
             ...prev,
-            [dept.workflowId!]: {
-              ...prev[dept.workflowId!],
-              reviewer_id: reviewerId,
-              status: awStatus,
-            },
+            [dept.workflowId!]: result,
           }))
         }
         onUpdate(updated)
@@ -253,16 +152,16 @@ export function TabFeedback({
       const aw = awMap[dept.workflowId]
       const rev = activity[dept.reviewerIdField] || null
       const date = aw?.completed_at || ''
-      const status = computeStatus(true, rev, text, date)
+      const status = computeFeedbackStatus(true, rev, text, date)
       const awStatus = status === 'Not Included' ? 'Pending' : status
       try {
-        await updateActivityWorkflowFields(activity.id, dept.workflowId, {
+        const result = await saveFeedbackFields(activity.id, dept.workflowId, {
           comments: text,
           status: awStatus,
         })
         setAwMap((prev) => ({
           ...prev,
-          [dept.workflowId!]: { ...prev[dept.workflowId!], comments: text, status: awStatus },
+          [dept.workflowId!]: result,
         }))
       } catch {
         toast({ title: 'Error saving feedback', variant: 'destructive' })
@@ -278,21 +177,17 @@ export function TabFeedback({
       const aw = awMap[dept.workflowId]
       const rev = activity[dept.reviewerIdField] || null
       const text = aw?.comments || ''
-      const status = computeStatus(true, rev, text, dateVal)
+      const status = computeFeedbackStatus(true, rev, text, dateVal)
       const awStatus = status === 'Not Included' ? 'Pending' : status
       const completedAt = dateVal ? new Date(dateVal + 'T00:00:00').toISOString() : null
       try {
-        await updateActivityWorkflowFields(activity.id, dept.workflowId, {
+        const result = await saveFeedbackFields(activity.id, dept.workflowId, {
           completed_at: completedAt,
           status: awStatus,
         })
         setAwMap((prev) => ({
           ...prev,
-          [dept.workflowId!]: {
-            ...prev[dept.workflowId!],
-            completed_at: completedAt,
-            status: awStatus,
-          },
+          [dept.workflowId!]: result,
         }))
       } catch {
         toast({ title: 'Error saving date', variant: 'destructive' })
@@ -322,14 +217,14 @@ export function TabFeedback({
           <TableBody>
             {deptRows.map((dept) => {
               const isEnabled = !!activity[dept.enabledField]
-              const canFeedback = canProvideFeedback(permUser, activity, dept.label) && !isRO
+              const canFb = canProvideFeedback(permUser, activity, dept.label) && !isRO
               const reviewerId = activity[dept.reviewerIdField] || 'unassigned'
               const aw = dept.workflowId ? awMap[dept.workflowId] : null
               const feedbackText = aw?.comments || ''
               const feedbackDate = aw?.completed_at
                 ? new Date(aw.completed_at).toISOString().split('T')[0]
                 : ''
-              const status = computeStatus(
+              const status = computeFeedbackStatus(
                 isEnabled,
                 reviewerId === 'unassigned' ? null : reviewerId,
                 feedbackText,
@@ -337,13 +232,13 @@ export function TabFeedback({
               )
 
               return (
-                <TableRow key={dept.enabledField} className="align-top">
+                <TableRow key={dept.key} className="align-top">
                   <TableCell className="font-medium text-sm py-4">
                     <div className="flex items-center gap-3">
                       <Checkbox
                         checked={isEnabled}
                         onCheckedChange={(v) => handleToggle(dept, !!v)}
-                        disabled={!canFeedback}
+                        disabled={!canFb}
                       />
                       {dept.label}
                     </div>
@@ -352,7 +247,7 @@ export function TabFeedback({
                     <Select
                       value={reviewerId}
                       onValueChange={(v) => handleReviewer(dept, v)}
-                      disabled={!isEnabled || !canFeedback}
+                      disabled={!isEnabled || !canFb}
                     >
                       <SelectTrigger className="h-9 w-full">
                         <SelectValue placeholder="Select reviewer" />
@@ -383,9 +278,9 @@ export function TabFeedback({
                         type="date"
                         className="h-9"
                         defaultValue={feedbackDate}
-                        disabled={!canFeedback}
+                        disabled={!canFb}
                         onBlur={(e) => {
-                          if (canFeedback && e.target.value !== feedbackDate) {
+                          if (canFb && e.target.value !== feedbackDate) {
                             handleDate(dept, e.target.value)
                           }
                         }}
@@ -400,15 +295,15 @@ export function TabFeedback({
                         <Textarea
                           className="min-h-[40px] resize-y text-sm"
                           defaultValue={feedbackText}
-                          disabled={!canFeedback}
+                          disabled={!canFb}
                           onBlur={(e) => {
-                            if (canFeedback && e.target.value !== feedbackText) {
+                            if (canFb && e.target.value !== feedbackText) {
                               handleText(dept, e.target.value)
                             }
                           }}
                           placeholder="Enter feedback..."
                         />
-                        {!canFeedback && (
+                        {!canFb && (
                           <p className="text-xs text-muted-foreground italic">
                             You can view this feedback, but you do not have permission to edit it.
                           </p>
