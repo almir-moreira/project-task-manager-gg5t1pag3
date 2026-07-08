@@ -45,12 +45,16 @@ export function ProgrammesCrud() {
     const [progRes, ccRes, profRes] = await Promise.all([
       supabase
         .from('programmes')
-        .select('*, cost_centers(id, code, name), profiles(id, name)')
+        .select('*, cost_centers(id, code, name), profiles!certifying_officer_id(id, name)')
         .order('name'),
       supabase.from('cost_centers').select('*').order('name'),
       supabase.from('profiles').select('id, name').order('name'),
     ])
-    if (progRes.data) setData(progRes.data)
+    if (progRes.error) {
+      toast({ title: 'Error fetching programmes', variant: 'destructive' })
+    } else if (progRes.data) {
+      setData(progRes.data)
+    }
     if (ccRes.data) setCostCenters(ccRes.data)
     if (profRes.data) setProfiles(profRes.data)
     setLoading(false)
@@ -67,7 +71,7 @@ export function ProgrammesCrud() {
     const { data: res, error } = await supabase
       .from('programmes')
       .insert(payload)
-      .select('*, cost_centers(id, code, name), profiles(id, name)')
+      .select('*, cost_centers(id, code, name), profiles!certifying_officer_id(id, name)')
       .single()
 
     if (error) {
@@ -100,7 +104,7 @@ export function ProgrammesCrud() {
       .from('programmes')
       .update(payload)
       .eq('id', id)
-      .select('*, cost_centers(id, code, name), profiles(id, name)')
+      .select('*, cost_centers(id, code, name), profiles!certifying_officer_id(id, name)')
       .single()
 
     if (error) {
