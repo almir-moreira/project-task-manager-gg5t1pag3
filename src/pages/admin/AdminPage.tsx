@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast'
 import { Link } from 'react-router-dom'
 import { SimpleCrud } from '@/components/admin/SimpleCrud'
 import { ProjectsCrud } from '@/components/admin/ProjectsCrud'
+import { ProgrammesCrud } from '@/components/admin/ProgrammesCrud'
 import { UsersCrud } from '@/components/admin/UsersCrud'
 import { CodeNameCrud } from '@/components/admin/CodeNameCrud'
 
@@ -418,7 +419,7 @@ export default function AdminPage() {
 
         <TabsContent value="programmes">
           <div className="bg-card border rounded-xl p-6">
-            <SimpleCrud table="programmes" title="Programmes" />
+            <ProgrammesCrud />
           </div>
         </TabsContent>
 
