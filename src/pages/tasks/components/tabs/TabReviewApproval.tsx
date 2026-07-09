@@ -32,6 +32,7 @@ import { canEditActivity, isAdmin } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 import { ApprovalActions } from './ApprovalActions'
 import { canActOnApprovalStep, ROLE_TO_STEP_NAME } from '@/lib/approval-guards'
+import { areAllRequiredApprovalsComplete, getCompletionUpdates } from '@/lib/stage-status-sync'
 
 export function TabReviewApproval({
   activity,
@@ -124,10 +125,15 @@ export function TabReviewApproval({
       if (!allowed) return
       const today = new Date().toISOString().split('T')[0]
       try {
-        const updated = await updateActivity(activity.id, {
+        const updates: any = {
           [role.approvedField]: true,
           [role.dateField]: today,
-        } as any)
+        }
+        const simulatedActivity = { ...activity, [role.approvedField]: true }
+        if (areAllRequiredApprovalsComplete(simulatedActivity)) {
+          Object.assign(updates, getCompletionUpdates())
+        }
+        const updated = await updateActivity(activity.id, updates)
         onUpdate(updated)
         toast({ title: 'Step approved successfully' })
       } catch {

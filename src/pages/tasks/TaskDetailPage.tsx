@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getActivity, updateActivity } from '@/services/activities'
 import { getMasterData } from '@/services/master-data'
 import { canEditActivity, isActivityFinalized } from '@/lib/permissions'
+import { getStageStatusSync } from '@/lib/stage-status-sync'
 import { usePermissions } from '@/hooks/use-permissions'
 import { ActivityTabs } from './components/TaskActivityTabs'
 import { ArrowLeft, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
@@ -40,6 +41,18 @@ export default function ActivityDetailPage() {
   useEffect(() => {
     if (id) {
       getActivity(id)
+        .then(async (data) => {
+          const sync = getStageStatusSync(data)
+          if (sync.needsSync) {
+            try {
+              const updated = await updateActivity(data.id, sync.updates as any)
+              return updated
+            } catch (e) {
+              console.error('Error syncing stage/status:', e)
+            }
+          }
+          return data
+        })
         .then(setActivity)
         .catch(console.error)
         .finally(() => setLoading(false))
@@ -102,10 +115,14 @@ export default function ActivityDetailPage() {
     if (!canEditActivity(permUser, activity)) return
     if (isActivityFinalized(activity)) return
     try {
-      const updated = await updateActivity(activity.id, {
+      const updates: any = {
         current_stage: nextStage,
         stage_started_at: new Date().toISOString(),
-      } as any)
+      }
+      if (nextStage === 'Done') {
+        updates.status = 'Done'
+      }
+      const updated = await updateActivity(activity.id, updates)
       setActivity(updated)
       toast({ title: `Advanced to ${nextStage} stage` })
     } catch (e) {
