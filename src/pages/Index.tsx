@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
 import { deriveIndicators, ActivityIndicators } from '@/lib/dashboard-indicators'
+import { sortActivitiesByDoneStatus } from '@/lib/stage-aware-workflow'
 
 const Index = () => {
   const { user } = useAuth()
@@ -116,17 +117,19 @@ const Index = () => {
       result = result.filter(
         (t) => indicatorsMap.get(t.id)?.pendingApproval || indicatorsMap.get(t.id)?.pendingReview,
       )
-    return result
+    return sortActivitiesByDoneStatus(result)
   }, [programmeTasks, filters, indicatorsMap])
 
   const filteredMyTasks = useMemo(() => {
-    if (!search) return myTasks
     const q = search.toLowerCase()
-    return myTasks.filter(
-      (t) =>
-        (t.activity_name || '').toLowerCase().includes(q) ||
-        (t.task_number || t.id).toLowerCase().includes(q),
-    )
+    const result = !search
+      ? myTasks
+      : myTasks.filter(
+          (t) =>
+            (t.activity_name || '').toLowerCase().includes(q) ||
+            (t.task_number || t.id).toLowerCase().includes(q),
+        )
+    return sortActivitiesByDoneStatus(result)
   }, [myTasks, search])
 
   const handleFilterChange = useCallback(

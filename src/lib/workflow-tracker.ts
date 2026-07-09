@@ -1,4 +1,5 @@
 import { WORKFLOW_STEPS } from '@/pages/tasks/components/tabs/workflow-steps-config'
+import { findInProgressIndex, getStageAwareCurrentStepName } from '@/lib/stage-aware-workflow'
 
 export interface TrackerStep {
   id: string
@@ -116,9 +117,12 @@ export function computeTracker(
     })
     .sort((a, b) => a.order - b.order)
 
-  const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
-  if (firstPendingIndex !== -1) {
-    steps[firstPendingIndex].status = 'In Progress'
+  const inProgressIndex = findInProgressIndex(
+    steps.map((s) => ({ status: s.status, category: s.stage })),
+    activity.current_stage,
+  )
+  if (inProgressIndex !== -1) {
+    steps[inProgressIndex].status = 'In Progress'
   }
 
   const stages: TrackerStage[] = VISIBLE_STAGES.map((stageName) => ({
@@ -131,7 +135,10 @@ export function computeTracker(
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   const currentStep = steps.find((s) => s.status === 'In Progress')
-  const currentStepName = currentStep ? `${currentStep.label} (${currentStep.stage})` : ''
+  const currentStepName = getStageAwareCurrentStepName(
+    currentStep ? { label: currentStep.label, stage: currentStep.stage } : null,
+    activity.current_stage,
+  )
 
   return {
     hasWorkflow: true,

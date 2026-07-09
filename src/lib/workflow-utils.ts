@@ -1,4 +1,5 @@
 import { WORKFLOW_STEPS } from '@/pages/tasks/components/tabs/workflow-steps-config'
+import { findInProgressIndex } from '@/lib/stage-aware-workflow'
 
 export interface ComputedWorkflowStep {
   id: string
@@ -44,9 +45,12 @@ export function computeWorkflowSteps(
     }
   })
 
-  const firstPendingIndex = steps.findIndex((s) => s.status === 'Pending')
-  if (firstPendingIndex !== -1) {
-    steps[firstPendingIndex].status = 'In Progress'
+  const inProgressIndex = findInProgressIndex(
+    steps.map((s) => ({ status: s.status, category: s.category })),
+    activity.current_stage,
+  )
+  if (inProgressIndex !== -1) {
+    steps[inProgressIndex].status = 'In Progress'
   }
 
   return steps

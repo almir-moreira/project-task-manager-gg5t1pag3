@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { findInProgressIndex } from '@/lib/stage-aware-workflow'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   WORKFLOW_STEPS,
@@ -27,6 +28,7 @@ interface WorkflowStep {
   id: string
   name: string
   order: number
+  category: string
   reviewerName: string
   status: string
   comments: string
@@ -100,14 +102,18 @@ export function TabWorkflow({ activity }: { activity: any }) {
         id: s.id,
         name: s.displayName,
         order: s.order,
+        category: s.category,
         reviewerName: revId ? profiles[revId] || 'Assigned' : 'Unassigned',
         status,
         comments,
         date,
       }
     })
-    const fp = built.findIndex((s) => s.status === 'Pending')
-    if (fp !== -1) built[fp].status = 'In Progress'
+    const inProgressIdx = findInProgressIndex(
+      built.map((s) => ({ status: s.status, category: s.category })),
+      activity.current_stage,
+    )
+    if (inProgressIdx !== -1) built[inProgressIdx].status = 'In Progress'
     return built
   }, [activity, wfMap, awList, profiles])
 
