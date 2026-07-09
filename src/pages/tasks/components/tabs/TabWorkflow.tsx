@@ -143,6 +143,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
           </h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-muted-foreground">
             <span>ID: {activity.task_number || activity.id?.split('-')[0]}</span>
+            {activity.current_stage && <span>• Current stage: {activity.current_stage}</span>}
             {activity.end_date && (
               <span>• Est. Completion: {formatDate(activity.end_date, 'MMM d, yyyy')}</span>
             )}
@@ -153,7 +154,7 @@ export function TabWorkflow({ activity }: { activity: any }) {
             variant="outline"
             className="text-sm px-3 py-1 bg-muted/50 w-full sm:w-auto justify-center"
           >
-            {completedCount} of {steps.length} approvals complete
+            {completedCount} of {steps.length} steps complete
           </Badge>
           <div className="flex items-center gap-2 mt-3 w-full sm:w-auto">
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
