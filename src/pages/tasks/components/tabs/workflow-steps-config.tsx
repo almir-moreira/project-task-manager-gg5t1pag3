@@ -50,7 +50,7 @@ export const WORKFLOW_STEPS: WorkflowStepConfig[] = [
     order: 4,
     enabledField: 'wf_gob',
     reviewerIdField: 'wf_gob_reviewer_id',
-    workflowRole: 'GoB',
+    workflowRole: 'Governing Bodies',
   },
   {
     id: 'wf-protocol',

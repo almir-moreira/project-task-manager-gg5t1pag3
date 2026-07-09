@@ -19,8 +19,14 @@ export const DEPT_FIELD_MAPPINGS: Record<string, DeptFieldMapping> = {
     reviewerIdField: 'wf_legal_reviewer_id',
   },
   GoB: {
-    workflowRole: 'GoB',
-    label: 'GoB',
+    workflowRole: 'Governing Bodies',
+    label: 'Governing Bodies',
+    enabledField: 'wf_gob',
+    reviewerIdField: 'wf_gob_reviewer_id',
+  },
+  'Governing Bodies': {
+    workflowRole: 'Governing Bodies',
+    label: 'Governing Bodies',
     enabledField: 'wf_gob',
     reviewerIdField: 'wf_gob_reviewer_id',
   },
