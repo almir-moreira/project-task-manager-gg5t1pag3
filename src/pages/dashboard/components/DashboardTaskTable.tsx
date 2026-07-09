@@ -13,13 +13,16 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { getStatusColor } from '@/lib/status-colors'
 import { Search } from 'lucide-react'
+import { IndicatorChips } from './ActivityIndicators'
+import type { ActivityIndicators } from '@/lib/dashboard-indicators'
 
 interface DashboardTaskTableProps {
   title: string
   tasks: any[]
+  indicatorsMap?: Map<string, ActivityIndicators>
 }
 
-export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
+export function DashboardTaskTable({ title, tasks, indicatorsMap }: DashboardTaskTableProps) {
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
@@ -49,58 +52,73 @@ export function DashboardTaskTable({ title, tasks }: DashboardTaskTableProps) {
             <TableRow className="bg-muted/10 hover:bg-muted/10">
               <TableHead className="w-[100px] font-medium text-xs">ID</TableHead>
               <TableHead className="font-medium text-xs">Status</TableHead>
+              <TableHead className="font-medium text-xs hidden md:table-cell">Stage</TableHead>
               <TableHead className="font-medium text-xs">Description</TableHead>
               <TableHead className="font-medium text-xs">Category</TableHead>
               <TableHead className="font-medium text-xs hidden md:table-cell">Location</TableHead>
               <TableHead className="font-medium text-xs hidden sm:table-cell">Owner</TableHead>
               <TableHead className="font-medium text-xs hidden lg:table-cell">Due Date</TableHead>
+              <TableHead className="font-medium text-xs hidden lg:table-cell">Indicators</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredActivities.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-sm">
+                <TableCell colSpan={9} className="text-center py-6 text-muted-foreground text-sm">
                   No activities found.
                 </TableCell>
               </TableRow>
             ) : (
-              filteredActivities.map((activity) => (
-                <TableRow
-                  key={activity.id}
-                  className="cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors"
-                  onClick={() => navigate(`/tasks/${activity.task_number || activity.id}`)}
-                >
-                  <TableCell className="font-medium text-xs">
-                    {activity.task_number || activity.id.slice(0, 8)}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] font-semibold border-0 ${getStatusColor(activity.status)}`}
-                    >
-                      {activity.status || 'To Do'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell
-                    className="max-w-[200px] truncate text-sm"
-                    title={activity.activity_name}
+              filteredActivities.map((activity) => {
+                const indicators = indicatorsMap?.get(activity.id)
+                return (
+                  <TableRow
+                    key={activity.id}
+                    className="cursor-pointer hover:bg-slate-50 dark:hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate(`/tasks/${activity.task_number || activity.id}`)}
                   >
-                    {activity.activity_name}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {activity.type?.name || '-'}
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
-                    -
-                  </TableCell>
-                  <TableCell className="text-xs hidden sm:table-cell">
-                    {activity.project_owner?.name || '-'}
-                  </TableCell>
-                  <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">
-                    {activity.end_date || '-'}
-                  </TableCell>
-                </TableRow>
-              ))
+                    <TableCell className="font-medium text-xs">
+                      {activity.task_number || activity.id.slice(0, 8)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-semibold border-0 ${getStatusColor(activity.status)}`}
+                      >
+                        {activity.status || 'To Do'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
+                      {activity.current_stage || 'Not available'}
+                    </TableCell>
+                    <TableCell
+                      className="max-w-[200px] truncate text-sm"
+                      title={activity.activity_name}
+                    >
+                      {activity.activity_name}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {activity.category_obj?.name || activity.type?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
+                      -
+                    </TableCell>
+                    <TableCell className="text-xs hidden sm:table-cell">
+                      {activity.project_owner?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-xs hidden lg:table-cell whitespace-nowrap">
+                      {activity.end_date || '-'}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell max-w-[300px]">
+                      {indicators ? (
+                        <IndicatorChips indicators={indicators} />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Not available</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>

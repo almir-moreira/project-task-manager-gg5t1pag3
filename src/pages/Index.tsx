@@ -1,11 +1,17 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DashboardTaskTable } from './dashboard/components/DashboardTaskTable'
 import { ActivityMatrixCard } from './dashboard/components/ActivityMatrixCard'
+import {
+  DashboardFilterBar,
+  DashboardFilters,
+  DEFAULT_DASHBOARD_FILTERS,
+} from './dashboard/components/DashboardFilterBar'
 import { getActivities } from '@/services/activities'
 import { useAuth } from '@/hooks/use-auth'
 import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { Search } from 'lucide-react'
+import { deriveIndicators, ActivityIndicators } from '@/lib/dashboard-indicators'
 
 const Index = () => {
   const { user } = useAuth()
@@ -13,27 +19,33 @@ const Index = () => {
   const [profile, setProfile] = useState<any>(null)
   const [allWorkflows, setAllWorkflows] = useState<any[]>([])
   const [allActivityWorkflows, setAllActivityWorkflows] = useState<any[]>([])
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
+  const [taskTypes, setTaskTypes] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState<DashboardFilters>(DEFAULT_DASHBOARD_FILTERS)
 
   useEffect(() => {
     async function load() {
       try {
-        const [acts, { data: prof }] = await Promise.all([
+        const [acts, { data: prof }, { data: cats }, { data: types }] = await Promise.all([
           getActivities(),
           user
             ? supabase.from('profiles').select('*').eq('id', user.id).single()
             : Promise.resolve({ data: null }),
+          supabase.from('categories').select('id, name').order('name'),
+          supabase.from('task_types').select('id, name').order('name'),
         ])
         setTasks(acts || [])
         setProfile(prof)
+        setCategories(cats || [])
+        setTaskTypes(types || [])
 
-        const assignedIds = (acts || []).filter((a) => a.assignee_id === user?.id).map((a) => a.id)
-
-        if (assignedIds.length > 0) {
+        if (acts && acts.length > 0) {
+          const allIds = acts.map((a) => a.id)
           const [wfRes, awRes] = await Promise.all([
             supabase.from('workflows').select('id, role, activity_id'),
-            supabase.from('activity_workflows').select('*').in('activity_id', assignedIds),
+            supabase.from('activity_workflows').select('*').in('activity_id', allIds),
           ])
           setAllWorkflows(wfRes.data || [])
           setAllActivityWorkflows(awRes.data || [])
@@ -53,6 +65,60 @@ const Index = () => {
     [tasks, profile],
   )
 
+  const getWfMap = useCallback(
+    (activityId: string) =>
+      allWorkflows
+        .filter((w) => w.activity_id === activityId || w.activity_id === null)
+        .reduce((acc, w) => ({ ...acc, [w.role]: w.id }), {} as Record<string, string>),
+    [allWorkflows],
+  )
+
+  const getAws = useCallback(
+    (activityId: string) => allActivityWorkflows.filter((aw) => aw.activity_id === activityId),
+    [allActivityWorkflows],
+  )
+
+  const indicatorsMap = useMemo(() => {
+    const map = new Map<string, ActivityIndicators>()
+    tasks.forEach((t) => {
+      map.set(t.id, deriveIndicators(t, getAws(t.id), getWfMap(t.id)))
+    })
+    return map
+  }, [tasks, getAws, getWfMap])
+
+  const stages = useMemo(
+    () => Array.from(new Set(tasks.map((t) => t.current_stage).filter(Boolean) as string[])).sort(),
+    [tasks],
+  )
+  const statuses = useMemo(
+    () => Array.from(new Set(tasks.map((t) => t.status || 'To Do'))).sort(),
+    [tasks],
+  )
+  const assignees = useMemo(() => {
+    const map = new Map<string, string>()
+    tasks.forEach((t) => {
+      if (t.assignee_id && t.assignee?.name) map.set(t.assignee_id, t.assignee.name)
+    })
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
+  }, [tasks])
+
+  const filteredProgrammeTasks = useMemo(() => {
+    let result = programmeTasks
+    if (filters.stage) result = result.filter((t) => t.current_stage === filters.stage)
+    if (filters.status) result = result.filter((t) => (t.status || 'To Do') === filters.status)
+    if (filters.categoryId) result = result.filter((t) => t.category_id === filters.categoryId)
+    if (filters.typeId) result = result.filter((t) => t.type_id === filters.typeId)
+    if (filters.assigneeId) result = result.filter((t) => t.assignee_id === filters.assigneeId)
+    if (filters.overdueOnly) result = result.filter((t) => indicatorsMap.get(t.id)?.isOverdue)
+    if (filters.pendingFeedbackOnly)
+      result = result.filter((t) => indicatorsMap.get(t.id)?.pendingFeedback)
+    if (filters.pendingApprovalOnly)
+      result = result.filter(
+        (t) => indicatorsMap.get(t.id)?.pendingApproval || indicatorsMap.get(t.id)?.pendingReview,
+      )
+    return result
+  }, [programmeTasks, filters, indicatorsMap])
+
   const filteredMyTasks = useMemo(() => {
     if (!search) return myTasks
     const q = search.toLowerCase()
@@ -63,13 +129,11 @@ const Index = () => {
     )
   }, [myTasks, search])
 
-  const getWfMap = (activityId: string) =>
-    allWorkflows
-      .filter((w) => w.activity_id === activityId || w.activity_id === null)
-      .reduce((acc, w) => ({ ...acc, [w.role]: w.id }), {} as Record<string, string>)
-
-  const getAws = (activityId: string) =>
-    allActivityWorkflows.filter((aw) => aw.activity_id === activityId)
+  const handleFilterChange = useCallback(
+    (updater: (prev: DashboardFilters) => DashboardFilters) => setFilters((prev) => updater(prev)),
+    [],
+  )
+  const handleReset = useCallback(() => setFilters(DEFAULT_DASHBOARD_FILTERS), [])
 
   if (loading) return <div className="p-6">Loading dashboard...</div>
 
@@ -108,13 +172,29 @@ const Index = () => {
                 activity={task}
                 activityWorkflows={getAws(task.id)}
                 wfMap={getWfMap(task.id)}
+                indicators={indicatorsMap.get(task.id)}
               />
             ))}
           </div>
         )}
       </div>
 
-      <DashboardTaskTable title="Programme Activities" tasks={programmeTasks} />
+      <DashboardFilterBar
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onReset={handleReset}
+        stages={stages}
+        statuses={statuses}
+        categories={categories}
+        taskTypes={taskTypes}
+        assignees={assignees}
+      />
+
+      <DashboardTaskTable
+        title="Programme Activities"
+        tasks={filteredProgrammeTasks}
+        indicatorsMap={indicatorsMap}
+      />
     </div>
   )
 }

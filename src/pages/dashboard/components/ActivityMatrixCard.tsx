@@ -6,6 +6,8 @@ import { ArrowRight, ChevronRight } from 'lucide-react'
 import { getStatusColor } from '@/lib/status-colors'
 import { cn } from '@/lib/utils'
 import { computeTracker, getStatusStyles, TrackerStage } from '@/lib/workflow-tracker'
+import { IndicatorChips } from './ActivityIndicators'
+import type { ActivityIndicators } from '@/lib/dashboard-indicators'
 
 const STAGE_STYLES: Record<string, { header: string; container: string }> = {
   Feedback: {
@@ -26,12 +28,14 @@ interface ActivityMatrixCardProps {
   activity: any
   activityWorkflows: any[]
   wfMap: Record<string, string>
+  indicators?: ActivityIndicators
 }
 
 export function ActivityMatrixCard({
   activity,
   activityWorkflows,
   wfMap,
+  indicators,
 }: ActivityMatrixCardProps) {
   const navigate = useNavigate()
   const tracker = computeTracker(activity, activityWorkflows, wfMap)
@@ -87,6 +91,12 @@ export function ActivityMatrixCard({
             </div>
           ))}
         </div>
+
+        {indicators && (
+          <div className="px-4 py-2.5 border-b border-border bg-muted/20">
+            <IndicatorChips indicators={indicators} />
+          </div>
+        )}
 
         {tracker.hasWorkflow ? (
           <div className="p-4 space-y-3">
