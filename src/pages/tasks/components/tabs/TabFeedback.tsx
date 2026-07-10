@@ -23,6 +23,7 @@ import { updateActivity } from '@/services/activities'
 import { useToast } from '@/hooks/use-toast'
 import { canProvideFeedback, isReadOnly } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
+import { isStagePreparation } from '@/lib/stage-aware-workflow'
 import {
   FEEDBACK_UNITS_CONFIG,
   computeFeedbackStatus,
@@ -45,6 +46,10 @@ const STATUS_STYLES: Record<FeedbackStatus, string> = {
 
 interface DeptRow extends FeedbackUnitConfig {
   workflowId: string | null
+}
+
+function canEnterFeedback(currentStage: string | null | undefined): boolean {
+  return !isStagePreparation(currentStage)
 }
 
 export function TabFeedback({
@@ -167,6 +172,7 @@ export function TabFeedback({
     async (dept: DeptRow, text: string) => {
       if (!activity) return
       if (!canProvideFeedback(permUser, activity, dept.label)) return
+      if (!canEnterFeedback(activity.current_stage)) return
       const wfId = await resolveWorkflowId(dept)
       if (!wfId) {
         toast({ title: 'Unable to resolve workflow for this unit', variant: 'destructive' })
@@ -197,6 +203,7 @@ export function TabFeedback({
     async (dept: DeptRow, dateVal: string) => {
       if (!activity) return
       if (!canProvideFeedback(permUser, activity, dept.label)) return
+      if (!canEnterFeedback(activity.current_stage)) return
       const wfId = await resolveWorkflowId(dept)
       if (!wfId) {
         toast({ title: 'Unable to resolve workflow for this unit', variant: 'destructive' })
@@ -229,8 +236,15 @@ export function TabFeedback({
     return <div className="p-4 text-sm text-muted-foreground">Loading feedback...</div>
   }
 
+  const stageLocked = !canEnterFeedback(activity.current_stage)
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {stageLocked && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Feedback entry is available after the activity is advanced to Feedback.
+        </div>
+      )}
       <div className="border border-border rounded-lg overflow-hidden bg-card">
         <Table>
           <TableHeader className="bg-muted/50">
@@ -246,6 +260,7 @@ export function TabFeedback({
             {deptRows.map((dept) => {
               const isEnabled = !!activity[dept.enabledField]
               const canFb = canProvideFeedback(permUser, activity, dept.label) && !isRO
+              const stageLockedRow = !canEnterFeedback(activity.current_stage)
               const reviewerId = activity[dept.reviewerIdField] || 'unassigned'
               const aw = dept.workflowId ? awMap[dept.workflowId] : null
               const feedbackText = aw?.comments || ''
@@ -306,9 +321,9 @@ export function TabFeedback({
                         type="date"
                         className="h-9"
                         defaultValue={feedbackDate}
-                        disabled={!canFb}
+                        disabled={!canFb || stageLockedRow}
                         onBlur={(e) => {
-                          if (canFb && e.target.value !== feedbackDate) {
+                          if (canFb && !stageLockedRow && e.target.value !== feedbackDate) {
                             handleDate(dept, e.target.value)
                           }
                         }}
@@ -323,14 +338,19 @@ export function TabFeedback({
                         <Textarea
                           className="min-h-[40px] resize-y text-sm"
                           defaultValue={feedbackText}
-                          disabled={!canFb}
+                          disabled={!canFb || stageLockedRow}
                           onBlur={(e) => {
-                            if (canFb && e.target.value !== feedbackText) {
+                            if (canFb && !stageLockedRow && e.target.value !== feedbackText) {
                               handleText(dept, e.target.value)
                             }
                           }}
                           placeholder="Enter feedback..."
                         />
+                        {stageLockedRow && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Feedback entry is available after the activity is advanced to Feedback.
+                          </p>
+                        )}
                         {!canFb && (
                           <p className="text-xs text-muted-foreground italic">
                             You can view this feedback, but you do not have permission to edit it.
