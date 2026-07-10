@@ -129,6 +129,10 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
       ...user,
       role,
       programme_id: programmeId === 'none' ? null : programmeId,
+      programme:
+        programmeId === 'none'
+          ? null
+          : { name: programmes.find((p) => p.id === programmeId)?.name || '' },
       user_units: units
         .filter((u) => selectedUnits.has(u.id))
         .map((u) => ({

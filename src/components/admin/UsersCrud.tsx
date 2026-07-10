@@ -104,10 +104,16 @@ export function UsersCrud() {
     }
     if (usersRes.data) {
       setUsers(
-        usersRes.data.map((row) => ({
-          ...row,
-          programme: (row as Record<string, unknown>).programme ?? null,
-        })) as unknown as ProfileRow[],
+        usersRes.data.map((row: any) => {
+          let prog = row.programme
+          if (Array.isArray(prog)) {
+            prog = prog.length > 0 ? prog[0] : null
+          }
+          return {
+            ...row,
+            programme: prog,
+          }
+        }) as ProfileRow[],
       )
     }
     if (progRes.error) {
@@ -144,6 +150,10 @@ export function UsersCrud() {
         variant: 'destructive',
       })
       return
+    }
+
+    if (newProgramme !== 'none') {
+      await supabase.from('profiles').update({ programme_id: newProgramme }).eq('email', newEmail)
     }
 
     toast({ title: `User ${newName} created successfully` })
