@@ -101,8 +101,11 @@ export function DashboardTaskTable({ title, tasks, indicatorsMap }: DashboardTas
                     <TableCell className="text-xs text-muted-foreground">
                       {activity.category_obj?.name || activity.type?.name || '-'}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
-                      -
+                    <TableCell
+                      className="text-xs text-muted-foreground hidden md:table-cell max-w-[150px] truncate"
+                      title={activity.event_location || ''}
+                    >
+                      {activity.event_location || '-'}
                     </TableCell>
                     <TableCell className="text-xs hidden sm:table-cell">
                       {activity.project_owner?.name || '-'}
