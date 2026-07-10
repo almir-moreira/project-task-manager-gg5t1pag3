@@ -1,5 +1,10 @@
 import { WORKFLOW_STEPS } from '@/pages/tasks/components/tabs/workflow-steps-config'
-import { findInProgressIndex, getStageAwareCurrentStepName } from '@/lib/stage-aware-workflow'
+import {
+  findInProgressIndex,
+  getStageAwareCurrentStepName,
+  isActivityDone,
+  normalizeStage,
+} from '@/lib/stage-aware-workflow'
 
 export interface TrackerStep {
   id: string
@@ -148,4 +153,32 @@ export function computeTracker(
     progressPercent,
     currentStepName,
   }
+}
+
+export function getStageDisplayStatus(
+  activity: { status?: string | null; current_stage?: string | null },
+  tracker?: WorkflowTracker | null,
+): string {
+  if (isActivityDone(activity)) return 'Done'
+
+  const normalized = normalizeStage(activity.current_stage)
+
+  if (normalized === 'preparation') return 'Preparation'
+
+  if (normalized === 'feedback') {
+    if (tracker?.currentStepName) return tracker.currentStepName
+    return 'Feedback'
+  }
+
+  if (normalized === 'review') return 'Review'
+
+  if (normalized === 'approval') {
+    const stage = activity.current_stage || ''
+    if (stage.toLowerCase().includes('final')) return 'Final Approval'
+    return 'Approval'
+  }
+
+  if (tracker?.currentStepName) return tracker.currentStepName
+
+  return activity.current_stage || 'Preparation'
 }

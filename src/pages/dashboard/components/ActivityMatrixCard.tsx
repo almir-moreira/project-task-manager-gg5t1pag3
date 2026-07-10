@@ -3,9 +3,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ChevronRight } from 'lucide-react'
-import { getStatusColor } from '@/lib/status-colors'
+import { getStageStatusColor } from '@/lib/status-colors'
 import { cn } from '@/lib/utils'
-import { computeTracker, getStatusStyles, TrackerStage } from '@/lib/workflow-tracker'
+import {
+  computeTracker,
+  getStageDisplayStatus,
+  getStatusStyles,
+  TrackerStage,
+} from '@/lib/workflow-tracker'
 import { IndicatorChips } from './ActivityIndicators'
 import type { ActivityIndicators } from '@/lib/dashboard-indicators'
 
@@ -40,7 +45,8 @@ export function ActivityMatrixCard({
   const navigate = useNavigate()
   const tracker = computeTracker(activity, activityWorkflows, wfMap)
   const activityId = activity.task_number || activity.id
-  const statusColor = getStatusColor(activity.status)
+  const displayStatus = getStageDisplayStatus(activity, tracker)
+  const statusColor = getStageStatusColor(displayStatus)
 
   const metaItems = [
     { label: 'Category', value: activity.category_obj?.name || activity.type?.name || '-' },
@@ -59,7 +65,7 @@ export function ActivityMatrixCard({
               variant="outline"
               className={cn('text-[10px] font-semibold border-0 shrink-0', statusColor)}
             >
-              {activity.status || 'To Do'}
+              {displayStatus}
             </Badge>
             <div className="min-w-0">
               <span className="text-xs font-mono text-muted-foreground">{activityId}</span>

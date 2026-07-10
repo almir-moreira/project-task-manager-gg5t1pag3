@@ -11,7 +11,8 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { getStatusColor } from '@/lib/status-colors'
+import { getStageStatusColor } from '@/lib/status-colors'
+import { getStageDisplayStatus } from '@/lib/workflow-tracker'
 import { Search } from 'lucide-react'
 import { IndicatorChips } from './ActivityIndicators'
 import type { ActivityIndicators } from '@/lib/dashboard-indicators'
@@ -83,9 +84,9 @@ export function DashboardTaskTable({ title, tasks, indicatorsMap }: DashboardTas
                     <TableCell>
                       <Badge
                         variant="outline"
-                        className={`text-[10px] font-semibold border-0 ${getStatusColor(activity.status)}`}
+                        className={`text-[10px] font-semibold border-0 ${getStageStatusColor(getStageDisplayStatus(activity))}`}
                       >
-                        {activity.status || 'To Do'}
+                        {getStageDisplayStatus(activity)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
