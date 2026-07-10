@@ -39,6 +39,15 @@ const ROLES = [
   'Secretary General',
   'Team Assistant',
   'Administrator',
+  'Admin',
+  'Programme Manager',
+  'SPM',
+  'PROD Head',
+  'CPO',
+  'PROD Team Assistant',
+  'Feedback Unit User',
+  'EOSG Assistant',
+  'Read Only',
 ]
 
 interface ProfileRow {
@@ -47,10 +56,13 @@ interface ProfileRow {
   name: string | null
   role: string | null
   department: string | null
+  programme_id: string | null
+  programme: { name: string } | null
 }
 
 export function UsersCrud() {
   const [users, setUsers] = useState<ProfileRow[]>([])
+  const [programmes, setProgrammes] = useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = useState(true)
   const { toast } = useToast()
 
@@ -59,12 +71,14 @@ export function UsersCrud() {
   const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState('Collaborator')
   const [newDepartment, setNewDepartment] = useState('')
+  const [newProgramme, setNewProgramme] = useState('none')
   const [adding, setAdding] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState('')
   const [editDepartment, setEditDepartment] = useState('')
+  const [editProgramme, setEditProgramme] = useState('none')
 
   useEffect(() => {
     fetchData()
@@ -72,14 +86,38 @@ export function UsersCrud() {
 
   const fetchData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, email, name, role, department')
-      .order('name')
-    if (error) {
-      toast({ title: 'Error fetching users', variant: 'destructive' })
+    const [usersRes, progRes] = await Promise.all([
+      supabase
+        .from('profiles')
+        .select(
+          'id, email, name, role, department, programme_id, programme:programmes!profiles_programme_id_fkey(name)',
+        )
+        .order('name'),
+      supabase.from('programmes').select('id, name').order('name'),
+    ])
+    if (usersRes.error) {
+      toast({
+        title: 'Error fetching users',
+        description: usersRes.error.message,
+        variant: 'destructive',
+      })
     }
-    if (data) setUsers(data as ProfileRow[])
+    if (usersRes.data) {
+      setUsers(
+        usersRes.data.map((row) => ({
+          ...row,
+          programme: (row as Record<string, unknown>).programme ?? null,
+        })) as unknown as ProfileRow[],
+      )
+    }
+    if (progRes.error) {
+      toast({
+        title: 'Error fetching programmes',
+        description: progRes.error.message,
+        variant: 'destructive',
+      })
+    }
+    if (progRes.data) setProgrammes(progRes.data)
     setLoading(false)
   }
 
@@ -93,6 +131,7 @@ export function UsersCrud() {
         name: newName,
         role: newRole,
         department: newDepartment || null,
+        programme_id: newProgramme === 'none' ? null : newProgramme,
       },
     })
 
@@ -113,6 +152,7 @@ export function UsersCrud() {
     setNewEmail('')
     setNewRole('Collaborator')
     setNewDepartment('')
+    setNewProgramme('none')
     fetchData()
   }
 
@@ -121,6 +161,7 @@ export function UsersCrud() {
     setEditName(user.name || '')
     setEditRole(user.role || '')
     setEditDepartment(user.department || '')
+    setEditProgramme(user.programme_id || 'none')
   }
 
   const cancelEdit = () => {
@@ -134,16 +175,25 @@ export function UsersCrud() {
         name: editName,
         role: editRole,
         department: editDepartment || null,
+        programme_id: editProgramme === 'none' ? null : editProgramme,
       })
       .eq('id', id)
 
     if (error) {
       toast({ title: 'Error updating user', variant: 'destructive' })
     } else {
+      const progObj = programmes.find((p) => p.id === editProgramme)
       setUsers(
         users.map((u) =>
           u.id === id
-            ? { ...u, name: editName, role: editRole, department: editDepartment || null }
+            ? {
+                ...u,
+                name: editName,
+                role: editRole,
+                department: editDepartment || null,
+                programme_id: editProgramme === 'none' ? null : editProgramme,
+                programme: progObj ? { name: progObj.name } : null,
+              }
             : u,
         ),
       )
@@ -168,7 +218,7 @@ export function UsersCrud() {
         <div>
           <h3 className="text-lg font-medium">Users Management</h3>
           <p className="text-sm text-muted-foreground">
-            Manage user roles, departments, and basic profile information.
+            Manage user roles, departments, programmes, and basic profile information.
           </p>
         </div>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -225,6 +275,22 @@ export function UsersCrud() {
                   placeholder="e.g. Operations, Legal, Finance"
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Programme</Label>
+                <Select value={newProgramme} onValueChange={setNewProgramme}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Programme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Programme</SelectItem>
+                    {programmes.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild>
@@ -252,6 +318,7 @@ export function UsersCrud() {
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Programme</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -292,6 +359,21 @@ export function UsersCrud() {
                           className="max-w-[200px]"
                         />
                       </TableCell>
+                      <TableCell>
+                        <Select value={editProgramme} onValueChange={setEditProgramme}>
+                          <SelectTrigger className="w-[200px]">
+                            <SelectValue placeholder="Select Programme" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No Programme</SelectItem>
+                            {programmes.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
@@ -319,6 +401,7 @@ export function UsersCrud() {
                       </TableCell>
                       <TableCell>{user.role || '-'}</TableCell>
                       <TableCell>{user.department || '-'}</TableCell>
+                      <TableCell>{user.programme?.name ?? 'N/A'}</TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
@@ -343,7 +426,7 @@ export function UsersCrud() {
               ))}
               {users.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     No users found.
                   </TableCell>
                 </TableRow>

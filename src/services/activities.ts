@@ -4,8 +4,8 @@ import { Database } from '@/lib/supabase/types'
 export type Activity = Database['public']['Tables']['activities']['Row']
 export type ActivityUpdate = Database['public']['Tables']['activities']['Update']
 
-export async function getActivities() {
-  const { data, error } = await supabase
+export async function getActivities(programmeId?: string | null) {
+  let query = supabase
     .from('activities')
     .select(`
     *,
@@ -18,6 +18,12 @@ export async function getActivities() {
     activity_budget_lines(*)
   `)
     .order('created_at', { ascending: false })
+
+  if (programmeId) {
+    query = query.eq('programme_id', programmeId)
+  }
+
+  const { data, error } = await query
   if (error) throw error
   return data
 }

@@ -15,27 +15,51 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { useToast } from '@/hooks/use-toast'
 import { getActivities } from '@/services/activities'
-import { getStatusColor } from '@/lib/status-colors'
-import { canCreateActivity } from '@/lib/permissions'
+import { getStageStatusColor } from '@/lib/status-colors'
+import { getStageDisplayStatus } from '@/lib/workflow-tracker'
+import { canCreateActivity, isGlobalViewRole } from '@/lib/permissions'
 import { usePermissions } from '@/hooks/use-permissions'
 
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [programmeName, setProgrammeName] = useState<string | null>(null)
   const { toast } = useToast()
   const navigate = useNavigate()
-  const { permUser } = usePermissions()
+  const { permUser, loading: permLoading } = usePermissions()
+
+  const isGlobal = isGlobalViewRole(permUser)
+  const userProgrammeId = permUser?.programme_id ?? null
+  const isRestrictedUnassigned = !isGlobal && !userProgrammeId
 
   useEffect(() => {
+    if (permLoading) return
     fetchActivities()
-  }, [])
+    if (!isGlobal && userProgrammeId) {
+      fetchProgrammeName(userProgrammeId)
+    } else {
+      setProgrammeName(null)
+    }
+  }, [permLoading, isGlobal, userProgrammeId])
+
+  const fetchProgrammeName = async (pid: string) => {
+    const { data } = await supabase.from('programmes').select('name').eq('id', pid).single()
+    if (data?.name) setProgrammeName(data.name)
+  }
 
   const fetchActivities = async () => {
     try {
       setLoading(true)
-      const data = await getActivities()
-      setActivities(data || [])
+      if (isGlobal) {
+        const data = await getActivities()
+        setActivities(data || [])
+      } else if (userProgrammeId) {
+        const data = await getActivities(userProgrammeId)
+        setActivities(data || [])
+      } else {
+        setActivities([])
+      }
     } catch (error: any) {
       toast({
         title: 'Error fetching activities',
@@ -57,15 +81,16 @@ export default function ActivitiesPage() {
       return
     }
     try {
-      const { data, error } = await supabase
-        .from('activities')
-        .insert({
-          activity_name: 'New Activity',
-          status: 'To Do',
-          priority: 'Medium',
-        })
-        .select()
-        .single()
+      const insertData: Record<string, any> = {
+        activity_name: 'New Activity',
+        status: 'To Do',
+        priority: 'Medium',
+      }
+      if (!isGlobal && userProgrammeId) {
+        insertData.programme_id = userProgrammeId
+      }
+
+      const { data, error } = await supabase.from('activities').insert(insertData).select().single()
 
       if (error) throw error
 
@@ -83,6 +108,12 @@ export default function ActivitiesPage() {
     }
   }
 
+  const subtitle = isGlobal
+    ? 'Manage and track activities across all programmes.'
+    : isRestrictedUnassigned
+      ? 'No programme is assigned to your profile. Please contact an administrator.'
+      : `Manage and track activities for ${programmeName || 'your programme'}.`
+
   const filteredActivities = activities.filter(
     (activity) =>
       (activity.activity_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,8 +125,14 @@ export default function ActivitiesPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Activity Matrix</h1>
-          <p className="text-muted-foreground">
-            Manage and track your activities across all programmes.
+          <p
+            className={
+              isRestrictedUnassigned
+                ? 'text-amber-600 dark:text-amber-400 font-medium'
+                : 'text-muted-foreground'
+            }
+          >
+            {subtitle}
           </p>
         </div>
         {canCreateActivity(permUser) && (
@@ -135,13 +172,19 @@ export default function ActivitiesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {loading || permLoading ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                   <div className="flex flex-col items-center gap-2">
                     <div className="w-6 h-6 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <p>Loading activities...</p>
                   </div>
+                </TableCell>
+              </TableRow>
+            ) : isRestrictedUnassigned ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
+                  No programme is assigned to your profile. Please contact an administrator.
                 </TableCell>
               </TableRow>
             ) : filteredActivities.length === 0 ? (
@@ -164,11 +207,12 @@ export default function ActivitiesPage() {
                   </TableCell>
                   <TableCell className="font-medium text-sm">{activity.activity_name}</TableCell>
                   <TableCell>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(activity.status)}`}
+                    <Badge
+                      variant="outline"
+                      className={`text-xs font-semibold border-0 ${getStageStatusColor(getStageDisplayStatus(activity))}`}
                     >
-                      {activity.status || 'To Do'}
-                    </span>
+                      {getStageDisplayStatus(activity)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge

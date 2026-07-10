@@ -25,6 +25,11 @@ interface UnitOption {
   name: string | null
 }
 
+interface ProgrammeOption {
+  id: string
+  name: string
+}
+
 interface UserEditSheetProps {
   user: UserProfileWithUnits | null
   open: boolean
@@ -35,6 +40,8 @@ interface UserEditSheetProps {
 export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserEditSheetProps) {
   const { toast } = useToast()
   const [role, setRole] = useState('')
+  const [programmeId, setProgrammeId] = useState('none')
+  const [programmes, setProgrammes] = useState<ProgrammeOption[]>([])
   const [units, setUnits] = useState<UnitOption[]>([])
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
@@ -42,6 +49,7 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
   useEffect(() => {
     if (user) {
       setRole(user.role || 'Collaborator')
+      setProgrammeId(user.programme_id ?? 'none')
       setSelectedUnits(
         new Set((user.user_units || []).map((uu) => uu.unit_id).filter(Boolean) as string[]),
       )
@@ -50,13 +58,13 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
 
   useEffect(() => {
     if (open) {
-      supabase
-        .from('units')
-        .select('id, name')
-        .order('name')
-        .then(({ data }) => {
-          setUnits(data || [])
-        })
+      Promise.all([
+        supabase.from('units').select('id, name').order('name'),
+        supabase.from('programmes').select('id, name').order('name'),
+      ]).then(([unitRes, progRes]) => {
+        setUnits(unitRes.data || [])
+        setProgrammes(progRes.data || [])
+      })
     }
   }, [open])
 
@@ -73,9 +81,19 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
     if (!user) return
     setSaving(true)
 
-    const { error: roleError } = await supabase.from('profiles').update({ role }).eq('id', user.id)
-    if (roleError) {
-      toast({ title: 'Failed to update role. Please try again.', variant: 'destructive' })
+    const updates: Record<string, any> = { role }
+    if (programmeId === 'none') {
+      updates.programme_id = null
+    } else {
+      updates.programme_id = programmeId
+    }
+
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id)
+    if (profileError) {
+      toast({ title: 'Failed to update user. Please try again.', variant: 'destructive' })
       setSaving(false)
       return
     }
@@ -110,6 +128,7 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
     const updatedUser: UserProfileWithUnits = {
       ...user,
       role,
+      programme_id: programmeId === 'none' ? null : programmeId,
       user_units: units
         .filter((u) => selectedUnits.has(u.id))
         .map((u) => ({
@@ -120,7 +139,7 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
     }
     onUserUpdated?.(updatedUser)
 
-    toast({ title: 'Role updated successfully' })
+    toast({ title: 'User updated successfully' })
     setSaving(false)
     onOpenChange(false)
   }
@@ -129,6 +148,7 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
     ? {
         id: user.id,
         role: role as PermissionUser['role'],
+        programme_id: programmeId === 'none' ? null : programmeId,
         units: units
           .filter((u) => selectedUnits.has(u.id))
           .map((u) => u.name || '')
@@ -163,6 +183,22 @@ export function UserEditSheet({ user, open, onOpenChange, onUserUpdated }: UserE
                     {ALL_ROLES.map((r) => (
                       <SelectItem key={r} value={r}>
                         {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Programme</Label>
+                <Select value={programmeId} onValueChange={setProgrammeId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select programme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No Programme</SelectItem>
+                    {programmes.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

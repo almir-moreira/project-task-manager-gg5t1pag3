@@ -26,12 +26,13 @@ export function usePermissions() {
           id: user.id,
           role: pRes.data?.role || null,
           units: unitNames,
+          programme_id: pRes.data?.programme_id || null,
         })
         setLoading(false)
       })
       .catch(() => {
         if (cancelled) return
-        setPermUser({ id: user.id, role: null, units: [] })
+        setPermUser({ id: user.id, role: null, units: [], programme_id: null })
         setLoading(false)
       })
     return () => {

@@ -62,6 +62,7 @@ export interface PermissionUser {
   id: string
   role: UserRole | null
   units: string[]
+  programme_id?: string | null
 }
 
 /**
@@ -150,6 +151,19 @@ export const EDIT_ELIGIBLE_ROLES: UserRole[] = [
   'PROD Team Assistant',
   'Team Assistant',
 ]
+
+/** Roles that have a global view of all activities across all programmes. */
+export const GLOBAL_VIEW_ROLES: UserRole[] = ['Admin', 'Administrator', 'CPO', 'Head', 'PROD Head']
+
+/**
+ * Returns true if the user's role grants global visibility of all activities.
+ * Admins and head-level leadership roles see everything regardless of programme assignment.
+ */
+export function isGlobalViewRole(user: PermissionUser | null | undefined): boolean {
+  if (!user || !user.role) return false
+  if (isAdmin(user)) return true
+  return GLOBAL_VIEW_ROLES.includes(user.role)
+}
 
 /** Roles allowed to view reports. */
 export const REPORT_VIEWER_ROLES: UserRole[] = [
