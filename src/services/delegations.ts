@@ -166,3 +166,64 @@ export async function replaceFunctionalStaffing(
   const { error: insError } = await staffingTable().insert(insertRows)
   if (insError) throw insError
 }
+
+export interface DelegationConsultation {
+  id?: string
+  delegation_package_id?: string
+  unit_name: string
+  reviewer_id: string | null
+  status: string
+  recommendation: string | null
+  comments: string | null
+  reviewed_at: string | null
+}
+
+const consultationsTable = () => (supabase as any).from('travel_delegation_consultations')
+
+export async function getConsultations(packageId: string): Promise<any[]> {
+  const { data, error } = await consultationsTable()
+    .select('*, reviewer:profiles!travel_delegation_consultations_reviewer_id_fkey(name)')
+    .eq('delegation_package_id', packageId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return data || []
+}
+
+export async function submitDelegationForConsultation(
+  packageId: string,
+  userId: string,
+  unitNames: string[],
+): Promise<void> {
+  const now = new Date().toISOString()
+  const { error: updateError } = await table()
+    .update({
+      status: 'Consultation',
+      current_stage: 'Involved Unit Consultation',
+      submitted_at: now,
+      submitted_by: userId,
+      consultation_started_at: now,
+    })
+    .eq('id', packageId)
+  if (updateError) throw updateError
+
+  if (unitNames.length > 0) {
+    const rows = unitNames.map((unitName) => ({
+      delegation_package_id: packageId,
+      unit_name: unitName,
+      status: 'Pending',
+    }))
+    const { error: insError } = await consultationsTable().insert(rows)
+    if (insError) throw insError
+  }
+}
+
+export async function updateConsultation(id: string, updates: Record<string, any>): Promise<any> {
+  const now = new Date().toISOString()
+  const payload: Record<string, any> = { ...updates }
+  if (updates.status === 'Completed' && !updates.reviewed_at) {
+    payload.reviewed_at = now
+  }
+  const { data, error } = await consultationsTable().update(payload).eq('id', id).select().single()
+  if (error) throw error
+  return data
+}

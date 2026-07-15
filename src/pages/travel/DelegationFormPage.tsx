@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -14,6 +14,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useAuth } from '@/hooks/use-auth'
+import { usePermissions } from '@/hooks/use-permissions'
+import { isAdmin } from '@/lib/permissions'
 import { useToast } from '@/hooks/use-toast'
 import { getMasterData } from '@/services/master-data'
 import { getActivities, getActivity } from '@/services/activities'
@@ -23,6 +25,9 @@ import {
   updateDelegationPackage,
   replaceDelegationTravelers,
   replaceFunctionalStaffing,
+  getConsultations,
+  submitDelegationForConsultation,
+  updateConsultation,
   type DelegationPackage,
   type DelegationTraveler,
   type FunctionalStaffingRow,
@@ -76,6 +81,7 @@ export default function DelegationFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { permUser } = usePermissions()
   const { toast } = useToast()
   const isEdit = !!id
 
@@ -113,6 +119,10 @@ export default function DelegationFormPage() {
   const [saving, setSaving] = useState(false)
   const [pendingPrefill, setPendingPrefill] = useState<Record<string, any> | null>(null)
   const [showPrefillDialog, setShowPrefillDialog] = useState(false)
+  const [consultations, setConsultations] = useState<any[]>([])
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([])
+  const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     Promise.all([getMasterData(), getActivities()])
@@ -176,6 +186,7 @@ export default function DelegationFormPage() {
               })),
             )
           }
+          getConsultations(id).then(setConsultations).catch(console.error)
         })
         .catch(console.error)
         .finally(() => setLoading(false))
@@ -235,6 +246,75 @@ export default function DelegationFormPage() {
     setPendingPrefill(null)
   }
 
+  const handleConsultationChange = (cId: string, field: string, value: any) => {
+    setConsultations((prev) => prev.map((c) => (c.id === cId ? { ...c, [field]: value } : c)))
+  }
+
+  const handleConsultationUpdate = async (cId: string, field: string, value: any) => {
+    setConsultations((prev) => prev.map((c) => (c.id === cId ? { ...c, [field]: value } : c)))
+    try {
+      await updateConsultation(cId, { [field]: value })
+    } catch (e: any) {
+      toast({
+        title: 'Error saving consultation',
+        description: e?.message,
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const savePackage = async (): Promise<string> => {
+    const payload = {
+      ...cleanPayload({
+        ...formData,
+        total_proposed_travelers: travelers.length,
+        total_proposed_staff:
+          formData.total_proposed_staff ??
+          staffingRows.reduce((sum, r) => sum + (r.proposed_staff_count || 0), 0),
+        created_by: user?.id,
+      }),
+      status: 'Draft',
+      current_stage: 'Delegation Proposal',
+    }
+    let pkgId: string
+    if (isEdit && id) {
+      const updated = await updateDelegationPackage(id, payload)
+      pkgId = updated.id
+    } else {
+      const created = await createDelegationPackage(payload)
+      pkgId = created.id
+    }
+    await replaceDelegationTravelers(pkgId, travelers)
+    await replaceFunctionalStaffing(pkgId, staffingRows)
+    return pkgId
+  }
+
+  const confirmSubmitForConsultation = async () => {
+    if (!user) return
+    setSubmitting(true)
+    try {
+      const pkgId = await savePackage()
+      await submitDelegationForConsultation(pkgId, user.id, selectedUnits)
+      const updatedConsultations = await getConsultations(pkgId)
+      setConsultations(updatedConsultations)
+      handleChange('status', 'Consultation')
+      handleChange('current_stage', 'Involved Unit Consultation')
+      if (!id) {
+        navigate(`/travel/delegations/${pkgId}`, { replace: true })
+      }
+      toast({ title: 'Submitted for consultation successfully' })
+      setShowSubmitDialog(false)
+    } catch (e: any) {
+      toast({
+        title: 'Error submitting for consultation',
+        description: e?.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const UUID_FIELDS = ['linked_activity_id', 'programme_id', 'project_id', 'event_lead_id']
 
   const cleanPayload = (data: Record<string, any>): Record<string, any> => {
@@ -267,31 +347,7 @@ export default function DelegationFormPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const payload = {
-        ...cleanPayload({
-          ...formData,
-          total_proposed_travelers: travelers.length,
-          total_proposed_staff:
-            formData.total_proposed_staff ??
-            staffingRows.reduce((sum, r) => sum + (r.proposed_staff_count || 0), 0),
-          created_by: user?.id,
-        }),
-        status: 'Draft',
-        current_stage: 'Delegation Proposal',
-      }
-
-      let packageId: string
-      if (isEdit && id) {
-        const updated = await updateDelegationPackage(id, payload)
-        packageId = updated.id
-      } else {
-        const created = await createDelegationPackage(payload)
-        packageId = created.id
-      }
-
-      await replaceDelegationTravelers(packageId, travelers)
-      await replaceFunctionalStaffing(packageId, staffingRows)
-
+      await savePackage()
       toast({ title: 'Delegation proposal saved successfully' })
       navigate('/travel/delegations')
     } catch (e: any) {
@@ -305,6 +361,11 @@ export default function DelegationFormPage() {
       setSaving(false)
     }
   }
+
+  const isConsultationDraft =
+    formData.status === 'Draft' ||
+    formData.current_stage === 'Delegation Proposal' ||
+    formData.current_stage === 'Draft'
 
   if (loading) {
     return (
@@ -358,15 +419,29 @@ export default function DelegationFormPage() {
         onChange={handleChange}
         staffingRows={staffingRows}
         onStaffingChange={setStaffingRows}
+        consultations={consultations}
+        selectedUnits={selectedUnits}
+        onSelectedUnitsChange={setSelectedUnits}
+        onConsultationChange={handleConsultationChange}
+        onConsultationUpdate={handleConsultationUpdate}
+        profiles={masterData?.profiles || []}
+        canEditConsultations={isAdmin(permUser)}
+        currentUserId={user?.id || null}
       />
 
       <div className="flex gap-3 justify-end pb-6">
         <Button variant="outline" onClick={() => navigate('/travel/delegations')}>
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving}>
+        <Button onClick={handleSave} disabled={saving || submitting}>
           {saving ? 'Saving...' : 'Save Draft'}
         </Button>
+        {isConsultationDraft && (
+          <Button onClick={() => setShowSubmitDialog(true)} disabled={submitting || saving}>
+            <Send className="h-4 w-4 mr-2" />
+            {submitting ? 'Submitting...' : 'Submit for Consultation'}
+          </Button>
+        )}
       </div>
 
       <AlertDialog open={showPrefillDialog} onOpenChange={setShowPrefillDialog}>
@@ -382,6 +457,24 @@ export default function DelegationFormPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmPrefill}>Overwrite</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Submit for Consultation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will transition the proposal from Draft to the Consultation stage. Consultation
+              records will be created for all selected units. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmSubmitForConsultation} disabled={submitting}>
+              {submitting ? 'Submitting...' : 'Submit'}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

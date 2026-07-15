@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { DelegationConsultationTab } from './DelegationConsultationTab'
 
 export interface FunctionalStaffingRow {
   id?: string
@@ -29,6 +30,14 @@ interface Props {
   onChange: (field: string, value: any) => void
   staffingRows: FunctionalStaffingRow[]
   onStaffingChange: (rows: FunctionalStaffingRow[]) => void
+  consultations: any[]
+  selectedUnits: string[]
+  onSelectedUnitsChange: (units: string[]) => void
+  onConsultationChange: (id: string, field: string, value: any) => void
+  onConsultationUpdate: (id: string, field: string, value: any) => void
+  profiles: any[]
+  canEditConsultations: boolean
+  currentUserId: string | null
 }
 
 const COMPLEXITY_DRIVERS = [
@@ -104,7 +113,19 @@ export function DelegationSopEvaluationSection({
   onChange,
   staffingRows,
   onStaffingChange,
+  consultations,
+  selectedUnits,
+  onSelectedUnitsChange,
+  onConsultationChange,
+  onConsultationUpdate,
+  profiles,
+  canEditConsultations,
+  currentUserId,
 }: Props) {
+  const isConsultationDraft =
+    formData.status === 'Draft' ||
+    formData.current_stage === 'Delegation Proposal' ||
+    formData.current_stage === 'Draft'
   const ensureStaffingRows = (): FunctionalStaffingRow[] => {
     const existingAreas = staffingRows.map((r) => r.functional_area)
     const missing = DEFAULT_STAFFING_AREAS.filter((a) => !existingAreas.includes(a))
@@ -361,28 +382,18 @@ export function DelegationSopEvaluationSection({
           </TabsContent>
 
           <TabsContent value="consultation" className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              The following units will be involved in the consultation workflow for this delegation
-              proposal. This section is a draft placeholder — no actions are available at this
-              stage.
-            </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {CONSULTATION_UNITS.map((unit) => (
-                <div
-                  key={unit}
-                  className="flex items-center gap-2 rounded-lg border border-dashed p-3 bg-muted/20"
-                >
-                  <div className="h-2 w-2 rounded-full bg-muted-foreground/40" />
-                  <span className="text-sm font-medium text-muted-foreground">{unit}</span>
-                </div>
-              ))}
-            </div>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                Consultation workflow actions (request feedback, submit, approve) will be available
-                in a future phase. The delegation proposal status remains <strong>Draft</strong>.
-              </p>
-            </div>
+            <DelegationConsultationTab
+              isDraft={isConsultationDraft}
+              consultations={consultations}
+              selectedUnits={selectedUnits}
+              onSelectedUnitsChange={onSelectedUnitsChange}
+              onConsultationChange={onConsultationChange}
+              onConsultationUpdate={onConsultationUpdate}
+              profiles={profiles}
+              canEdit={canEditConsultations}
+              currentUserId={currentUserId}
+              units={CONSULTATION_UNITS}
+            />
           </TabsContent>
         </Tabs>
       </CardContent>

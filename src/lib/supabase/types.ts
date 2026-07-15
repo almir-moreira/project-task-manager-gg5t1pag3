@@ -1443,6 +1443,60 @@ export type Database = {
           },
         ]
       }
+      travel_delegation_consultations: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          delegation_package_id: string
+          id: string
+          recommendation: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: string | null
+          unit_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          delegation_package_id: string
+          id?: string
+          recommendation?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string | null
+          unit_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          delegation_package_id?: string
+          id?: string
+          recommendation?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: string | null
+          unit_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_delegation_consultations_delegation_package_id_fkey'
+            columns: ['delegation_package_id']
+            isOneToOne: false
+            referencedRelation: 'travel_delegation_packages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_consultations_reviewer_id_fkey'
+            columns: ['reviewer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       travel_delegation_functional_staffing: {
         Row: {
           created_at: string | null
@@ -1486,10 +1540,15 @@ export type Database = {
       }
       travel_delegation_packages: {
         Row: {
+          approved_at: string | null
           assessment_comments: string | null
           benchmark_category: string | null
           benchmark_justification: string | null
           benchmark_range: string | null
+          certified_at: string | null
+          certifying_officer_comments: string | null
+          certifying_officer_id: string | null
+          certifying_officer_status: string | null
           complexity_branding_visibility: boolean | null
           complexity_branding_visibility_comments: string | null
           complexity_donor_engagement: boolean | null
@@ -1512,6 +1571,8 @@ export type Database = {
           complexity_venues_comments: string | null
           complexity_vip_participation: boolean | null
           complexity_vip_participation_comments: string | null
+          consultation_completed_at: string | null
+          consultation_started_at: string | null
           created_at: string | null
           created_by: string | null
           current_stage: string | null
@@ -1523,6 +1584,10 @@ export type Database = {
           event_lead_id: string | null
           event_title: string | null
           event_type: string | null
+          head_of_division_comments: string | null
+          head_of_division_id: string | null
+          head_of_division_status: string | null
+          head_reviewed_at: string | null
           id: string
           indicative_staffing_range: string | null
           is_within_benchmark: boolean | null
@@ -1531,17 +1596,30 @@ export type Database = {
           location: string | null
           programme_id: string | null
           project_id: string | null
+          rejected_reason: string | null
+          returned_for_revision_reason: string | null
+          sg_approver_id: string | null
+          sg_comments: string | null
+          sg_decided_at: string | null
+          sg_decision: string | null
           status: string | null
+          submitted_at: string | null
+          submitted_by: string | null
           total_proposed_staff: number | null
           total_proposed_travelers: number | null
           traffic_light_status: string | null
           updated_at: string | null
         }
         Insert: {
+          approved_at?: string | null
           assessment_comments?: string | null
           benchmark_category?: string | null
           benchmark_justification?: string | null
           benchmark_range?: string | null
+          certified_at?: string | null
+          certifying_officer_comments?: string | null
+          certifying_officer_id?: string | null
+          certifying_officer_status?: string | null
           complexity_branding_visibility?: boolean | null
           complexity_branding_visibility_comments?: string | null
           complexity_donor_engagement?: boolean | null
@@ -1564,6 +1642,8 @@ export type Database = {
           complexity_venues_comments?: string | null
           complexity_vip_participation?: boolean | null
           complexity_vip_participation_comments?: string | null
+          consultation_completed_at?: string | null
+          consultation_started_at?: string | null
           created_at?: string | null
           created_by?: string | null
           current_stage?: string | null
@@ -1575,6 +1655,10 @@ export type Database = {
           event_lead_id?: string | null
           event_title?: string | null
           event_type?: string | null
+          head_of_division_comments?: string | null
+          head_of_division_id?: string | null
+          head_of_division_status?: string | null
+          head_reviewed_at?: string | null
           id?: string
           indicative_staffing_range?: string | null
           is_within_benchmark?: boolean | null
@@ -1583,17 +1667,30 @@ export type Database = {
           location?: string | null
           programme_id?: string | null
           project_id?: string | null
+          rejected_reason?: string | null
+          returned_for_revision_reason?: string | null
+          sg_approver_id?: string | null
+          sg_comments?: string | null
+          sg_decided_at?: string | null
+          sg_decision?: string | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
           total_proposed_staff?: number | null
           total_proposed_travelers?: number | null
           traffic_light_status?: string | null
           updated_at?: string | null
         }
         Update: {
+          approved_at?: string | null
           assessment_comments?: string | null
           benchmark_category?: string | null
           benchmark_justification?: string | null
           benchmark_range?: string | null
+          certified_at?: string | null
+          certifying_officer_comments?: string | null
+          certifying_officer_id?: string | null
+          certifying_officer_status?: string | null
           complexity_branding_visibility?: boolean | null
           complexity_branding_visibility_comments?: string | null
           complexity_donor_engagement?: boolean | null
@@ -1616,6 +1713,8 @@ export type Database = {
           complexity_venues_comments?: string | null
           complexity_vip_participation?: boolean | null
           complexity_vip_participation_comments?: string | null
+          consultation_completed_at?: string | null
+          consultation_started_at?: string | null
           created_at?: string | null
           created_by?: string | null
           current_stage?: string | null
@@ -1627,6 +1726,10 @@ export type Database = {
           event_lead_id?: string | null
           event_title?: string | null
           event_type?: string | null
+          head_of_division_comments?: string | null
+          head_of_division_id?: string | null
+          head_of_division_status?: string | null
+          head_reviewed_at?: string | null
           id?: string
           indicative_staffing_range?: string | null
           is_within_benchmark?: boolean | null
@@ -1635,7 +1738,15 @@ export type Database = {
           location?: string | null
           programme_id?: string | null
           project_id?: string | null
+          rejected_reason?: string | null
+          returned_for_revision_reason?: string | null
+          sg_approver_id?: string | null
+          sg_comments?: string | null
+          sg_decided_at?: string | null
+          sg_decision?: string | null
           status?: string | null
+          submitted_at?: string | null
+          submitted_by?: string | null
           total_proposed_staff?: number | null
           total_proposed_travelers?: number | null
           traffic_light_status?: string | null
@@ -1643,8 +1754,22 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: 'travel_delegation_packages_certifying_officer_id_fkey'
+            columns: ['certifying_officer_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'travel_delegation_packages_event_lead_id_fkey'
             columns: ['event_lead_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_head_of_division_id_fkey'
+            columns: ['head_of_division_id']
             isOneToOne: false
             referencedRelation: 'profiles'
             referencedColumns: ['id']
@@ -1682,6 +1807,20 @@ export type Database = {
             columns: ['project_id']
             isOneToOne: false
             referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_sg_approver_id_fkey'
+            columns: ['sg_approver_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_submitted_by_fkey'
+            columns: ['submitted_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]
