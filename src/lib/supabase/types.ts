@@ -1443,10 +1443,75 @@ export type Database = {
           },
         ]
       }
+      travel_delegation_functional_staffing: {
+        Row: {
+          created_at: string | null
+          delegation_package_id: string | null
+          functional_area: string
+          id: string
+          is_required: boolean | null
+          justification: string | null
+          proposed_staff_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delegation_package_id?: string | null
+          functional_area: string
+          id?: string
+          is_required?: boolean | null
+          justification?: string | null
+          proposed_staff_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delegation_package_id?: string | null
+          functional_area?: string
+          id?: string
+          is_required?: boolean | null
+          justification?: string | null
+          proposed_staff_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_delegation_functional_staffin_delegation_package_id_fkey'
+            columns: ['delegation_package_id']
+            isOneToOne: false
+            referencedRelation: 'travel_delegation_packages'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       travel_delegation_packages: {
         Row: {
+          assessment_comments: string | null
           benchmark_category: string | null
+          benchmark_justification: string | null
           benchmark_range: string | null
+          complexity_branding_visibility: boolean | null
+          complexity_branding_visibility_comments: string | null
+          complexity_donor_engagement: boolean | null
+          complexity_donor_engagement_comments: string | null
+          complexity_hybrid_streaming: boolean | null
+          complexity_hybrid_streaming_comments: string | null
+          complexity_interpretation: boolean | null
+          complexity_interpretation_comments: string | null
+          complexity_media_presence: boolean | null
+          complexity_media_presence_comments: string | null
+          complexity_parallel_sessions: boolean | null
+          complexity_parallel_sessions_comments: string | null
+          complexity_participant_logistics: boolean | null
+          complexity_participant_logistics_comments: string | null
+          complexity_security_sensitive: boolean | null
+          complexity_security_sensitive_comments: string | null
+          complexity_site_visits: boolean | null
+          complexity_site_visits_comments: string | null
+          complexity_venues: boolean | null
+          complexity_venues_comments: string | null
+          complexity_vip_participation: boolean | null
+          complexity_vip_participation_comments: string | null
           created_at: string | null
           created_by: string | null
           current_stage: string | null
@@ -1459,18 +1524,46 @@ export type Database = {
           event_title: string | null
           event_type: string | null
           id: string
+          indicative_staffing_range: string | null
+          is_within_benchmark: boolean | null
           justification_if_above_benchmark: string | null
           linked_activity_id: string | null
           location: string | null
           programme_id: string | null
           project_id: string | null
           status: string | null
+          total_proposed_staff: number | null
           total_proposed_travelers: number | null
+          traffic_light_status: string | null
           updated_at: string | null
         }
         Insert: {
+          assessment_comments?: string | null
           benchmark_category?: string | null
+          benchmark_justification?: string | null
           benchmark_range?: string | null
+          complexity_branding_visibility?: boolean | null
+          complexity_branding_visibility_comments?: string | null
+          complexity_donor_engagement?: boolean | null
+          complexity_donor_engagement_comments?: string | null
+          complexity_hybrid_streaming?: boolean | null
+          complexity_hybrid_streaming_comments?: string | null
+          complexity_interpretation?: boolean | null
+          complexity_interpretation_comments?: string | null
+          complexity_media_presence?: boolean | null
+          complexity_media_presence_comments?: string | null
+          complexity_parallel_sessions?: boolean | null
+          complexity_parallel_sessions_comments?: string | null
+          complexity_participant_logistics?: boolean | null
+          complexity_participant_logistics_comments?: string | null
+          complexity_security_sensitive?: boolean | null
+          complexity_security_sensitive_comments?: string | null
+          complexity_site_visits?: boolean | null
+          complexity_site_visits_comments?: string | null
+          complexity_venues?: boolean | null
+          complexity_venues_comments?: string | null
+          complexity_vip_participation?: boolean | null
+          complexity_vip_participation_comments?: string | null
           created_at?: string | null
           created_by?: string | null
           current_stage?: string | null
@@ -1483,18 +1576,46 @@ export type Database = {
           event_title?: string | null
           event_type?: string | null
           id?: string
+          indicative_staffing_range?: string | null
+          is_within_benchmark?: boolean | null
           justification_if_above_benchmark?: string | null
           linked_activity_id?: string | null
           location?: string | null
           programme_id?: string | null
           project_id?: string | null
           status?: string | null
+          total_proposed_staff?: number | null
           total_proposed_travelers?: number | null
+          traffic_light_status?: string | null
           updated_at?: string | null
         }
         Update: {
+          assessment_comments?: string | null
           benchmark_category?: string | null
+          benchmark_justification?: string | null
           benchmark_range?: string | null
+          complexity_branding_visibility?: boolean | null
+          complexity_branding_visibility_comments?: string | null
+          complexity_donor_engagement?: boolean | null
+          complexity_donor_engagement_comments?: string | null
+          complexity_hybrid_streaming?: boolean | null
+          complexity_hybrid_streaming_comments?: string | null
+          complexity_interpretation?: boolean | null
+          complexity_interpretation_comments?: string | null
+          complexity_media_presence?: boolean | null
+          complexity_media_presence_comments?: string | null
+          complexity_parallel_sessions?: boolean | null
+          complexity_parallel_sessions_comments?: string | null
+          complexity_participant_logistics?: boolean | null
+          complexity_participant_logistics_comments?: string | null
+          complexity_security_sensitive?: boolean | null
+          complexity_security_sensitive_comments?: string | null
+          complexity_site_visits?: boolean | null
+          complexity_site_visits_comments?: string | null
+          complexity_venues?: boolean | null
+          complexity_venues_comments?: string | null
+          complexity_vip_participation?: boolean | null
+          complexity_vip_participation_comments?: string | null
           created_at?: string | null
           created_by?: string | null
           current_stage?: string | null
@@ -1507,13 +1628,17 @@ export type Database = {
           event_title?: string | null
           event_type?: string | null
           id?: string
+          indicative_staffing_range?: string | null
+          is_within_benchmark?: boolean | null
           justification_if_above_benchmark?: string | null
           linked_activity_id?: string | null
           location?: string | null
           programme_id?: string | null
           project_id?: string | null
           status?: string | null
+          total_proposed_staff?: number | null
           total_proposed_travelers?: number | null
+          traffic_light_status?: string | null
           updated_at?: string | null
         }
         Relationships: [
