@@ -19,6 +19,8 @@ import MonitoringPage from './pages/monitoring/MonitoringPage'
 import KaiciidCalendarReport from './pages/reports/KaiciidCalendarReport'
 import LoginPage from './pages/auth/LoginPage'
 import AccessDenied from './pages/AccessDenied'
+import TravelPage from './pages/travel/TravelPage'
+import TravelFormPage from './pages/travel/TravelFormPage'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth()
@@ -67,6 +69,9 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/tasks" element={<TasksPage />} />
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
+              <Route path="/travel" element={<TravelPage />} />
+              <Route path="/travel/new" element={<TravelFormPage />} />
+              <Route path="/travel/:id" element={<TravelFormPage />} />
               <Route
                 path="/admin"
                 element={

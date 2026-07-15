@@ -8,6 +8,7 @@ import {
   LogOut,
   LineChart,
   FileText,
+  Plane,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -97,6 +98,18 @@ export function AppSidebar() {
                   <Link to="/tasks">
                     <CheckSquare />
                     <span>Activities</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith('/travel')}
+                  tooltip="Travel Authorization"
+                >
+                  <Link to="/travel">
+                    <Plane />
+                    <span>Travel Authorization</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
