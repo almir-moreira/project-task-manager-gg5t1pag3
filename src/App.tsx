@@ -21,6 +21,8 @@ import LoginPage from './pages/auth/LoginPage'
 import AccessDenied from './pages/AccessDenied'
 import TravelPage from './pages/travel/TravelPage'
 import TravelFormPage from './pages/travel/TravelFormPage'
+import DelegationListPage from './pages/travel/DelegationListPage'
+import DelegationFormPage from './pages/travel/DelegationFormPage'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth()
@@ -71,6 +73,9 @@ const App = () => (
               <Route path="/tasks/:id" element={<TaskDetailPage />} />
               <Route path="/travel" element={<TravelPage />} />
               <Route path="/travel/new" element={<TravelFormPage />} />
+              <Route path="/travel/delegations" element={<DelegationListPage />} />
+              <Route path="/travel/delegations/new" element={<DelegationFormPage />} />
+              <Route path="/travel/delegations/:id" element={<DelegationFormPage />} />
               <Route path="/travel/:id" element={<TravelFormPage />} />
               <Route
                 path="/admin"

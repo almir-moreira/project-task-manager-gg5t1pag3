@@ -79,6 +79,31 @@ export function TripDetailsSection({
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {formData.travel_type === 'Event Delegation' && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 space-y-2">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+              Event Delegation requires a Delegation Proposal
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Event-based delegation travel must be initiated through a Delegation Proposal.
+              Please create one from the Travel page by clicking "New Request" → "New Delegation Proposal".
+            </p>
+          </div>
+        )}
+
+        {formData.travel_type === 'Event Delegation' && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-4 space-y-2">
+            <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
+              Event Delegation requires a Delegation Proposal
+            </p>
+            <p className="text-sm text-amber-700 dark:text-amber-300">
+              Event-based delegation travel must be initiated through a Delegation Proposal.
+              Please create one from the Travel page by clicking "New Request" → "New Delegation Proposal".
+            </p>
+          </div>
+        )}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Traveler</Label>
             <Select

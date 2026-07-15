@@ -109,10 +109,29 @@ export function AppSidebar() {
                 >
                   <Link to="/travel">
                     <Plane />
-                    <span>Travel Authorization</span>
+                    <span>Travel</span>
                   </Link>
                 </SidebarMenuButton>
-              </SidebarMenuItem>
+                <SidebarMenuSub>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton asChild isActive={location.pathname === '/travel'}>
+                      <Link to="/travel">
+                        <span>Travel Authorizations</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                  <SidebarMenuSubItem>
+                    <SidebarMenuSubButton
+                      asChild
+                      isActive={location.pathname.startsWith('/travel/delegations')}
+                    >
+                      <Link to="/travel/delegations">
+                        <span>Delegation Proposals</span>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  </SidebarMenuSubItem>
+                </SidebarMenuSub>
+              </SidebarMenuItem>{' '}
               {canViewKaiciidCalendar(permUser) && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
