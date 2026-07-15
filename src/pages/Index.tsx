@@ -8,9 +8,10 @@ import {
 } from './dashboard/components/DashboardFilterBar'
 import { getActivities } from '@/services/activities'
 import { useAuth } from '@/hooks/use-auth'
+import { isGlobalViewRole } from '@/lib/permissions'
 import { supabase } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
-import { Search } from 'lucide-react'
+import { Search, AlertCircle } from 'lucide-react'
 import { deriveIndicators, ActivityIndicators } from '@/lib/dashboard-indicators'
 import { sortActivitiesByDoneStatus } from '@/lib/stage-aware-workflow'
 
@@ -18,6 +19,7 @@ const Index = () => {
   const { user } = useAuth()
   const [tasks, setTasks] = useState<any[]>([])
   const [profile, setProfile] = useState<any>(null)
+  const [programmeName, setProgrammeName] = useState<string | null>(null)
   const [allWorkflows, setAllWorkflows] = useState<any[]>([])
   const [allActivityWorkflows, setAllActivityWorkflows] = useState<any[]>([])
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([])
@@ -26,30 +28,65 @@ const Index = () => {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState<DashboardFilters>(DEFAULT_DASHBOARD_FILTERS)
 
+  const isGlobalView = useMemo(() => {
+    if (!profile) return false
+    return isGlobalViewRole({
+      id: user?.id || '',
+      role: profile.role,
+      units: [],
+      programme_id: profile.programme_id || null,
+    })
+  }, [profile, user])
+
+  const hasProgramme = Boolean(profile?.programme_id)
+
   useEffect(() => {
     async function load() {
       try {
-        const [acts, { data: prof }, { data: cats }, { data: types }] = await Promise.all([
-          getActivities(),
-          user
-            ? supabase.from('profiles').select('*').eq('id', user.id).single()
-            : Promise.resolve({ data: null }),
+        const { data: prof } = user
+          ? await supabase.from('profiles').select('*').eq('id', user.id).single()
+          : { data: null }
+        setProfile(prof)
+
+        const [catsRes, typesRes] = await Promise.all([
           supabase.from('categories').select('id, name').order('name'),
           supabase.from('task_types').select('id, name').order('name'),
         ])
-        setTasks(acts || [])
-        setProfile(prof)
-        setCategories(cats || [])
-        setTaskTypes(types || [])
+        setCategories(catsRes.data || [])
+        setTaskTypes(typesRes.data || [])
 
-        if (acts && acts.length > 0) {
-          const allIds = acts.map((a) => a.id)
-          const [wfRes, awRes] = await Promise.all([
-            supabase.from('workflows').select('id, role, activity_id'),
-            supabase.from('activity_workflows').select('*').in('activity_id', allIds),
-          ])
-          setAllWorkflows(wfRes.data || [])
-          setAllActivityWorkflows(awRes.data || [])
+        const globalView = isGlobalViewRole({
+          id: user?.id || '',
+          role: prof?.role || null,
+          units: [],
+          programme_id: prof?.programme_id || null,
+        })
+
+        if (!globalView && prof?.programme_id) {
+          const { data: prog } = await supabase
+            .from('programmes')
+            .select('name')
+            .eq('id', prof.programme_id)
+            .single()
+          setProgrammeName(prog?.name || null)
+        }
+
+        if (!globalView && !prof?.programme_id) {
+          setTasks([])
+        } else {
+          const programmeId = globalView ? undefined : prof?.programme_id
+          const acts = await getActivities(programmeId)
+          setTasks(acts || [])
+
+          if (acts && acts.length > 0) {
+            const allIds = acts.map((a) => a.id)
+            const [wfRes, awRes] = await Promise.all([
+              supabase.from('workflows').select('id, role, activity_id'),
+              supabase.from('activity_workflows').select('*').in('activity_id', allIds),
+            ])
+            setAllWorkflows(wfRes.data || [])
+            setAllActivityWorkflows(awRes.data || [])
+          }
         }
       } catch (e) {
         console.error(e)
@@ -61,10 +98,11 @@ const Index = () => {
   }, [user])
 
   const myTasks = useMemo(() => tasks.filter((t) => t.assignee_id === user?.id), [tasks, user])
-  const programmeTasks = useMemo(
-    () => tasks.filter((t) => t.programme_id === profile?.programme_id),
-    [tasks, profile],
-  )
+
+  const programmeTasks = useMemo(() => {
+    if (isGlobalView) return tasks
+    return tasks.filter((t) => t.programme_id === profile?.programme_id)
+  }, [tasks, profile, isGlobalView])
 
   const getWfMap = useCallback(
     (activityId: string) =>
@@ -138,15 +176,21 @@ const Index = () => {
   )
   const handleReset = useCallback(() => setFilters(DEFAULT_DASHBOARD_FILTERS), [])
 
+  const subtitle = useMemo(() => {
+    if (isGlobalView) return 'Manage and track activities across all programmes.'
+    if (!hasProgramme)
+      return 'No programme is assigned to your profile. Please contact an administrator.'
+    if (programmeName) return `Manage and track activities for ${programmeName}.`
+    return 'Manage and track activities for your programme.'
+  }, [isGlobalView, hasProgramme, programmeName])
+
   if (loading) return <div className="p-6">Loading dashboard...</div>
 
   return (
     <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto">
       <div className="space-y-1 mb-6">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Monitor system-wide activity progress and your assigned activities.
-        </p>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
 
       <div className="space-y-4">
@@ -182,22 +226,40 @@ const Index = () => {
         )}
       </div>
 
-      <DashboardFilterBar
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onReset={handleReset}
-        stages={stages}
-        statuses={statuses}
-        categories={categories}
-        taskTypes={taskTypes}
-        assignees={assignees}
-      />
+      {!isGlobalView && !hasProgramme ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center border border-dashed rounded-lg bg-muted/20">
+          <AlertCircle className="w-10 h-10 text-muted-foreground mb-3" />
+          <p className="text-sm font-medium text-foreground">
+            No programme is assigned to your profile.
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">Please contact an administrator.</p>
+        </div>
+      ) : (
+        <>
+          <DashboardFilterBar
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            onReset={handleReset}
+            stages={stages}
+            statuses={statuses}
+            categories={categories}
+            taskTypes={taskTypes}
+            assignees={assignees}
+          />
 
-      <DashboardTaskTable
-        title="Programme Activities"
-        tasks={filteredProgrammeTasks}
-        indicatorsMap={indicatorsMap}
-      />
+          {!isGlobalView && hasProgramme && programmeTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground text-sm border border-dashed rounded-lg">
+              No activities found for your programme.
+            </div>
+          ) : (
+            <DashboardTaskTable
+              title="Programme Activities"
+              tasks={filteredProgrammeTasks}
+              indicatorsMap={indicatorsMap}
+            />
+          )}
+        </>
+      )}
     </div>
   )
 }
