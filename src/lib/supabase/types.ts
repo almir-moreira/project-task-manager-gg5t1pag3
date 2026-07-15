@@ -1111,6 +1111,7 @@ export type Database = {
       }
       programmes: {
         Row: {
+          allotment_manager_id: string | null
           certifying_officer_id: string | null
           cost_center_id: string | null
           created_at: string | null
@@ -1119,6 +1120,7 @@ export type Database = {
           organization_id: string | null
         }
         Insert: {
+          allotment_manager_id?: string | null
           certifying_officer_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
@@ -1127,6 +1129,7 @@ export type Database = {
           organization_id?: string | null
         }
         Update: {
+          allotment_manager_id?: string | null
           certifying_officer_id?: string | null
           cost_center_id?: string | null
           created_at?: string | null
@@ -1135,6 +1138,13 @@ export type Database = {
           organization_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'programmes_allotment_manager_id_fkey'
+            columns: ['allotment_manager_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'programmes_certifying_officer_id_fkey'
             columns: ['certifying_officer_id']
@@ -1222,6 +1232,113 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      travel_authorizations: {
+        Row: {
+          created_at: string | null
+          current_stage: string | null
+          destination: string | null
+          id: string
+          linked_activity_id: string | null
+          mission_title_or_event_name: string | null
+          pm_verifier_id: string | null
+          programme_id: string | null
+          requester_id: string | null
+          status: string | null
+          travel_authorization_number: string | null
+          travel_end_date: string | null
+          travel_start_date: string | null
+          travel_type: string | null
+          traveler_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_stage?: string | null
+          destination?: string | null
+          id?: string
+          linked_activity_id?: string | null
+          mission_title_or_event_name?: string | null
+          pm_verifier_id?: string | null
+          programme_id?: string | null
+          requester_id?: string | null
+          status?: string | null
+          travel_authorization_number?: string | null
+          travel_end_date?: string | null
+          travel_start_date?: string | null
+          travel_type?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_stage?: string | null
+          destination?: string | null
+          id?: string
+          linked_activity_id?: string | null
+          mission_title_or_event_name?: string | null
+          pm_verifier_id?: string | null
+          programme_id?: string | null
+          requester_id?: string | null
+          status?: string | null
+          travel_authorization_number?: string | null
+          travel_end_date?: string | null
+          travel_start_date?: string | null
+          travel_type?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_authorizations_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['activity_id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_pm_verifier_id_fkey'
+            columns: ['pm_verifier_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_programme_id_fkey'
+            columns: ['programme_id']
+            isOneToOne: false
+            referencedRelation: 'programmes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_requester_id_fkey'
+            columns: ['requester_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_traveler_id_fkey'
+            columns: ['traveler_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
       }
       units: {
         Row: {
