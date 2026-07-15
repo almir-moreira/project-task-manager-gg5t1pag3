@@ -1235,60 +1235,146 @@ export type Database = {
       }
       travel_authorizations: {
         Row: {
+          accommodation_free: string | null
+          accommodation_free_details: string | null
+          account: string | null
+          account_id: string | null
+          budget_line: string | null
+          colleagues_names: string | null
+          cost_center_id: string | null
           created_at: string | null
           current_stage: string | null
           destination: string | null
+          destination_transfer_free: boolean | null
+          event_organizer_or_title: string | null
           id: string
           linked_activity_id: string | null
+          lisbon_airport_transfer_free: boolean | null
+          meals_free: string | null
+          meals_free_details: string | null
           mission_title_or_event_name: string | null
+          official_purpose_full_absence: boolean | null
+          other_kaiciid_colleagues_travelling: boolean | null
+          pm_verification_comments: string | null
+          pm_verification_status: string | null
           pm_verifier_id: string | null
+          private_stay_dates: string | null
           programme_id: string | null
+          purpose_justification: string | null
+          reason_for_travel: string | null
+          reason_for_travel_option: string | null
+          reason_for_travel_other_details: string | null
           requester_id: string | null
           status: string | null
+          tickets_provided_by_kaiciid: boolean | null
           travel_authorization_number: string | null
           travel_end_date: string | null
           travel_start_date: string | null
           travel_type: string | null
+          traveler_confirmation: boolean | null
           traveler_id: string | null
           updated_at: string | null
+          work_order_id: string | null
         }
         Insert: {
+          accommodation_free?: string | null
+          accommodation_free_details?: string | null
+          account?: string | null
+          account_id?: string | null
+          budget_line?: string | null
+          colleagues_names?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           current_stage?: string | null
           destination?: string | null
+          destination_transfer_free?: boolean | null
+          event_organizer_or_title?: string | null
           id?: string
           linked_activity_id?: string | null
+          lisbon_airport_transfer_free?: boolean | null
+          meals_free?: string | null
+          meals_free_details?: string | null
           mission_title_or_event_name?: string | null
+          official_purpose_full_absence?: boolean | null
+          other_kaiciid_colleagues_travelling?: boolean | null
+          pm_verification_comments?: string | null
+          pm_verification_status?: string | null
           pm_verifier_id?: string | null
+          private_stay_dates?: string | null
           programme_id?: string | null
+          purpose_justification?: string | null
+          reason_for_travel?: string | null
+          reason_for_travel_option?: string | null
+          reason_for_travel_other_details?: string | null
           requester_id?: string | null
           status?: string | null
+          tickets_provided_by_kaiciid?: boolean | null
           travel_authorization_number?: string | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           travel_type?: string | null
+          traveler_confirmation?: boolean | null
           traveler_id?: string | null
           updated_at?: string | null
+          work_order_id?: string | null
         }
         Update: {
+          accommodation_free?: string | null
+          accommodation_free_details?: string | null
+          account?: string | null
+          account_id?: string | null
+          budget_line?: string | null
+          colleagues_names?: string | null
+          cost_center_id?: string | null
           created_at?: string | null
           current_stage?: string | null
           destination?: string | null
+          destination_transfer_free?: boolean | null
+          event_organizer_or_title?: string | null
           id?: string
           linked_activity_id?: string | null
+          lisbon_airport_transfer_free?: boolean | null
+          meals_free?: string | null
+          meals_free_details?: string | null
           mission_title_or_event_name?: string | null
+          official_purpose_full_absence?: boolean | null
+          other_kaiciid_colleagues_travelling?: boolean | null
+          pm_verification_comments?: string | null
+          pm_verification_status?: string | null
           pm_verifier_id?: string | null
+          private_stay_dates?: string | null
           programme_id?: string | null
+          purpose_justification?: string | null
+          reason_for_travel?: string | null
+          reason_for_travel_option?: string | null
+          reason_for_travel_other_details?: string | null
           requester_id?: string | null
           status?: string | null
+          tickets_provided_by_kaiciid?: boolean | null
           travel_authorization_number?: string | null
           travel_end_date?: string | null
           travel_start_date?: string | null
           travel_type?: string | null
+          traveler_confirmation?: boolean | null
           traveler_id?: string | null
           updated_at?: string | null
+          work_order_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: 'travel_authorizations_account_id_fkey'
+            columns: ['account_id']
+            isOneToOne: false
+            referencedRelation: 'accounts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_cost_center_id_fkey'
+            columns: ['cost_center_id']
+            isOneToOne: false
+            referencedRelation: 'cost_centers'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'travel_authorizations_linked_activity_id_fkey'
             columns: ['linked_activity_id']
@@ -1336,6 +1422,13 @@ export type Database = {
             columns: ['traveler_id']
             isOneToOne: false
             referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_work_order_id_fkey'
+            columns: ['work_order_id']
+            isOneToOne: false
+            referencedRelation: 'workorders'
             referencedColumns: ['id']
           },
         ]

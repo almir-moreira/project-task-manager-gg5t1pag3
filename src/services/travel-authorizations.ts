@@ -15,6 +15,30 @@ export interface TravelAuthorization {
   travel_end_date: string | null
   status: string | null
   current_stage: string | null
+  reason_for_travel: string | null
+  reason_for_travel_option: string | null
+  reason_for_travel_other_details: string | null
+  purpose_justification: string | null
+  cost_center_id: string | null
+  work_order_id: string | null
+  account_id: string | null
+  account: string | null
+  budget_line: string | null
+  event_organizer_or_title: string | null
+  official_purpose_full_absence: boolean | null
+  private_stay_dates: string | null
+  tickets_provided_by_kaiciid: boolean | null
+  other_kaiciid_colleagues_travelling: boolean | null
+  colleagues_names: string | null
+  accommodation_free: string | null
+  accommodation_free_details: string | null
+  meals_free: string | null
+  meals_free_details: string | null
+  lisbon_airport_transfer_free: boolean | null
+  destination_transfer_free: boolean | null
+  traveler_confirmation: boolean | null
+  pm_verification_status: string | null
+  pm_verification_comments: string | null
   created_at: string | null
   updated_at: string | null
 }

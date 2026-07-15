@@ -1,8 +1,3 @@
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import {
   Select,
   SelectContent,
@@ -10,183 +5,170 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { BudgetCodingRow, ConfirmationBox, YesNoField } from './travel-form-helpers'
 
-interface TravelPart1FieldsProps {
+const REASON_OPTIONS = [
+  'Training/Conference',
+  'Representing KAICIID',
+  'Assisting at KAICIID event',
+  'Conducting training/lecture',
+  'Home Leave',
+  'Other',
+]
+
+interface Props {
   formData: Record<string, any>
   onChange: (field: string, value: any) => void
   isHomeLeave: boolean
+  masterData: any
 }
 
-function boolToSelect(val: boolean | null | undefined): string {
-  if (val === true) return 'Yes'
-  if (val === false) return 'No'
-  return ''
-}
+export function TravelPart1Fields({ formData, onChange, isHomeLeave, masterData }: Props) {
+  const showOtherReason = formData.reason_for_travel_option === 'Other'
+  const showPrivateStay = formData.official_purpose_full_absence === false
+  const showColleagues = formData.other_kaiciid_colleagues_travelling === true
+  const showAccommodationDetails =
+    formData.accommodation_free === 'No' || formData.accommodation_free === 'Partial'
+  const showMealsDetails = formData.meals_free === 'No' || formData.meals_free === 'Partial'
 
-function selectToBool(val: string): boolean | null {
-  if (val === 'Yes') return true
-  if (val === 'No') return false
-  return null
-}
-
-function SwitchRow({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string
-  checked: boolean | null
-  onChange: (v: boolean) => void
-}) {
-  return (
-    <div className="flex items-center justify-between bg-muted/30 px-3 py-2.5 rounded-md border border-input h-10">
-      <Label className="text-sm font-medium">{label}</Label>
-      <Switch checked={!!checked} onCheckedChange={onChange} />
+  const reasonSelect = (defaultValue?: string) => (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">Reason for Travel</Label>
+      <Select
+        value={formData.reason_for_travel_option || defaultValue || ''}
+        onValueChange={(v) => onChange('reason_for_travel_option', v)}
+      >
+        <SelectTrigger>
+          <SelectValue placeholder="Select reason" />
+        </SelectTrigger>
+        <SelectContent>
+          {REASON_OPTIONS.map((r) => (
+            <SelectItem key={r} value={r}>
+              {r}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
-}
 
-export function TravelPart1Fields({ formData, onChange, isHomeLeave }: TravelPart1FieldsProps) {
   if (isHomeLeave) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Travel Request Part 1 — Traveler Information</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <SwitchRow
-              label="Tickets Provided by KAICIID"
-              checked={formData.tickets_provided_by_kaiciid}
-              onChange={(v) => onChange('tickets_provided_by_kaiciid', v)}
-            />
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Budget Line</Label>
-              <Input
-                value={formData.budget_line || ''}
-                onChange={(e) => onChange('budget_line', e.target.value)}
-                placeholder="Enter budget line"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Account</Label>
-              <Input
-                value={formData.account || ''}
-                onChange={(e) => onChange('account', e.target.value)}
-                placeholder="Enter account"
-              />
-            </div>
-            <div className="grid gap-2 md:col-span-2">
-              <Label className="text-sm font-semibold">Comments</Label>
-              <Textarea
-                value={formData.reason_for_travel || ''}
-                onChange={(e) => onChange('reason_for_travel', e.target.value)}
-                placeholder="Add any comments..."
-                className="min-h-[80px] resize-y"
-              />
-            </div>
-          </div>
+        <CardContent className="space-y-4">
+          {reasonSelect('Home Leave')}
+          <YesNoField
+            label="Tickets Provided by KAICIID"
+            value={formData.tickets_provided_by_kaiciid}
+            onChange={(v) => onChange('tickets_provided_by_kaiciid', v)}
+          />
+          <BudgetCodingRow formData={formData} onChange={onChange} masterData={masterData} />
+          <ConfirmationBox formData={formData} onChange={onChange} />
         </CardContent>
       </Card>
     )
   }
-
-  const showPrivateStay = formData.official_purpose_full_absence === false
-  const showColleagues = formData.other_kaiciid_colleagues_travelling === true
-  const showAccommodationDetails =
-    formData.accommodation_free === 'No' || formData.accommodation_free === 'Partially'
-  const showMealsDetails = formData.meals_free === 'No' || formData.meals_free === 'Partially'
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Travel Request Part 1 — Traveler Information</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="grid gap-2 lg:col-span-3">
-            <Label className="text-sm font-semibold">Reason for Travel</Label>
-            <Textarea
-              value={formData.reason_for_travel || ''}
-              onChange={(e) => onChange('reason_for_travel', e.target.value)}
-              placeholder="Explain the purpose and justification for this travel..."
-              className="min-h-[80px] resize-y"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Event Organizer or Title</Label>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{reasonSelect()}</div>
+        {showOtherReason && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Other reason details</Label>
             <Input
-              value={formData.event_organizer_or_title || ''}
-              onChange={(e) => onChange('event_organizer_or_title', e.target.value)}
-              placeholder="Enter event organizer or title"
+              value={formData.reason_for_travel_other_details || ''}
+              onChange={(e) => onChange('reason_for_travel_other_details', e.target.value)}
+              placeholder="Specify other reason..."
             />
           </div>
+        )}
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Purpose / Justification</Label>
+          <Textarea
+            value={formData.purpose_justification || ''}
+            onChange={(e) => onChange('purpose_justification', e.target.value)}
+            placeholder="Explain the purpose and justification for this travel..."
+            rows={3}
+          />
+        </div>
 
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Official Purpose — Full Absence?</Label>
-            <Select
-              value={boolToSelect(formData.official_purpose_full_absence)}
-              onValueChange={(v) => onChange('official_purpose_full_absence', selectToBool(v))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Yes">Yes</SelectItem>
-                <SelectItem value="No">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <YesNoField
+            label="Official Purpose — Full Absence?"
+            value={formData.official_purpose_full_absence}
+            onChange={(v) => onChange('official_purpose_full_absence', v)}
+          />
           {showPrivateStay && (
-            <div className="grid gap-2">
-              <Label className="text-sm font-semibold">Private Stay Dates</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Private stay dates</Label>
               <Input
                 value={formData.private_stay_dates || ''}
                 onChange={(e) => onChange('private_stay_dates', e.target.value)}
-                placeholder="e.g., 15–17 July 2026"
+                placeholder="Enter private stay dates..."
               />
             </div>
           )}
+        </div>
 
-          <SwitchRow
+        <div className="space-y-2">
+          <Label className="text-sm font-medium">Event Organizer or Title</Label>
+          <Input
+            value={formData.event_organizer_or_title || ''}
+            onChange={(e) => onChange('event_organizer_or_title', e.target.value)}
+            placeholder="Enter event organizer or title..."
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <YesNoField
             label="Tickets Provided by KAICIID"
-            checked={formData.tickets_provided_by_kaiciid}
+            value={formData.tickets_provided_by_kaiciid}
             onChange={(v) => onChange('tickets_provided_by_kaiciid', v)}
           />
+          <YesNoField
+            label="Lisbon Airport Transfer Free"
+            value={formData.lisbon_airport_transfer_free}
+            onChange={(v) => onChange('lisbon_airport_transfer_free', v)}
+          />
+          <YesNoField
+            label="Destination Transfer Free"
+            value={formData.destination_transfer_free}
+            onChange={(v) => onChange('destination_transfer_free', v)}
+          />
+        </div>
 
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Other KAICIID Colleagues Travelling?</Label>
-            <Select
-              value={boolToSelect(formData.other_kaiciid_colleagues_travelling)}
-              onValueChange={(v) =>
-                onChange('other_kaiciid_colleagues_travelling', selectToBool(v))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Yes">Yes</SelectItem>
-                <SelectItem value="No">No</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <YesNoField
+            label="Other KAICIID Colleagues Travelling?"
+            value={formData.other_kaiciid_colleagues_travelling}
+            onChange={(v) => onChange('other_kaiciid_colleagues_travelling', v)}
+          />
           {showColleagues && (
-            <div className="grid gap-2 lg:col-span-3">
-              <Label className="text-sm font-semibold">Colleagues Names</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Colleagues Names</Label>
               <Input
                 value={formData.colleagues_names || ''}
                 onChange={(e) => onChange('colleagues_names', e.target.value)}
-                placeholder="Enter names of travelling colleagues"
+                placeholder="Enter colleagues names..."
               />
             </div>
           )}
+        </div>
 
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Accommodation Free?</Label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Accommodation Free?</Label>
             <Select
               value={formData.accommodation_free || ''}
               onValueChange={(v) => onChange('accommodation_free', v)}
@@ -197,13 +179,12 @@ export function TravelPart1Fields({ formData, onChange, isHomeLeave }: TravelPar
               <SelectContent>
                 <SelectItem value="Yes">Yes</SelectItem>
                 <SelectItem value="No">No</SelectItem>
-                <SelectItem value="Partially">Partially</SelectItem>
+                <SelectItem value="Partial">Partial</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Meals Free?</Label>
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Meals Free?</Label>
             <Select
               value={formData.meals_free || ''}
               onValueChange={(v) => onChange('meals_free', v)}
@@ -214,73 +195,34 @@ export function TravelPart1Fields({ formData, onChange, isHomeLeave }: TravelPar
               <SelectContent>
                 <SelectItem value="Yes">Yes</SelectItem>
                 <SelectItem value="No">No</SelectItem>
-                <SelectItem value="Partially">Partially</SelectItem>
+                <SelectItem value="Partial">Partial</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
-          {showAccommodationDetails && (
-            <div className="grid gap-2 lg:col-span-3">
-              <Label className="text-sm font-semibold">Accommodation Details</Label>
-              <Textarea
-                value={formData.accommodation_free_details || ''}
-                onChange={(e) => onChange('accommodation_free_details', e.target.value)}
-                placeholder="Explain accommodation arrangement details..."
-                className="min-h-[60px] resize-y"
-              />
-            </div>
-          )}
-
-          {showMealsDetails && (
-            <div className="grid gap-2 lg:col-span-3">
-              <Label className="text-sm font-semibold">Meals Details</Label>
-              <Textarea
-                value={formData.meals_free_details || ''}
-                onChange={(e) => onChange('meals_free_details', e.target.value)}
-                placeholder="Explain meals arrangement details..."
-                className="min-h-[60px] resize-y"
-              />
-            </div>
-          )}
-
-          <SwitchRow
-            label="Lisbon Airport Transfer Free"
-            checked={formData.lisbon_airport_transfer_free}
-            onChange={(v) => onChange('lisbon_airport_transfer_free', v)}
-          />
-
-          <SwitchRow
-            label="Destination Transfer Free"
-            checked={formData.destination_transfer_free}
-            onChange={(v) => onChange('destination_transfer_free', v)}
-          />
-
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Budget Line</Label>
-            <Input
-              value={formData.budget_line || ''}
-              onChange={(e) => onChange('budget_line', e.target.value)}
-              placeholder="Enter budget line"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <Label className="text-sm font-semibold">Account</Label>
-            <Input
-              value={formData.account || ''}
-              onChange={(e) => onChange('account', e.target.value)}
-              placeholder="Enter account"
-            />
-          </div>
-
-          <div className="lg:col-span-3 mt-2">
-            <SwitchRow
-              label="I confirm that the information provided above is accurate"
-              checked={formData.traveler_confirmation}
-              onChange={(v) => onChange('traveler_confirmation', v)}
-            />
-          </div>
         </div>
+        {showAccommodationDetails && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Accommodation Details</Label>
+            <Input
+              value={formData.accommodation_free_details || ''}
+              onChange={(e) => onChange('accommodation_free_details', e.target.value)}
+              placeholder="Enter accommodation details..."
+            />
+          </div>
+        )}
+        {showMealsDetails && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Meals Details</Label>
+            <Input
+              value={formData.meals_free_details || ''}
+              onChange={(e) => onChange('meals_free_details', e.target.value)}
+              placeholder="Enter meals details..."
+            />
+          </div>
+        )}
+
+        <BudgetCodingRow formData={formData} onChange={onChange} masterData={masterData} />
+        <ConfirmationBox formData={formData} onChange={onChange} />
       </CardContent>
     </Card>
   )
