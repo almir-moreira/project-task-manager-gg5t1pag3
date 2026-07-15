@@ -12,7 +12,12 @@ import {
 import { cn } from '@/lib/utils'
 
 const CONSULTATION_STATUSES = ['Pending', 'In Progress', 'Completed', 'Not Required'] as const
-const RECOMMENDATIONS = ['No Objection', 'Recommend Adjustment', 'Concern', 'Not Applicable'] as const
+const RECOMMENDATIONS = [
+  'No Objection',
+  'Recommend Adjustment',
+  'Concern',
+  'Not Applicable',
+] as const
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'bg-muted text-muted-foreground',
@@ -127,10 +132,14 @@ export function DelegationConsultationTab({
                         value={c.reviewer_id || ''}
                         onValueChange={(v) => onConsultationUpdate(c.id, 'reviewer_id', v)}
                       >
-                        <SelectTrigger className="w-full"><SelectValue placeholder="Select..." /></SelectTrigger>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select..." />
+                        </SelectTrigger>
                         <SelectContent>
                           {profiles.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>{p.name || p.email}</SelectItem>
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name || p.email}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -144,10 +153,14 @@ export function DelegationConsultationTab({
                         value={c.status || 'Pending'}
                         onValueChange={(v) => onConsultationUpdate(c.id, 'status', v)}
                       >
-                        <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
                         <SelectContent>
                           {CONSULTATION_STATUSES.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -163,10 +176,14 @@ export function DelegationConsultationTab({
                         value={c.recommendation || ''}
                         onValueChange={(v) => onConsultationUpdate(c.id, 'recommendation', v)}
                       >
-                        <SelectTrigger className="w-full"><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="—" />
+                        </SelectTrigger>
                         <SelectContent>
                           {RECOMMENDATIONS.map((r) => (
-                            <SelectItem key={r} value={r}>{r}</SelectItem>
+                            <SelectItem key={r} value={r}>
+                              {r}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -192,7 +209,7 @@ export function DelegationConsultationTab({
                   </td>
                 </tr>
               )
-            )}
+            })}
           </tbody>
         </table>
       </div>
