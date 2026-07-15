@@ -35,6 +35,15 @@ export interface DelegationPackage {
   justification_if_above_benchmark: string
 }
 
+export interface FunctionalStaffingRow {
+  id?: string
+  delegation_package_id?: string
+  functional_area: string
+  is_required: boolean
+  proposed_staff_count: number
+  justification: string
+}
+
 const SELECT_RELATIONS = `
   *,
   linked_activity:activities(activity_name, task_number),
@@ -45,6 +54,7 @@ const SELECT_RELATIONS = `
 
 const table = () => (supabase as any).from('travel_delegation_packages')
 const travelersTable = () => (supabase as any).from('travel_delegation_travelers')
+const staffingTable = () => (supabase as any).from('travel_delegation_functional_staffing')
 
 export async function getDelegationPackages(): Promise<any[]> {
   const { data, error } = await table()
@@ -63,7 +73,12 @@ export async function getDelegationPackage(id: string): Promise<any> {
     .eq('delegation_package_id', id)
     .order('created_at', { ascending: true })
 
-  return { ...data, travelers: travelers || [] }
+  const { data: staffing } = await staffingTable()
+    .select('*')
+    .eq('delegation_package_id', id)
+    .order('created_at', { ascending: true })
+
+  return { ...data, travelers: travelers || [], functional_staffing: staffing || [] }
 }
 
 export async function getDelegationTravelers(packageId: string): Promise<any[]> {
@@ -73,6 +88,22 @@ export async function getDelegationTravelers(packageId: string): Promise<any[]> 
     .order('created_at', { ascending: true })
   if (error) throw error
   return data || []
+}
+
+export async function getFunctionalStaffing(packageId: string): Promise<FunctionalStaffingRow[]> {
+  const { data, error } = await staffingTable()
+    .select('*')
+    .eq('delegation_package_id', packageId)
+    .order('created_at', { ascending: true })
+  if (error) throw error
+  return (data || []).map((r: any) => ({
+    id: r.id,
+    delegation_package_id: r.delegation_package_id,
+    functional_area: r.functional_area || '',
+    is_required: r.is_required ?? false,
+    proposed_staff_count: r.proposed_staff_count ?? 0,
+    justification: r.justification || '',
+  }))
 }
 
 export async function createDelegationPackage(payload: Record<string, any>): Promise<any> {
@@ -112,5 +143,26 @@ export async function replaceDelegationTravelers(
   }))
 
   const { error: insError } = await travelersTable().insert(rows)
+  if (insError) throw insError
+}
+
+export async function replaceFunctionalStaffing(
+  packageId: string,
+  rows: FunctionalStaffingRow[],
+): Promise<void> {
+  const { error: delError } = await staffingTable().delete().eq('delegation_package_id', packageId)
+  if (delError) throw delError
+
+  if (rows.length === 0) return
+
+  const insertRows = rows.map((r) => ({
+    delegation_package_id: packageId,
+    functional_area: r.functional_area || null,
+    is_required: r.is_required ?? false,
+    proposed_staff_count: r.proposed_staff_count ?? 0,
+    justification: r.justification || null,
+  }))
+
+  const { error: insError } = await staffingTable().insert(insertRows)
   if (insError) throw insError
 }

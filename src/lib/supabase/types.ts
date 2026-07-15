@@ -1244,6 +1244,7 @@ export type Database = {
           cost_center_id: string | null
           created_at: string | null
           current_stage: string | null
+          delegation_package_id: string | null
           destination: string | null
           destination_transfer_free: boolean | null
           event_organizer_or_title: string | null
@@ -1286,6 +1287,7 @@ export type Database = {
           cost_center_id?: string | null
           created_at?: string | null
           current_stage?: string | null
+          delegation_package_id?: string | null
           destination?: string | null
           destination_transfer_free?: boolean | null
           event_organizer_or_title?: string | null
@@ -1328,6 +1330,7 @@ export type Database = {
           cost_center_id?: string | null
           created_at?: string | null
           current_stage?: string | null
+          delegation_package_id?: string | null
           destination?: string | null
           destination_transfer_free?: boolean | null
           event_organizer_or_title?: string | null
@@ -1373,6 +1376,13 @@ export type Database = {
             columns: ['cost_center_id']
             isOneToOne: false
             referencedRelation: 'cost_centers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorizations_delegation_package_id_fkey'
+            columns: ['delegation_package_id']
+            isOneToOne: false
+            referencedRelation: 'travel_delegation_packages'
             referencedColumns: ['id']
           },
           {
@@ -1429,6 +1439,184 @@ export type Database = {
             columns: ['work_order_id']
             isOneToOne: false
             referencedRelation: 'workorders'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      travel_delegation_packages: {
+        Row: {
+          benchmark_category: string | null
+          benchmark_range: string | null
+          created_at: string | null
+          created_by: string | null
+          current_stage: string | null
+          delegation_package_number: string | null
+          estimated_event_budget: number | null
+          estimated_number_of_participants: number | null
+          estimated_number_of_virtual_participants: number | null
+          event_dates: string | null
+          event_lead_id: string | null
+          event_title: string | null
+          event_type: string | null
+          id: string
+          justification_if_above_benchmark: string | null
+          linked_activity_id: string | null
+          location: string | null
+          programme_id: string | null
+          project_id: string | null
+          status: string | null
+          total_proposed_travelers: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          benchmark_category?: string | null
+          benchmark_range?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string | null
+          delegation_package_number?: string | null
+          estimated_event_budget?: number | null
+          estimated_number_of_participants?: number | null
+          estimated_number_of_virtual_participants?: number | null
+          event_dates?: string | null
+          event_lead_id?: string | null
+          event_title?: string | null
+          event_type?: string | null
+          id?: string
+          justification_if_above_benchmark?: string | null
+          linked_activity_id?: string | null
+          location?: string | null
+          programme_id?: string | null
+          project_id?: string | null
+          status?: string | null
+          total_proposed_travelers?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          benchmark_category?: string | null
+          benchmark_range?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          current_stage?: string | null
+          delegation_package_number?: string | null
+          estimated_event_budget?: number | null
+          estimated_number_of_participants?: number | null
+          estimated_number_of_virtual_participants?: number | null
+          event_dates?: string | null
+          event_lead_id?: string | null
+          event_title?: string | null
+          event_type?: string | null
+          id?: string
+          justification_if_above_benchmark?: string | null
+          linked_activity_id?: string | null
+          location?: string | null
+          programme_id?: string | null
+          project_id?: string | null
+          status?: string | null
+          total_proposed_travelers?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_delegation_packages_event_lead_id_fkey'
+            columns: ['event_lead_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'activities'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['activity_id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_linked_activity_id_fkey'
+            columns: ['linked_activity_id']
+            isOneToOne: false
+            referencedRelation: 'calendar_report_view'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_programme_id_fkey'
+            columns: ['programme_id']
+            isOneToOne: false
+            referencedRelation: 'programmes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_packages_project_id_fkey'
+            columns: ['project_id']
+            isOneToOne: false
+            referencedRelation: 'projects'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      travel_delegation_travelers: {
+        Row: {
+          comments: string | null
+          created_at: string | null
+          delegation_package_id: string | null
+          functional_area: string | null
+          id: string
+          local_support_possible: boolean | null
+          physical_presence_justification: string | null
+          proposed_role_or_function: string | null
+          remote_participation_possible: boolean | null
+          status: string | null
+          traveler_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string | null
+          delegation_package_id?: string | null
+          functional_area?: string | null
+          id?: string
+          local_support_possible?: boolean | null
+          physical_presence_justification?: string | null
+          proposed_role_or_function?: string | null
+          remote_participation_possible?: boolean | null
+          status?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string | null
+          delegation_package_id?: string | null
+          functional_area?: string | null
+          id?: string
+          local_support_possible?: boolean | null
+          physical_presence_justification?: string | null
+          proposed_role_or_function?: string | null
+          remote_participation_possible?: boolean | null
+          status?: string | null
+          traveler_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_delegation_travelers_delegation_package_id_fkey'
+            columns: ['delegation_package_id']
+            isOneToOne: false
+            referencedRelation: 'travel_delegation_packages'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_delegation_travelers_traveler_id_fkey'
+            columns: ['traveler_id']
+            isOneToOne: false
+            referencedRelation: 'profiles'
             referencedColumns: ['id']
           },
         ]

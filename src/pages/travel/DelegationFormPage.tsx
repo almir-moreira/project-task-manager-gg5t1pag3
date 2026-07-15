@@ -22,11 +22,55 @@ import {
   createDelegationPackage,
   updateDelegationPackage,
   replaceDelegationTravelers,
+  replaceFunctionalStaffing,
   type DelegationPackage,
   type DelegationTraveler,
+  type FunctionalStaffingRow,
 } from '@/services/delegations'
 import { DelegationEventDetailsSection } from './components/DelegationEventDetailsSection'
 import { DelegationTravelersSection } from './components/DelegationTravelersSection'
+import { DelegationSopEvaluationSection } from './components/DelegationSopEvaluationSection'
+
+const SOP_FIELDS = [
+  'complexity_parallel_sessions',
+  'complexity_parallel_sessions_comments',
+  'complexity_venues',
+  'complexity_venues_comments',
+  'complexity_site_visits',
+  'complexity_site_visits_comments',
+  'complexity_vip_participation',
+  'complexity_vip_participation_comments',
+  'complexity_donor_engagement',
+  'complexity_donor_engagement_comments',
+  'complexity_media_presence',
+  'complexity_media_presence_comments',
+  'complexity_hybrid_streaming',
+  'complexity_hybrid_streaming_comments',
+  'complexity_interpretation',
+  'complexity_interpretation_comments',
+  'complexity_security_sensitive',
+  'complexity_security_sensitive_comments',
+  'complexity_participant_logistics',
+  'complexity_participant_logistics_comments',
+  'complexity_branding_visibility',
+  'complexity_branding_visibility_comments',
+  'indicative_staffing_range',
+  'total_proposed_staff',
+  'is_within_benchmark',
+  'benchmark_justification',
+  'traffic_light_status',
+  'assessment_comments',
+]
+
+const DEFAULT_STAFFING_AREAS = [
+  'Programme Delivery & Facilitation',
+  'Events Management & Logistics',
+  'Participant & Guest Management',
+  'Protocol & Security',
+  'Communications & Visibility',
+  'Executive / Senior Management Support',
+  'Technical / Hybrid Support',
+]
 
 export default function DelegationFormPage() {
   const { id } = useParams()
@@ -55,6 +99,14 @@ export default function DelegationFormPage() {
     justification_if_above_benchmark: '',
   })
   const [travelers, setTravelers] = useState<DelegationTraveler[]>([])
+  const [staffingRows, setStaffingRows] = useState<FunctionalStaffingRow[]>(
+    DEFAULT_STAFFING_AREAS.map((area) => ({
+      functional_area: area,
+      is_required: false,
+      proposed_staff_count: 0,
+      justification: '',
+    })),
+  )
   const [masterData, setMasterData] = useState<any>(null)
   const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -93,6 +145,11 @@ export default function DelegationFormPage() {
             justification_if_above_benchmark: pkg.justification_if_above_benchmark || '',
             delegation_package_number: pkg.delegation_package_number,
           }))
+          SOP_FIELDS.forEach((field) => {
+            if (pkg[field] !== undefined && pkg[field] !== null) {
+              setFormData((prev) => ({ ...prev, [field]: pkg[field] }))
+            }
+          })
           const loadedTravelers: DelegationTraveler[] = (pkg.travelers || []).map((t: any) => ({
             id: t.id,
             delegation_package_id: t.delegation_package_id,
@@ -106,6 +163,19 @@ export default function DelegationFormPage() {
             comments: t.comments || '',
           }))
           setTravelers(loadedTravelers)
+
+          if (pkg.functional_staffing && pkg.functional_staffing.length > 0) {
+            setStaffingRows(
+              pkg.functional_staffing.map((s: any) => ({
+                id: s.id,
+                delegation_package_id: s.delegation_package_id,
+                functional_area: s.functional_area || '',
+                is_required: s.is_required ?? false,
+                proposed_staff_count: s.proposed_staff_count ?? 0,
+                justification: s.justification || '',
+              })),
+            )
+          }
         })
         .catch(console.error)
         .finally(() => setLoading(false))
@@ -179,6 +249,7 @@ export default function DelegationFormPage() {
       'project',
       'event_lead',
       'travelers',
+      'functional_staffing',
     ]
     for (const [key, value] of Object.entries(data)) {
       if (EXCLUDED_FIELDS.includes(key)) continue
@@ -200,6 +271,9 @@ export default function DelegationFormPage() {
         ...cleanPayload({
           ...formData,
           total_proposed_travelers: travelers.length,
+          total_proposed_staff:
+            formData.total_proposed_staff ??
+            staffingRows.reduce((sum, r) => sum + (r.proposed_staff_count || 0), 0),
           created_by: user?.id,
         }),
         status: 'Draft',
@@ -216,6 +290,7 @@ export default function DelegationFormPage() {
       }
 
       await replaceDelegationTravelers(packageId, travelers)
+      await replaceFunctionalStaffing(packageId, staffingRows)
 
       toast({ title: 'Delegation proposal saved successfully' })
       navigate('/travel/delegations')
@@ -277,6 +352,13 @@ export default function DelegationFormPage() {
           onChange={setTravelers}
         />
       )}
+
+      <DelegationSopEvaluationSection
+        formData={formData}
+        onChange={handleChange}
+        staffingRows={staffingRows}
+        onStaffingChange={setStaffingRows}
+      />
 
       <div className="flex gap-3 justify-end pb-6">
         <Button variant="outline" onClick={() => navigate('/travel/delegations')}>
