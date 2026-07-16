@@ -33,6 +33,7 @@ export interface DelegationPackage {
   benchmark_range: string
   total_proposed_travelers: number
   justification_if_above_benchmark: string
+  consultation_required_units?: string[] | null
 }
 
 export interface FunctionalStaffingRow {
@@ -43,6 +44,20 @@ export interface FunctionalStaffingRow {
   proposed_staff_count: number
   justification: string
 }
+
+export const CONSULTATION_UNIT_MAP: Record<string, string> = {
+  ems: 'EMS',
+  communications: 'Communications',
+  protocol: 'Protocol',
+  eosg: 'Executive Office / EOSG',
+  security: 'Security',
+  other: 'Other',
+}
+
+export const CONSULTATION_UNITS = Object.entries(CONSULTATION_UNIT_MAP).map(([key, label]) => ({
+  key,
+  label,
+}))
 
 const SELECT_RELATIONS = `
   *,
@@ -192,7 +207,7 @@ export async function getConsultations(packageId: string): Promise<any[]> {
 export async function submitDelegationForConsultation(
   packageId: string,
   userId: string,
-  unitNames: string[],
+  unitKeys: string[],
 ): Promise<void> {
   const now = new Date().toISOString()
   const { error: updateError } = await table()
@@ -206,13 +221,26 @@ export async function submitDelegationForConsultation(
     .eq('id', packageId)
   if (updateError) throw updateError
 
-  if (unitNames.length > 0) {
-    const rows = unitNames.map((unitName) => ({
+  if (unitKeys.length === 0) return
+
+  const { data: existing, error: fetchError } = await consultationsTable()
+    .select('unit_key')
+    .eq('delegation_package_id', packageId)
+  if (fetchError) throw fetchError
+
+  const existingKeys = new Set((existing || []).map((r: any) => r.unit_key).filter(Boolean))
+
+  const toCreate = unitKeys
+    .filter((key) => !existingKeys.has(key))
+    .map((key) => ({
       delegation_package_id: packageId,
-      unit_name: unitName,
+      unit_name: CONSULTATION_UNIT_MAP[key] || key,
+      unit_key: key,
       status: 'Pending',
     }))
-    const { error: insError } = await consultationsTable().insert(rows)
+
+  if (toCreate.length > 0) {
+    const { error: insError } = await consultationsTable().insert(toCreate)
     if (insError) throw insError
   }
 }

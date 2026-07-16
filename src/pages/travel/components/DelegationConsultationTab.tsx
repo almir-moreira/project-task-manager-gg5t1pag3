@@ -36,7 +36,7 @@ interface Props {
   profiles: any[]
   canEdit: boolean
   currentUserId: string | null
-  units: string[]
+  units: { key: string; label: string }[]
 }
 
 export function DelegationConsultationTab({
@@ -52,8 +52,7 @@ export function DelegationConsultationTab({
   units,
 }: Props) {
   const allCompleted =
-    consultations.length > 0 &&
-    consultations.every((c) => c.status === 'Completed' || c.status === 'Not Required')
+    consultations.length > 0 && consultations.every((c) => c.status === 'Completed')
 
   const toggleUnit = (unit: string, checked: boolean) => {
     if (checked) {
@@ -71,13 +70,13 @@ export function DelegationConsultationTab({
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {units.map((unit) => (
-            <div key={unit} className="flex items-center justify-between rounded-lg border p-3">
-              <span className="text-sm font-medium">{unit}</span>
+            <div key={unit.key} className="flex items-center justify-between rounded-lg border p-3">
+              <span className="text-sm font-medium">{unit.label}</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">No</span>
                 <Switch
-                  checked={selectedUnits.includes(unit)}
-                  onCheckedChange={(v) => toggleUnit(unit, v)}
+                  checked={selectedUnits.includes(unit.key)}
+                  onCheckedChange={(v) => toggleUnit(unit.key, v)}
                 />
                 <span className="text-xs text-muted-foreground">Yes</span>
               </div>

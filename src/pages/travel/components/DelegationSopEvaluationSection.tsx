@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { CONSULTATION_UNITS } from '@/services/delegations'
 import { DelegationConsultationTab } from './DelegationConsultationTab'
 
 export interface FunctionalStaffingRow {
@@ -68,15 +69,6 @@ const DEFAULT_STAFFING_AREAS = [
 ]
 
 const BENCHMARK_CATEGORIES = ['Small Event', 'Medium Event', 'Large / High-Complexity Event']
-
-const CONSULTATION_UNITS = [
-  'EMS',
-  'Communications',
-  'Protocol',
-  'Executive Office / EOSG',
-  'Security',
-  'Other',
-]
 
 const TRAFFIC_LIGHTS = [
   {

@@ -186,6 +186,7 @@ export default function DelegationFormPage() {
               })),
             )
           }
+          setSelectedUnits(pkg.consultation_required_units || [])
           getConsultations(id).then(setConsultations).catch(console.error)
         })
         .catch(console.error)
@@ -267,6 +268,7 @@ export default function DelegationFormPage() {
     const payload = {
       ...cleanPayload({
         ...formData,
+        consultation_required_units: selectedUnits,
         total_proposed_travelers: travelers.length,
         total_proposed_staff:
           formData.total_proposed_staff ??
