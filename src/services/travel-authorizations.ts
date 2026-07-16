@@ -39,6 +39,32 @@ export interface TravelAuthorization {
   traveler_confirmation: boolean | null
   pm_verification_status: string | null
   pm_verification_comments: string | null
+  mission_purpose: string | null
+  strategic_relevance: string | null
+  organizing_institution_relevance: string | null
+  traveler_role: string[] | null
+  traveler_role_other_details: string | null
+  traveler_role_description: string | null
+  expected_benefits: string[] | null
+  expected_benefit_other_details: string | null
+  expected_follow_up_actions: string | null
+  remote_participation_considered: boolean | null
+  physical_attendance_justification: string | null
+  mission_combination_possible: boolean | null
+  mission_combination_details: string | null
+  number_of_kaiciid_staff_traveling: number | null
+  additional_staff_justification: string | null
+  mission_planned_in_advance: boolean | null
+  economical_travel_considered: boolean | null
+  mission_dates_limited: boolean | null
+  remote_alternatives_assessed: boolean | null
+  cost_efficiency_comments: string | null
+  mission_traffic_light_strategic: string | null
+  mission_traffic_light_role: string | null
+  mission_traffic_light_value: string | null
+  mission_traffic_light_cost: string | null
+  mission_traffic_light_necessity: string | null
+  mission_traffic_light_comments: string | null
   created_at: string | null
   updated_at: string | null
 }

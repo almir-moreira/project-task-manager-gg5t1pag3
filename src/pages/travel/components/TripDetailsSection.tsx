@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 const TRAVEL_CATEGORIES = [
   'Official Travel',
+  'Individual Official Mission',
   'Home Leave',
   'Rest & Recreation',
   'Medical Evacuation',

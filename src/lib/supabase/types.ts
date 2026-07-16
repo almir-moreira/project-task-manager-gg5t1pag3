@@ -1233,6 +1233,60 @@ export type Database = {
         }
         Relationships: []
       }
+      travel_authorization_attachments: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string | null
+          id: string
+          travel_authorization_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_type: string
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          travel_authorization_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          travel_authorization_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'travel_authorization_attachments_travel_authorization_id_fkey'
+            columns: ['travel_authorization_id']
+            isOneToOne: false
+            referencedRelation: 'travel_authorizations'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'travel_authorization_attachments_uploaded_by_fkey'
+            columns: ['uploaded_by']
+            isOneToOne: false
+            referencedRelation: 'profiles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       travel_authorizations: {
         Row: {
           accommodation_free: string | null

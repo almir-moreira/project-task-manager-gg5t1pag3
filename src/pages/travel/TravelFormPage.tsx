@@ -28,6 +28,7 @@ import {
 import { TripDetailsSection } from './components/TripDetailsSection'
 import { TravelPart1Fields } from './components/TravelPart1Fields'
 import { TravelAttachmentsSection } from './components/TravelAttachmentsSection'
+import { MissionSopEvaluationSection } from './components/MissionSopEvaluationSection'
 
 export default function TravelFormPage() {
   const { id } = useParams()
@@ -101,6 +102,7 @@ export default function TravelFormPage() {
   }, [id])
 
   const isHomeLeave = formData.travel_type === 'Home Leave'
+  const isIndividualMission = formData.travel_type === 'Individual Official Mission'
 
   useEffect(() => {
     if (isHomeLeave && !formData.reason_for_travel_option) {
@@ -262,6 +264,10 @@ export default function TravelFormPage() {
           isHomeLeave={isHomeLeave}
           masterData={masterData}
         />
+      )}
+
+      {isIndividualMission && (
+        <MissionSopEvaluationSection formData={formData} onChange={handleChange} />
       )}
 
       {isEdit && id && (
