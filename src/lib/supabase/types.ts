@@ -1453,6 +1453,7 @@ export type Database = {
           reviewed_at: string | null
           reviewer_id: string | null
           status: string | null
+          unit_key: string | null
           unit_name: string
           updated_at: string | null
         }
@@ -1465,6 +1466,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string | null
+          unit_key?: string | null
           unit_name: string
           updated_at?: string | null
         }
@@ -1477,6 +1479,7 @@ export type Database = {
           reviewed_at?: string | null
           reviewer_id?: string | null
           status?: string | null
+          unit_key?: string | null
           unit_name?: string
           updated_at?: string | null
         }
@@ -1572,6 +1575,7 @@ export type Database = {
           complexity_vip_participation: boolean | null
           complexity_vip_participation_comments: string | null
           consultation_completed_at: string | null
+          consultation_required_units: string[] | null
           consultation_started_at: string | null
           created_at: string | null
           created_by: string | null
@@ -1643,6 +1647,7 @@ export type Database = {
           complexity_vip_participation?: boolean | null
           complexity_vip_participation_comments?: string | null
           consultation_completed_at?: string | null
+          consultation_required_units?: string[] | null
           consultation_started_at?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1714,6 +1719,7 @@ export type Database = {
           complexity_vip_participation?: boolean | null
           complexity_vip_participation_comments?: string | null
           consultation_completed_at?: string | null
+          consultation_required_units?: string[] | null
           consultation_started_at?: string | null
           created_at?: string | null
           created_by?: string | null

@@ -27,6 +27,7 @@ import {
 } from '@/services/travel'
 import { TripDetailsSection } from './components/TripDetailsSection'
 import { TravelPart1Fields } from './components/TravelPart1Fields'
+import { TravelAttachmentsSection } from './components/TravelAttachmentsSection'
 
 export default function TravelFormPage() {
   const { id } = useParams()
@@ -260,6 +261,17 @@ export default function TravelFormPage() {
           onChange={handleChange}
           isHomeLeave={isHomeLeave}
           masterData={masterData}
+        />
+      )}
+
+      {isEdit && id && (
+        <TravelAttachmentsSection
+          travelAuthorizationId={id}
+          isEditable={
+            formData.status === 'Draft' ||
+            formData.current_stage === 'Draft / Part 1' ||
+            !formData.status
+          }
         />
       )}
 
